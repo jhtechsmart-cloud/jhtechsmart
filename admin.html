@@ -917,7 +917,8 @@ function confirmQuote(){
   syncToSheet('confirmed');
   renderDetail();
   renderList();
-  alert('견적이 확정되었습니다.\n출력 버튼으로 견적서와 장비사진을 각각 출력하세요.');
+  alert('견적이 확정되었습니다.\nGoogle Drive에 PDF 자동 저장 중…');
+  printQuote(currentReq, true);
 }
 
 function syncToSheet(status){
@@ -965,38 +966,56 @@ async function saveQuoteToDrive(html, quoteNo, company){
   const safeName = (company||'견적서').replace(/[\s\/\\:*?"<>|]/g,'_');
   const filename = safeName + '_' + dateStr;
 
-  let wrapper = null;
+  let iframe = null;
   try{
-    await loadHtml2Pdf();
-
-    // HTML에서 스타일과 본문 추출
-    const parsed = new DOMParser().parseFromString(html, 'text/html');
-    const styleText = [...parsed.querySelectorAll('style')].map(s=>s.textContent).join('\n');
     // 자동출력 스크립트 제거
-    parsed.querySelectorAll('script').forEach(s=>s.remove());
+    const htmlForPdf = html.replace(/<script[\s\S]*?<\/script>/gi, '');
 
-    wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;';
-    wrapper.innerHTML = `<style>${styleText}</style>` + parsed.body.innerHTML;
-    document.body.appendChild(wrapper);
+    // 숨겨진 iframe에 HTML 전체를 완전한 문서로 렌더링
+    // (same-origin이므로 CDN 스크립트·폰트 정상 로드, body{} CSS 그대로 적용)
+    iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:0;top:0;width:860px;height:1200px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(iframe);
 
-    await new Promise(r=>setTimeout(r,800)); // 렌더링·폰트 로딩 대기
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(htmlForPdf);
+    iframe.contentDocument.close();
 
-    const pdfBlob = await html2pdf().set({
+    // 폰트·이미지 로딩 대기
+    await new Promise(r => setTimeout(r, 600));
+    if(iframe.contentDocument.fonts){
+      await Promise.race([
+        iframe.contentDocument.fonts.ready,
+        new Promise(r => setTimeout(r, 2500))
+      ]);
+    }
+    await new Promise(r => setTimeout(r, 300));
+
+    // iframe 컨텍스트에 html2pdf 로드
+    await new Promise((res, rej) => {
+      const s = iframe.contentDocument.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      s.onload = res;
+      s.onerror = rej;
+      iframe.contentDocument.head.appendChild(s);
+    });
+
+    // iframe 내부에서 직접 PDF 생성 (body{} 스타일 완전 적용)
+    const pdfBlob = await iframe.contentWindow.html2pdf().set({
       margin: 0,
       filename: filename+'.pdf',
       image: {type:'jpeg', quality:0.97},
-      html2canvas: {scale:2, useCORS:true, logging:false, allowTaint:true},
+      html2canvas: {scale:2, useCORS:true, logging:false, scrollX:0, scrollY:0},
       jsPDF: {unit:'mm', format:'a4', orientation:'portrait'}
-    }).from(wrapper).toPdf().output('blob');
+    }).from(iframe.contentDocument.body).toPdf().output('blob');
 
-    document.body.removeChild(wrapper);
-    wrapper = null;
+    document.body.removeChild(iframe);
+    iframe = null;
 
     // Blob → base64
-    const base64 = await new Promise((res,rej)=>{
+    const base64 = await new Promise((res, rej) => {
       const reader = new FileReader();
-      reader.onload = ()=>res(reader.result.split(',')[1]);
+      reader.onload = () => res(reader.result.split(',')[1]);
       reader.onerror = rej;
       reader.readAsDataURL(pdfBlob);
     });
@@ -1013,7 +1032,7 @@ async function saveQuoteToDrive(html, quoteNo, company){
       showDriveToast('err', json.message||'알 수 없는 오류');
     }
   } catch(e){
-    if(wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    if(iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
     showDriveToast('err', 'PDF 생성 실패: '+e.message);
   }
 }
@@ -1066,7 +1085,8 @@ function confirmRevise(){
   syncToSheet('confirmed');
   renderList();
   renderDetail();
-  alert('수정 완료!\n새 버전: ' + currentReq.quoteNo);
+  alert('수정 완료!\n새 버전: ' + currentReq.quoteNo + '\nGoogle Drive에 PDF 자동 저장 중…');
+  printQuote(currentReq, true);
 }
 
 /* ─── 한글금액 변환 (일 생략 규칙 적용) ─── */
@@ -1131,7 +1151,7 @@ function printHistoryQuote(reqId, verIdx){
   });
 }
 
-function printQuote(reqOverride){
+function printQuote(reqOverride, skipPrint){
   const r = reqOverride || currentReq;
   if(!r) return;
 
@@ -1301,8 +1321,10 @@ function printQuote(reqOverride){
    +'<scr'+'ipt>window.onload=function(){if(document.fonts){document.fonts.ready.then(function(){setTimeout(window.print,200);});}else{setTimeout(window.print,500);}}<\/scr'+'ipt>'
    +'</body></html>';
 
-  const w = window.open('','_blank','width=860,height=1100');
-  if(w){w.document.write(html);w.document.close();}
+  if(!skipPrint){
+    const w = window.open('','_blank','width=860,height=1100');
+    if(w){w.document.write(html);w.document.close();}
+  }
   saveQuoteToDrive(html, r.quoteNo, r.company);
 }
 
