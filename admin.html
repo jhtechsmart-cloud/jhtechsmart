@@ -947,7 +947,7 @@ function showDriveToast(type, msg){
 }
 
 
-function saveQuoteToDrive(html, quoteNo, company){
+function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   const url = document.getElementById('gasUrl').value.trim();
   if(!url){ showDriveToast('err','GAS URL이 설정되지 않았습니다.'); return; }
   showDriveToast('loading');
@@ -955,12 +955,24 @@ function saveQuoteToDrive(html, quoteNo, company){
   const now = new Date();
   const dateStr = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
   const safeName = (company||'견적서').replace(/[\s\/\\:*?"<>|]/g,'_');
-  const filename = safeName + '_' + dateStr;
+  const quoteFilename = safeName + '_' + dateStr;
+  const equipFilename = '장비사진_' + safeName + '_' + dateStr;
 
-  // 자동출력 스크립트 제거 후 PDF 생성 스크립트 주입
-  const htmlNoPrint = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  // 팝업에서 장비사진 상대경로 해석에 필요한 base href 주입
+  const baseHref = location.href.substring(0, location.href.lastIndexOf('/')+1);
+  const htmlNoPrint = quoteHtml
+    .replace('<head>', '<head><base href="'+baseHref+'">')
+    .replace(/<script[\s\S]*?<\/script>/gi, '');
+
+  // 장비사진 HTML을 JSON으로 팝업 스크립트에 삽입
+  const equipJson = equipHtml ? JSON.stringify(equipHtml) : 'null';
+
   const pdfScript =
-    '<scr'+'ipt>(async function(){'
+    '<scr'+'ipt>'
+   +'var _EH='+equipJson+';'
+   +'(async function(){'
+   +'function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}'
+   +'function b64(blob){return new Promise(function(res){var rd=new FileReader();rd.onload=function(){res(rd.result.split(\',\')[1]);};rd.readAsDataURL(blob);});}'
    +'try{'
    +'await new Promise(function(res,rej){'
    +'var s=document.createElement(\'script\');'
@@ -968,28 +980,41 @@ function saveQuoteToDrive(html, quoteNo, company){
    +'s.onload=res;s.onerror=function(){rej(new Error(\'CDN load fail\'));};'
    +'document.head.appendChild(s);});'
    +'if(document.fonts)await document.fonts.ready;'
-   +'await new Promise(function(r){setTimeout(r,800);});'
-   +'var blob=await html2pdf().set({'
-   +'margin:0,'
-   +'image:{type:\'jpeg\',quality:0.97},'
+   +'await wait(800);'
+   +'var opt={margin:0,image:{type:\'jpeg\',quality:0.97},'
    +'html2canvas:{scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0},'
-   +'jsPDF:{unit:\'mm\',format:\'a4\',orientation:\'portrait\'}'
-   +'}).from(document.body).toPdf().output(\'blob\');'
-   +'var r=new FileReader();'
-   +'r.onload=function(){'
-   +'try{window.opener.__pdfOK__(r.result.split(\',\')[1]);}catch(e){}'
+   +'jsPDF:{unit:\'mm\',format:\'a4\',orientation:\'portrait\'}};'
+   // 1. 견적서 PDF (document.body 전체)
+   +'var qBlob=await html2pdf().set(opt).from(document.body).toPdf().output(\'blob\');'
+   +'var qB64=await b64(qBlob);'
+   // 2. 장비사진 PDF (별도 wrapper div)
+   +'var eB64=\'\';'
+   +'if(_EH){'
+   +'var ep=new DOMParser().parseFromString(_EH,\'text/html\');'
+   +'var eSty=[].slice.call(ep.querySelectorAll(\'style\')).map(function(s){'
+   +'return s.textContent.replace(/\\bbody\\b/g,\'.eqpdf\');}).join(\'\');'
+   +'var ew=document.createElement(\'div\');'
+   +'ew.className=\'eqpdf\';'
+   +'ew.style.cssText=\'position:absolute;left:0;top:0;width:720px;min-height:820px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;\';'
+   +'ew.innerHTML=\'<style>\'+eSty+\'</style>\'+ep.body.innerHTML;'
+   +'document.body.appendChild(ew);'
+   +'var img=ew.querySelector(\'img\');'
+   +'if(img&&!img.complete){await new Promise(function(res){img.onload=res;img.onerror=res;setTimeout(res,5000);});}'
+   +'await wait(600);'
+   +'var eBlob=await html2pdf().set(opt).from(ew).toPdf().output(\'blob\');'
+   +'eB64=await b64(eBlob);'
+   +'document.body.removeChild(ew);'
+   +'}'
+   +'if(window.opener&&!window.opener.closed)window.opener.__pdfBoth__(qB64,eB64);'
    +'setTimeout(function(){window.close();},300);'
-   +'};'
-   +'r.readAsDataURL(blob);'
    +'}catch(e){'
-   +'try{window.opener.__pdfNG__(e.message);}catch(ex){}'
+   +'if(window.opener&&!window.opener.closed)window.opener.__pdfNG__(e.message);'
    +'setTimeout(function(){window.close();},300);'
    +'}'
    +'})();<\/scr'+'ipt>';
 
   const htmlForPopup = htmlNoPrint.replace('</body>', pdfScript + '</body>');
 
-  // 콜백 등록
   const tid = setTimeout(function(){
     cleanup();
     showDriveToast('err','PDF 생성 시간 초과 (30초)');
@@ -997,26 +1022,31 @@ function saveQuoteToDrive(html, quoteNo, company){
 
   function cleanup(){
     clearTimeout(tid);
-    delete window.__pdfOK__;
+    delete window.__pdfBoth__;
     delete window.__pdfNG__;
   }
 
-  window.__pdfOK__ = async function(base64){
+  window.__pdfBoth__ = async function(quoteB64, equipB64){
     cleanup();
     try{
-      const body = new URLSearchParams({
-        action:'saveQuote',
-        data:JSON.stringify({pdf:base64, filename:filename, company:company})
-      });
-      const resp = await fetch(url, {method:'POST', body:body});
-      const json = await resp.json();
-      if(json.status==='ok'){
-        showDriveToast('ok','PDF 저장 완료 → <a href="'+json.url+'" target="_blank">드라이브에서 열기</a>');
-      }else{
-        showDriveToast('err', json.message||'알 수 없는 오류');
+      const r1 = await fetch(url, {method:'POST', body:new URLSearchParams({
+        action:'saveQuote', data:JSON.stringify({pdf:quoteB64, filename:quoteFilename, company:company})
+      })});
+      const j1 = await r1.json();
+      if(j1.status!=='ok') throw new Error('견적서: '+(j1.message||'오류'));
+
+      let driveUrl = j1.url;
+      if(equipB64){
+        const r2 = await fetch(url, {method:'POST', body:new URLSearchParams({
+          action:'saveQuote', data:JSON.stringify({pdf:equipB64, filename:equipFilename, company:company})
+        })});
+        const j2 = await r2.json();
+        if(j2.status==='ok') driveUrl = j2.url;
       }
+      const label = equipB64 ? '견적서 + 장비사진' : '견적서';
+      showDriveToast('ok', label+' PDF 저장 완료 → <a href="'+driveUrl+'" target="_blank">드라이브 열기</a>');
     }catch(e){
-      showDriveToast('err','전송 실패: '+e.message);
+      showDriveToast('err','Drive 저장 실패: '+e.message);
     }
   };
 
@@ -1025,7 +1055,6 @@ function saveQuoteToDrive(html, quoteNo, company){
     showDriveToast('err','PDF 생성 실패: '+msg);
   };
 
-  // 실제 브라우저 창에서 PDF 생성 (팝업 차단 주의)
   const pw = window.open('','','width=860,height=10,top='+(screen.height)+',left=0,scrollbars=no,status=no,toolbar=no');
   if(!pw){
     cleanup();
@@ -1324,18 +1353,15 @@ function printQuote(reqOverride, skipPrint){
     const w = window.open('','_blank','width=860,height=1100');
     if(w){w.document.write(html);w.document.close();}
   } else {
-    // 확정/수정확정 시 자동 Drive 저장 (출력창 없이)
-    saveQuoteToDrive(html, r.quoteNo, r.company);
+    // 확정/수정확정 시 자동 Drive 저장 (견적서 + 장비사진)
+    saveQuoteToDrive(html, r.quoteNo, r.company, buildEquipHtml(r));
   }
 }
 
-function printEquipPhoto(){
-  const r = currentReq;
-  if(!r) return;
+function buildEquipHtml(r){
   const eq = getEquipObj(r.equipment);
-  if(!eq){alert('장비 사진 정보가 없습니다.');return;}
-
-  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+  if(!eq) return null;
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
   <title>장비사진_${r.equipment}_${r.company}</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" as="style" crossorigin>
   <style>
@@ -1360,7 +1386,13 @@ function printEquipPhoto(){
   <div class="footer">(주)재현테크 영업팀</div>
   <script>window.onload=function(){window.print();}<\/script>
   </body></html>`;
+}
 
+function printEquipPhoto(){
+  const r = currentReq;
+  if(!r) return;
+  const html = buildEquipHtml(r);
+  if(!html){alert('장비 사진 정보가 없습니다.');return;}
   const w = window.open('', '_blank', 'width=720,height=820');
   w.document.write(html);
   w.document.close();
