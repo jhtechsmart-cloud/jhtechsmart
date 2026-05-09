@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>재현테크 2026 소공인 스마트제조 지원사업 사전검토</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    :root{
+      --blue:#1e56c8;--blue2:#0d3778;--orange:#f97316;--yellow:#fbbf24;
+      --bg:#f0f5fb;--line:#dce8f5;--text:#0f172a;--muted:#64748b;
+      --danger:#e53e3e;--ok:#0d9f6e;--soft:#eff6ff;
+      --shadow-sm:0 2px 8px rgba(13,55,120,.07);
+      --shadow-md:0 6px 24px rgba(13,55,120,.12);
+      --shadow-lg:0 16px 56px rgba(13,55,120,.17);
+      --radius:14px;--radius-sm:9px;--radius-lg:22px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;background:linear-gradient(145deg,#dde9f7 0%,#f0f5fb 60%,#e8f0fa 100%);color:var(--text);line-height:1.65;min-height:100vh;padding:28px;font-size:15px;-webkit-font-smoothing:antialiased}
+    .app{max-width:1140px;margin:0 auto;background:#fff;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg)}
+    header{background:linear-gradient(135deg,var(--blue2) 0%,var(--blue) 100%);color:#fff;padding:36px 44px;position:relative;overflow:hidden}
+    header::before{content:'';position:absolute;right:-60px;top:-80px;width:320px;height:320px;background:radial-gradient(circle,rgba(251,191,36,.24) 0%,transparent 65%);border-radius:50%}
+    header::after{content:'';position:absolute;left:-40px;bottom:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);border-radius:50%}
+    .badge{display:inline-flex;gap:8px;align-items:center;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.22);padding:7px 15px;border-radius:999px;font-size:13px;font-weight:700;margin-bottom:16px;letter-spacing:.2px}
+    h1{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.28;position:relative;z-index:1}
+    .accent{color:var(--yellow)}
+    .head-desc{margin-top:14px;color:rgba(255,255,255,.84);max-width:800px;font-size:15px;line-height:1.72;position:relative;z-index:1}
+    .top-info{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px 44px;background:#f7fafe;border-bottom:1.5px solid var(--line)}
+    .info-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:15px 17px;box-shadow:var(--shadow-sm);transition:box-shadow .18s}
+    .info-card:hover{box-shadow:var(--shadow-md)}
+    .info-card b{display:block;color:var(--blue);font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:5px}
+    .info-card span{font-size:14px;color:var(--text);font-weight:500}
+    .notice{margin:24px 44px 0;border:1.5px solid #fed7aa;background:linear-gradient(135deg,#fff7ed,#fffbf5);border-radius:var(--radius);padding:18px 22px}
+    .notice h3{font-size:15px;color:#c2410c;margin-bottom:8px;font-weight:700}
+    .notice p{font-size:14px;color:#78350f;line-height:1.7}
+    .wrap{display:grid;grid-template-columns:272px 1fr;gap:0;padding:28px 44px 40px}
+    .side{border-right:1.5px solid var(--line);padding-right:26px}
+    .steps{display:flex;flex-direction:column;gap:8px;position:sticky;top:24px}
+    .step-tab{border:1.5px solid var(--line);background:#fff;border-radius:var(--radius);padding:13px 16px;text-align:left;cursor:pointer;font-weight:700;font-size:14px;color:#4a6280;transition:all .18s}
+    .step-tab:hover:not(.active){background:#f5f9ff;border-color:#b8cfe8;color:var(--blue2)}
+    .step-tab.active{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(30,86,200,.26)}
+    .step-tab.done{border-color:#86efac;color:var(--ok);background:#f0fdf4}
+    .step-tab small{display:block;font-weight:500;font-size:12px;opacity:.76;margin-top:3px}
+    main{padding-left:30px}
+    .section{display:none}
+    .section.active{display:block}
+    .section h2{font-size:22px;font-weight:800;letter-spacing:-.6px;margin-bottom:8px;color:var(--blue2)}
+    .section-desc{color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.68}
+    .box{border:1.5px solid var(--line);border-radius:var(--radius-lg);padding:22px;margin-bottom:20px;background:#fff;box-shadow:var(--shadow-sm)}
+    .box.soft{background:var(--soft);border-color:#c7dff9}
+    .box h3{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--blue2)}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+    .field{display:flex;flex-direction:column;gap:7px}
+    .field label{font-size:13px;font-weight:700;color:#334155;letter-spacing:.1px}
+    .field input,.field select,.field textarea{width:100%;border:1.5px solid #dce8f5;border-radius:var(--radius-sm);padding:11px 14px;font-family:inherit;font-size:14px;outline:none;background:#fff;color:var(--text);transition:border-color .15s,box-shadow .15s}
+    .field textarea{min-height:96px;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3.5px rgba(30,86,200,.1)}
+    .field input::placeholder,.field textarea::placeholder{color:#aab7c9}
+    .check-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .check{display:flex;align-items:flex-start;gap:10px;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:13px 15px;background:#fff;font-size:14px;line-height:1.58;cursor:pointer;transition:all .15s}
+    .check:hover{border-color:#93b4d8;background:#f5f9ff;box-shadow:0 2px 8px rgba(30,86,200,.07)}
+    .check input[type=checkbox]{flex-shrink:0;margin-top:2px;accent-color:var(--orange);width:16px;height:16px;cursor:pointer}
+    .result{border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;font-weight:700;font-size:14px}
+    .result.ok{background:#f0fdf4;color:var(--ok);border:1.5px solid #86efac}
+    .result.warn{background:#fffbeb;color:#92400e;border:1.5px solid #fde68a}
+    .result.bad{background:#fef2f2;color:var(--danger);border:1.5px solid #fca5a5}
+    .hint{font-size:12px;color:var(--muted);margin-top:5px}
+    .nav{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+    .btn{border:0;border-radius:var(--radius-sm);padding:12px 22px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:-.1px;transition:all .18s}
+    .btn.primary{background:var(--orange);color:#fff;box-shadow:0 4px 14px rgba(249,115,22,.28)}
+    .btn.primary:hover:not(:disabled){background:#ea6c06;box-shadow:0 6px 20px rgba(249,115,22,.38);transform:translateY(-1px)}
+    .btn.secondary{background:#eef2f8;color:#334155;border:1.5px solid var(--line)}
+    .btn.secondary:hover:not(:disabled){background:#e2eaf5;border-color:#b8cfe8}
+    .btn.blue{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(30,86,200,.26)}
+    .btn.blue:hover:not(:disabled){background:#1748b0;box-shadow:0 6px 20px rgba(30,86,200,.36);transform:translateY(-1px)}
+    .btn:disabled{opacity:.42;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .equipment-list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .equip{border:1.5px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;background:#fff;transition:all .2s;box-shadow:var(--shadow-sm)}
+    .equip:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#93b4d8}
+    .equip.selected{border-color:var(--orange);box-shadow:0 0 0 3px rgba(249,115,22,.15),var(--shadow-md)}
+    .equip strong{display:block;color:var(--blue2);margin-bottom:5px;font-size:14px;font-weight:700}
+    .equip span{font-size:13px;color:var(--muted)}
+    .tag{display:inline-block;background:#eff6ff;color:var(--blue);border-radius:999px;padding:4px 10px;font-size:11px;margin:7px 4px 0 0;font-weight:600}
+    .summary{white-space:pre-wrap;background:#fafaf7;color:#2f2a22;border:1.5px solid #e8e0d0;border-radius:var(--radius);padding:18px;font-size:13px;max-height:420px;overflow:auto}
+    .mini-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.58}
+    .mini-table th,.mini-table td{border:1px solid var(--line);padding:11px 16px;text-align:left;vertical-align:top;word-break:keep-all}
+    .mini-table th{background:#f5f9ff;color:var(--blue2);font-weight:700}
+    .mini-table th:first-child,.mini-table td:first-child{width:160px;white-space:nowrap;font-weight:600}
+    .mini-table tr:nth-child(even) td{background:#f8fbff}
+    .required{color:var(--danger)}
+    .rev{display:none}
+    .equip-cat-header{grid-column:1/-1;border-left:4px solid var(--blue);padding:8px 14px;background:var(--soft);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:14px;font-weight:700;color:var(--blue2);margin-top:10px}
+    .equip-img-wrap{width:100%;height:130px;display:flex;align-items:center;justify-content:center;background:#f7faff;border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;border:1px solid var(--line)}
+    .equip-img{max-width:100%;max-height:130px;object-fit:contain}
+    .equip-select-btn{width:100%;margin-top:10px;padding:9px;background:#f1f5fb;border:1.5px solid var(--line);border-radius:var(--radius-sm);font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;color:#334155;transition:all .18s}
+    .equip-select-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .equip.selected .equip-select-btn{background:var(--orange);color:#fff;border-color:var(--orange)}
+    .summary-html{border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#f7fafe}
+    .sum-section{border-bottom:1px solid var(--line);padding:16px 22px}
+    .sum-section:last-child{border-bottom:0}
+    .sum-title{font-size:14px;font-weight:700;color:var(--blue2);margin-bottom:12px;display:flex;align-items:center;gap:8px;border-left:3.5px solid var(--blue);padding-left:9px}
+    .sum-row{display:flex;align-items:flex-start;gap:12px;padding:5px 0;border-bottom:1px dashed #e2eaf5;font-size:14px;line-height:1.58}
+    .sum-row:last-child{border-bottom:0}
+    .sum-label{flex-shrink:0;width:155px;color:var(--muted);font-size:13px;font-weight:600;padding-top:1px}
+    .sum-val{flex:1;color:var(--text)}
+    .sum-chk{display:inline-flex;align-items:center;gap:4px;font-size:13px;padding:2px 10px;border-radius:6px;font-weight:700}
+    .sum-chk.ok{background:#f0fdf4;color:var(--ok)}
+    .sum-chk.no{background:#fef2f2;color:var(--danger)}
+    .sum-tag{display:inline-block;background:#eff6ff;color:var(--blue);border-radius:999px;padding:3px 10px;font-size:12px;margin:2px 3px;line-height:1.4}
+    .form-topbar{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;padding:15px 36px}
+    .form-topbar .tb-back{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:var(--radius-sm);padding:7px 18px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:.15s}
+    .form-topbar .tb-back:hover{background:rgba(255,255,255,.28)}
+    .form-topbar .tb-title{font-size:14px;font-weight:600;opacity:.88}
+    .app.intro-mode .form-topbar{display:none}
+    .app.intro-mode .side{display:none}
+    .app.intro-mode .wrap{grid-template-columns:1fr}
+    .app.intro-mode main{padding-left:0}
+    .app.form-mode header,.app.form-mode .top-info,.app.form-mode .notice{display:none}
+    .app.form-mode [data-section="0"]{display:none!important}
+    @media(max-width:900px){
+      body{padding:10px}
+      .top-info{grid-template-columns:1fr 1fr;padding:16px}
+      .wrap{grid-template-columns:1fr;padding:16px}
+      .side{border-right:0;border-bottom:1.5px solid var(--line);padding:0 0 16px;margin-bottom:20px}
+      .steps{position:static}
+      .grid,.grid3,.equipment-list,.check-grid{grid-template-columns:1fr}
+      main{padding-left:0}
+      header{padding:28px 22px}
+      h1{font-size:24px}
+      .notice{margin:16px}
+    }
+  </style>
+</head>
+<body>
+<div class="app intro-mode">
+  <header>
+    <div class="badge">(주)재현테크 · 소상공인24 사전등록 공급기업</div>
+    <h1>2026년 소공인 <span class="accent">스마트제조 지원사업</span><br>사전검토 및 장비 견적 요청</h1>
+    <p class="head-desc">(주)재현테크는 2025년도 스마트제조 지원사업 공급기업이며, 2026년도 소상공인24에 사전등록된 공급기업입니다.<br>본 페이지는 공정 분석 및 문제점 분석을 기반으로 적합한 장비 도입 방안을 검토하기 위한 견적 신청 페이지입니다.</p>
+  </header>
+
+  <div class="top-info">
+    <div class="info-card"><b>정부지원금</b><span>최대 3,600만원</span></div>
+    <div class="info-card"><b>자부담</b><span>현금 1,200만원 + 현물 가능</span></div>
+    <div class="info-card"><b>신청 원칙</b><span>소공인이 직접 신청</span></div>
+    <div class="info-card"><b>재현테크 역할</b><span>견적·기술자료·공정검토</span></div>
+  </div>
+
+  <div class="notice">
+    <h3>중요 유의사항</h3>
+    <p>사업 신청 및 최종 제출은 신청기업 대표자 또는 소속 실무자가 직접 진행해야 합니다. 재현테크는 신청 대행이나 사업계획서 대필을 하지 않으며, 장비 견적·기술자료·공정개선 참고자료만 제공합니다. 허위자료, 페이백, 이면계약, 공급기업의 대리신청, 동일 IP 사용 등은 선정취소·환수·제재 사유가 될 수 있습니다.</p>
+  </div>
+
+  <div class="form-topbar">
+    <button class="tb-back" onclick="goIntro()">← 사업 안내로 돌아가기</button>
+    <span class="tb-title">(주)재현테크 · 2026 소공인 스마트제조 지원사업 장비 견적</span>
+  </div>
+
+  <div class="wrap">
+    <aside class="side">
+      <div class="steps">
+        <button class="step-tab" data-step="1">1. 자가진단<small>자격·평균매출 검토</small></button>
+        <button class="step-tab" data-step="2">2. 장비 견적 요청<small>기업·담당자 정보</small></button>
+        <button class="step-tab" data-step="3">3. 공정 문제 분석<small>문제점·개선목표 수집</small></button>
+        <button class="step-tab" data-step="4">4. 도입 희망 장비<small>장비 선택·추천</small></button>
+        <button class="step-tab" data-step="5">5. 제출 내용 확인<small>요약·견적요청</small></button>
+      </div>
+    </aside>
+
+    <main>
+      <section class="section active" data-section="0">
+        <h2>사업 안내</h2>
+        <p class="section-desc">신청 전 사업 구조와 (주)재현테크의 역할을 반드시 확인하세요.</p>
+        <div class="box soft"><h3>(주)재현테크 안내</h3><p>(주)재현테크는 2025년도 스마트제조 지원사업 공급기업이며, 2026년도 소상공인24에 사전등록된 공급기업입니다.</p></div>
+        <div class="box"><h3>사업 핵심 요약</h3><table class="mini-table"><tr><th>구분</th><th>내용</th></tr><tr><td>지원내용</td><td>스마트 장비 하드웨어 구매비, SaaS 또는 상용 소프트웨어 임차비</td></tr><tr><td>지원금액</td><td>국비 최대 3,600만원, 총 사업비 최대 6,000만원 기준</td></tr><tr><td>자부담</td><td>현금 1,200만원 + 현물(인건비) 1,200만원<br><span style="color:#e67e22;font-size:13px;font-weight:700">※ 전체 현금 사업비(4,800만원)의 부가세 480만원은 직접 부담</span><br><span style="color:#c7362f;font-size:13px;font-weight:700">→ 실질 현금 준비 필요액: 자부담 현금 1,200만원 + 부가세 480만원 = 총 1,680만원</span></td></tr><tr><td>사업기간</td><td>협약일 ~ 2026년 12월 20일</td></tr><tr><td>협약기간</td><td>협약체결일로부터 5년, 지원장비 보유·사용·유지관리 의무</td></tr><tr><td>신청방법</td><td>소상공인24를 통한 신청기업 직접 신청</td></tr></table></div>
+        <div class="box"><h3>사업 신청 절차</h3>
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div>
+              <p style="font-weight:700;color:#123d70;margin-bottom:8px;font-size:15px">① 신청기한</p>
+              <p style="font-size:14px;line-height:1.7;background:#f3f7fb;border-radius:10px;padding:10px 14px">5월 18일(월) ~ 6월 2일(화) 18:00<br>소상공인24 사이트에서 신청기업이 직접 신청</p>
+            </div>
+            <div>
+              <p style="font-weight:700;color:#123d70;margin-bottom:8px;font-size:15px">② 준비사항을 확인하세요</p>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">1.</b>동영상 사업계획서 (대표자 또는 소속 실무자 직접 설명)</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">2.</b>비교견적서 – 신청기업이 거래처 또는 인터넷 검색을 통해 직접 준비</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">3.</b>3년간 부가가치세 신고서</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">4.</b>견적서 및 비교견적서</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">5.</b>도입 예정 하드웨어 이미지</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">6.</b>국세·지방세 납세 증명서</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">7.</b>가점 서류 해당 시: 풍수해보험, 여성기업 확인서, 장애인 기업 확인서</label>
+              </div>
+            </div>
+            <div>
+              <p style="font-weight:700;color:#123d70;margin-bottom:8px;font-size:15px">③ 의무사항</p>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">1.</b>사업기간 종료 후 5년간 장비 보유·사용 의무 / 매년 수시·불시 점검에 응해야 함</label>
+                <label class="check"><input type="checkbox" class="intro-check"><b style="color:#174f8f;margin-right:6px">2.</b>5년 내 도입장비 판매·사업자 폐업·미사용 등 취소사유 발생 시 보조금 환수 예정</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="nav"><span></span><button class="btn primary" onclick="startForm()">자가진단 시작 →</button></div>
+      </section>
+
+      <section class="section" data-section="1">
+        <h2>1단계 · 자가진단 및 평균매출 검토</h2>
+        <p class="section-desc">기본 자격과 평균매출 조건을 먼저 확인합니다.</p>
+        <div class="box"><h3>기본 자가진단</h3><div style="display:flex;flex-direction:column;gap:8px">
+          <label class="check"><input type="checkbox" id="chkManufacturing"><b style="color:#174f8f;margin-right:6px">①</b>사업자 등록증상 제조업이며 실제 제조 현장이 있습니다.</label>
+          <label class="check"><input type="checkbox" id="chkMfrSite"><b style="color:#174f8f;margin-right:6px">②</b>부가세 신고서에서 제조 매출이 전체매출의 50% 초과입니다.</label>
+          <label class="check"><input type="checkbox" id="chkVatRatio"><b style="color:#174f8f;margin-right:6px">③</b>부가세 신고서 상에서 제출매출 / 총매출이 50% 이상입니다.</label>
+          <label class="check"><input type="checkbox" id="chkWorkers"><b style="color:#174f8f;margin-right:6px">④</b>상시근로자 수가 10인 미만입니다.</label>
+          <label class="check"><input type="checkbox" id="chkBefore2026"><b style="color:#174f8f;margin-right:6px">⑤</b>2026년 1월 1일 이전 설립 사업자입니까?</label>
+          <label class="check"><input type="checkbox" id="chkCash"><b style="color:#174f8f;margin-right:6px">⑥</b>자부담 현금 1,200만원 이상 납부가 가능합니다.</label>
+          <label class="check"><input type="checkbox" id="chkNoDuplicate"><b style="color:#174f8f;margin-right:6px">⑦</b>최근 유사 정부지원사업 중복수혜 또는 참여제한 사항이 없습니다.</label>
+          <label class="check"><input type="checkbox" id="chkMaintain"><b style="color:#174f8f;margin-right:6px">⑧</b>선정 시 5년간 장비 보유·사용·유지관리 의무를 이해했습니다.</label>
+        </div><div id="selfResult" class="result warn">자가진단 항목을 모두 확인해 주세요.</div></div>
+        <div class="box"><h3>평균매출 계산</h3><div class="grid">
+          <div class="field"><label>사업자등록일 <span class="required">*</span></label><input type="text" id="foundDate" inputmode="numeric" maxlength="10" placeholder="예: 20190315 → 자동 변환" oninput="formatDateInput(this);updateRevenueMode()"><p class="hint">숫자 8자리만 입력하면 자동으로 YYYY-MM-DD 형식으로 변환됩니다.</p></div>
+          <div class="field"><label>주업종 코드/업종 <span class="required">*</span></label><select id="industry" onchange="calcRevenue()"><option value="">선택</option><option value="C18|200000000">C18 인쇄 및 기록매체 복제업 / 지원 기준: 평균매출 2억원 이상</option><option value="ETC|200000000">그 외 업종 / 지원 기준: 평균매출 2억원 이상</option></select></div>
+        </div><p class="hint" id="revMode">사업자등록일을 입력하면 필요한 매출 입력 항목이 자동 표시됩니다.</p><div id="revGrid" class="grid3" style="margin-top:12px">
+          <div class="field rev rev2023"><label>2023년 연매출</label><input type="text" id="rev2023" placeholder="예: 250000000" oninput="formatNumberInput(this);calcRevenue()"></div>
+          <div class="field rev rev2024"><label>2024년 연매출</label><input type="text" id="rev2024" placeholder="예: 300000000" oninput="formatNumberInput(this);calcRevenue()"></div>
+          <div class="field rev rev2025"><label>2025년 연매출</label><input type="text" id="rev2025" placeholder="예: 350000000" oninput="formatNumberInput(this);calcRevenue()"></div>
+        </div><div id="revenueResult" class="result warn">평균매출 정보를 입력해 주세요.</div></div>
+        <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="nextStep()">다음 →</button></div>
+      </section>
+
+      <section class="section" data-section="2">
+        <h2>2단계 · 장비 견적 요청</h2>
+        <p class="section-desc">견적서 작성을 위한 개인정보 동의와 신청기업 정보를 입력합니다.</p>
+        <div class="box soft"><h3>개인정보 수집·이용 동의</h3>
+          <p style="font-size:14px;line-height:1.7;margin-bottom:16px">본 신청서는 <b>(주)재현테크</b> 견적 신청을 위한 것입니다. 수집된 정보는 자동화 장비 견적 검토, 상담 연락, 기술자료 제공을 위한 목적으로만 사용됩니다.</p>
+          <table class="mini-table" style="margin-bottom:14px;background:#fff;border-radius:10px;overflow:hidden">
+            <tr><th>구분</th><th>내용</th></tr>
+            <tr><td>개인정보처리자</td><td>(주)재현테크 (담당부서: 영업팀)</td></tr>
+            <tr><td>수집·이용 목적</td><td>스마트 장비 견적 검토 및 제안, 상담 연락, 기술자료·설치조건 자료 제공</td></tr>
+            <tr><td>수집 항목</td><td><b>필수:</b> 업체명, 사업자등록번호, 대표자명, 사업장 주소, 담당자 연락처, 이메일<br><b>선택:</b> 공정 현황, 도입 희망 장비 및 요청사항</td></tr>
+            <tr><td>보유·이용 기간</td><td>동의일로부터 <b>1년</b> (견적·상담 완료 후 지체 없이 파기)<br><span style="color:#6c7f95;font-size:13px">※ 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간까지 보관</span></td></tr>
+            <tr><td>제3자 제공</td><td>원칙적으로 제3자에게 제공하지 않습니다.<br><span style="color:#6c7f95;font-size:13px">※ 법령에 의한 요청, 수사기관의 적법한 요청이 있는 경우는 예외</span></td></tr>
+            <tr><td>처리 위탁</td><td>별도의 개인정보 처리 위탁 없음</td></tr>
+            <tr><td>정보주체 권리</td><td>열람·정정·삭제·처리정지 요청 가능 (담당자 직접 연락 시 처리)</td></tr>
+          </table>
+          <div style="background:#fff8ee;border:1px solid #ffd39c;border-radius:10px;padding:12px 16px;font-size:13px;color:#564334;line-height:1.65;margin-bottom:14px">
+            <b>동의 거부권 안내:</b> 위 개인정보 수집·이용에 대한 동의를 거부할 권리가 있습니다.<br>
+            단, <b>필수 항목</b>에 동의하지 않을 경우 장비 견적 신청 및 상담 서비스 제공이 제한될 수 있습니다.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <label class="check"><input type="checkbox" id="privacyAgree"><b style="color:#c7362f">[필수]</b>&nbsp;개인정보 수집·이용 내용을 확인하였으며, 이에 동의합니다. <span class="required">*</span></label>
+            <label class="check"><input type="checkbox" id="contactAgree"><b style="color:#c7362f">[필수]</b>&nbsp;견적 검토 및 상담을 위한 연락(전화·이메일)에 동의합니다. <span class="required">*</span></label>
+          </div>
+        </div>
+        <div class="box"><h3>신청기업 정보</h3><div class="grid">
+          <div class="field"><label>업체명 <span class="required">*</span></label><input id="company" placeholder="예: 주식회사 ○○"></div>
+          <div class="field"><label>사업자등록번호 <span class="required">*</span></label><input id="bizNo" inputmode="numeric" maxlength="12" placeholder="000-00-00000" oninput="formatBizNo(this)"><p class="hint">숫자만 입력해도 자동으로 하이픈이 적용됩니다.</p></div>
+          <div class="field"><label>대표자명 <span class="required">*</span></label><input id="ceo" placeholder="대표자명"></div>
+          <div class="field"><label>담당자 연락처 <span class="required">*</span></label><input id="phone" inputmode="numeric" maxlength="13" placeholder="010-0000-0000" oninput="formatPhone(this)"></div>
+          <div class="field"><label>이메일 <span class="required">*</span></label><input id="email" type="email" placeholder="example@company.com"></div>
+          <div class="field"><label>사업장 주소 <span class="required">*</span></label><input id="address" placeholder="사업장 주소"></div>
+        </div></div>
+        <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="nextStep()">다음 →</button></div>
+      </section>
+
+      <section class="section" data-section="3">
+        <h2>3단계 · 공정 문제 분석</h2>
+        <p class="section-desc">도입 장비는 인쇄업 제조공정의 실제 문제를 해결하기 위한 목적이어야 합니다.</p>
+        <div class="box"><h3>현재 공정 흐름</h3>
+          <p class="hint" style="margin-bottom:10px">주요 생산 공정을 순서대로 최대 5단계까지 입력하세요.</p>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px">
+            <div class="field"><label style="font-size:12px">공정 1</label><input id="processFlow1" placeholder="예: 디자인 접수" oninput="updateProcessPreview()"></div>
+            <div class="field"><label style="font-size:12px">공정 2</label><input id="processFlow2" placeholder="예: 파일 확인" oninput="updateProcessPreview()"></div>
+            <div class="field"><label style="font-size:12px">공정 3</label><input id="processFlow3" placeholder="예: 인쇄" oninput="updateProcessPreview()"></div>
+            <div class="field"><label style="font-size:12px">공정 4</label><input id="processFlow4" placeholder="예: 절단/커팅" oninput="updateProcessPreview()"></div>
+            <div class="field"><label style="font-size:12px">공정 5</label><input id="processFlow5" placeholder="예: 검수·포장·출하" oninput="updateProcessPreview()"></div>
+          </div>
+          <div id="processFlowPreview" style="background:#f0f4ff;border:1px solid #c8d8f0;border-radius:8px;padding:10px 14px;font-size:13px;color:#2a3f6b;display:none"></div>
+        </div>
+        <div class="box"><h3>문제 공정 및 장비 도입 목적</h3><div class="grid">
+          <div class="field"><label>가장 문제가 되는 공정 <span class="required">*</span></label><select id="problemProcess" onchange="renderPurposeOptions();recommendEquip()"><option value="">선택</option><option>절단/커팅 공정</option><option>인쇄 공정</option><option>기타</option></select></div>
+          <div class="field"><label>장비 도입 목적 <span class="required">*</span></label><select id="adoptionType" onchange="renderPurposeOptions();recommendEquip()"><option value="">선택</option><option value="replace">기존장비 교체</option><option value="new">신규 장비 도입</option></select></div>
+        </div>
+        <p class="hint" style="margin-top:12px">선택한 공정과 도입 목적에 따라 해당되는 문제·개선 목적을 복수로 선택하세요.</p>
+        <div class="check-grid" id="purposeList" style="margin-top:14px"></div>
+        <div id="purposeHint" class="result warn">문제 공정과 장비 도입 목적을 선택해 주세요.</div></div>
+        <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="nextStep();recommendEquip();">다음 →</button></div>
+      </section>
+
+      <section class="section" data-section="4">
+        <h2>4단계 · 도입 희망 장비 선택</h2>
+        <p class="section-desc">공정 문제 분석 결과를 기준으로 도입 희망 장비를 선택하세요.</p>
+        <div id="recommendBox" class="result warn">공정 문제를 입력하면 추천 장비가 표시됩니다.</div>
+        <div class="box"><h3>도입 희망 장비 리스트</h3><div class="equipment-list" id="equipmentList"></div></div>
+        <div class="box"><h3>장비별 요청사항</h3><div class="field"><label>장비 사양 또는 요청사항</label><textarea id="equipRequest" placeholder="예: 작업 가능 소재, 최대 작업 사이즈, 속도, 설치 공간, 전원 조건 등"></textarea></div></div>
+        <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="nextStep();buildSummary();">다음 →</button></div>
+      </section>
+
+      <section class="section" data-section="5">
+        <h2>5단계 · 제출 내용 확인</h2>
+        <p class="section-desc">입력 내용을 확인한 뒤 저장하거나 담당자에게 전달하세요.</p>
+        <div class="box soft"><h3>최종 확인사항</h3><div style="display:flex;flex-direction:column;gap:8px">
+          <label class="check"><input type="checkbox" id="finalDirect"><b style="color:#174f8f;margin-right:6px">①</b>신청 및 최종 제출은 신청기업이 직접 진행합니다.</label>
+          <label class="check"><input type="checkbox" id="finalTrue"><b style="color:#174f8f;margin-right:6px">②</b>입력한 내용은 사실에 근거한 내용입니다.</label>
+          <label class="check"><input type="checkbox" id="finalQuote"><b style="color:#174f8f;margin-right:6px">③</b>(주)재현테크는 견적 및 기술자료 제공 역할임을 확인했습니다.</label>
+          <label class="check"><input type="checkbox" id="finalNoPayback"><b style="color:#174f8f;margin-right:6px">④</b>페이백, 이면계약, 자부담 지원 요청을 하지 않습니다.</label>
+        </div></div>
+        <div class="box"><h3>입력 내용 요약</h3><div class="summary-html" id="summaryText"></div></div>
+        <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="requestQuote()">견적 요청 접수</button></div>
+      </section>
+    </main>
+  </div>
+</div>
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweqPFxHWyROe6YbvSJOr-EiOBIM9Z76kpNZxtOe6NhCPQZoAZgWARKvp9xRjiLj49r/exec';
+const equipment = [
+  {id:'or16',   name:'XTRA OR16',  cat:'printer', img:'장비사진/프린터 XTRA OR16.png',  desc:'소형 UV 평판 프린터 · 정밀 소량 인쇄 및 샘플 제작 최적화'},
+  {id:'or32',   name:'XTRA OR32',  cat:'printer', img:'장비사진/프린터 XTRA OR32.png',  desc:'A3+ UV 평판 프린터 · 소형 소재 고품질 직접 인쇄'},
+  {id:'r20',    name:'XTRA R20',   cat:'printer', img:'장비사진/프린터 XTRA R20.png',   desc:'롤 미디어 UV 프린터 · 배너·필름·원단 연속 출력'},
+  {id:'s2512',  name:'XTRA 2512S', cat:'printer', img:'장비사진/프린터 XTRA 2512S.png', desc:'2500×1200mm 대형 UV 평판 · 대형 소재 직접 인쇄'},
+  {id:'x20',    name:'X20',        cat:'printer', img:'장비사진/프린터 X20.png',         desc:'중형 UV 평판 프린터 · 다양한 소재 직접 인쇄'},
+  {id:'ju2513', name:'JU2513+',    cat:'printer', img:'장비사진/프린터 JP2513+.png',     desc:'2500×1300mm 고속 UV 평판 · 대량 생산 및 대형 소재 대응'},
+  {id:'ju1810', name:'JU1810+',    cat:'printer', img:'장비사진/프린터 JU180+.png',      desc:'1800×1000mm UV 평판 · 중대형 소재 인쇄'},
+  {id:'ju9060', name:'JU9060+',    cat:'printer', img:'장비사진/프린터 JP9060+.png',     desc:'900×600mm 중소형 UV 평판 · 소량 다품종 및 다소재 대응'},
+  {id:'ju1361', name:'JU1361',     cat:'printer', img:'장비사진/프린터JU1361.png',       desc:'1300×610mm UV 평판 · 소형 소재 배치 인쇄 최적화'},
+  {id:'t8q',    name:'T8Q',        cat:'printer', img:'장비사진/프린터 T8Q.png',         desc:'고해상도 UV 평판 프린터 · 정밀 인쇄 품질'},
+  {id:'t9m',    name:'T9M',        cat:'printer', img:'장비사진/프린터 T9M.png',         desc:'UV 평판 프린터 · 다목적 다소재 인쇄'},
+  {id:'jp0806', name:'JP0806',     cat:'cutter',  img:'장비사진/평판커팅기 JP0806.png',  desc:'800×600mm 평판 커팅기 · 소형 소재 정밀 커팅'},
+  {id:'jp1311', name:'JP1311',     cat:'cutter',  img:'장비사진/평판커팅기 JP1311.png',  desc:'1100×1300mm 평판 커팅기 · 중형 소재 커팅'},
+  {id:'jp1625', name:'JP1625',     cat:'cutter',  img:'장비사진/평판커팅기 JP1625.png',  desc:'1600×2500mm 대형 평판 커팅기 · 대형 시트·판재 커팅'},
+  {id:'sg1625', name:'SG1625',     cat:'cutter',  img:'장비사진/평판커팅기 SG1625.png',  desc:'1600×2500mm 고속 평판 커팅기 · 대량 커팅 대응'},
+];
+let step=0;let selectedEquip=[];
+function qs(s){return document.querySelector(s)};function qsa(s){return [...document.querySelectorAll(s)]};
+function startForm(){showStep(1);}
+function goIntro(){step=0;qs('.app').className='app intro-mode';qsa('.section').forEach(x=>x.classList.toggle('active',Number(x.dataset.section)===0));window.scrollTo({top:0,behavior:'smooth'});}
+function showStep(n){
+  if(n<1){goIntro();return;}
+  step=Math.min(5,n);
+  qs('.app').className='app form-mode';
+  qsa('.section').forEach(x=>x.classList.toggle('active',Number(x.dataset.section)===step));
+  qsa('.step-tab').forEach(x=>{const t=Number(x.dataset.step);x.classList.toggle('active',t===step);x.classList.toggle('done',t<step);});
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(step===5)buildSummary();
+}
+function validateStep(n){if(n===2){if(!qs('#privacyAgree').checked||!qs('#contactAgree').checked){alert('개인정보 수집·이용 및 상담 연락 동의를 체크해 주세요.');return false;}if(!val('company').trim()||!val('bizNo').trim()||!val('ceo').trim()||!val('phone').trim()||!val('email').trim()||!val('address').trim()){alert('필수 항목(업체명, 사업자등록번호, 대표자명, 사업장 주소, 담당자 연락처, 이메일)을 입력해 주세요.');return false;}if(!isValidEmail(val('email'))){alert('올바른 이메일 주소를 입력해 주세요.');return false;}}if(n===3){if(!val('problemProcess')||!val('adoptionType')){alert('문제 공정과 장비 도입 목적을 선택해 주세요.');return false;}}return true;}function nextStep(){if(!validateStep(step))return;showStep(step+1)}function prevStep(){showStep(step-1)}qsa('.step-tab').forEach(b=>b.addEventListener('click',()=>{const t=Number(b.dataset.step);if(t>step&&!validateStep(step))return;showStep(t);}));
+function rawNum(v){return Number(String(v||'').replace(/,/g,''))||0}function money(n){return n.toLocaleString('ko-KR')+'원'}
+function formatNumberInput(el){let n=String(el.value).replace(/[^0-9]/g,'');el.value=n?Number(n).toLocaleString('ko-KR'):''}
+function formatDateInput(el){let n=String(el.value).replace(/[^0-9]/g,'').slice(0,8);if(n.length>6)el.value=n.replace(/(\d{4})(\d{2})(\d{0,2})/,'$1-$2-$3');else if(n.length>4)el.value=n.replace(/(\d{4})(\d{0,2})/,'$1-$2');else el.value=n;}
+function formatBizNo(el){let n=String(el.value).replace(/[^0-9]/g,'').slice(0,10); if(n.length>5) el.value=n.replace(/(\d{3})(\d{2})(\d{0,5})/,'$1-$2-$3'); else if(n.length>3) el.value=n.replace(/(\d{3})(\d{0,2})/,'$1-$2'); else el.value=n;}
+function formatPhone(el){let n=String(el.value).replace(/[^0-9]/g,'').slice(0,11); if(n.startsWith('02')){ if(n.length>6) el.value=n.replace(/(02)(\d{3,4})(\d{0,4})/,'$1-$2-$3'); else if(n.length>2) el.value=n.replace(/(02)(\d{0,4})/,'$1-$2'); else el.value=n; } else { if(n.length>7) el.value=n.replace(/(\d{3})(\d{4})(\d{0,4})/,'$1-$2-$3'); else if(n.length>3) el.value=n.replace(/(\d{3})(\d{0,4})/,'$1-$2'); else el.value=n; }}
+function isValidEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||''));}
+
+function updateRevenueMode(){const d=qs('#foundDate').value; qsa('.rev').forEach(x=>x.style.display='none'); if(!d){qs('#revMode').textContent='사업자등록일을 입력하면 필요한 매출 입력 항목이 자동 표시됩니다.'; return;} const date=new Date(d); const base=new Date('2023-01-01'); const grid=qs('#revGrid'); if(date<base){qs('#revMode').textContent='2022년 12월 31일 이전 설립: (2023년 + 2024년 + 2025년 연매출) ÷ 3'; qsa('.rev2023,.rev2024,.rev2025').forEach(x=>x.style.display='flex'); if(grid)grid.style.gridTemplateColumns='repeat(3,1fr)';} else {qs('#revMode').textContent='2023년 1월 1일 이후 설립: (2024년 + 2025년 연매출) ÷ 2'; qsa('.rev2024,.rev2025').forEach(x=>x.style.display='flex'); if(grid)grid.style.gridTemplateColumns='repeat(2,1fr)';} calcRevenue();}
+function calcRevenue(){const d=qs('#foundDate').value; const ind=qs('#industry').value; const box=qs('#revenueResult'); if(!d||!ind){box.className='result warn';box.textContent='사업자등록일과 주업종을 선택해 주세요.';return;} const limit=Number(ind.split('|')[1]); const date=new Date(d), base=new Date('2023-01-01'); let avg=0, ok=false; if(date<base){let a=rawNum(qs('#rev2023').value),b=rawNum(qs('#rev2024').value),c=rawNum(qs('#rev2025').value); if(!a||!b||!c){box.className='result warn';box.textContent='2023년, 2024년, 2025년 연매출을 모두 입력해 주세요.';return;} avg=(a+b+c)/3; ok=avg>=limit;} else {let b=rawNum(qs('#rev2024').value),c=rawNum(qs('#rev2025').value); if(!b||!c){box.className='result warn';box.textContent='2024년, 2025년 연매출을 모두 입력해 주세요.';return;} avg=(b+c)/2; ok=avg>=limit;} box.className='result '+(ok?'ok':'bad'); box.textContent=`평균매출: ${money(Math.round(avg))} / 기준: ${money(limit)} → ${ok?'2억원 이상 — 지원 대상 가능':'2억원 미만 — 기준 미달 (지원 대상 제외)'}`;}
+qsa('#chkManufacturing,#chkMfrSite,#chkVatRatio,#chkWorkers,#chkBefore2026,#chkCash,#chkNoDuplicate,#chkMaintain').forEach(x=>x.addEventListener('change',()=>{const all=['#chkManufacturing','#chkMfrSite','#chkVatRatio','#chkWorkers','#chkBefore2026','#chkCash','#chkNoDuplicate','#chkMaintain'].every(s=>qs(s).checked); const r=qs('#selfResult'); r.className='result '+(all?'ok':'warn'); r.textContent=all?'기본 자가진단 항목을 모두 확인했습니다.':'자가진단 항목을 모두 확인해 주세요.';}));
+function selectEquip(id){qsa('.equip').forEach(x=>x.classList.remove('selected'));const d=qs('.equip[data-id="'+id+'"]');if(d)d.classList.add('selected');selectedEquip=[id];}
+function renderEquip(){const list=qs('#equipmentList');list.innerHTML='';[{key:'printer',label:'프린터'},{key:'cutter',label:'평판커팅기'}].forEach(cat=>{const hdr=document.createElement('div');hdr.className='equip-cat-header';hdr.textContent=cat.label;list.appendChild(hdr);equipment.filter(e=>e.cat===cat.key).forEach(e=>{const div=document.createElement('div');div.className='equip';div.dataset.id=e.id;div.innerHTML=`<div class="equip-img-wrap"><img src="${e.img}" alt="${e.name}" class="equip-img" onerror="this.parentElement.style.display='none'"></div><strong>${e.name}</strong><span>${e.desc}</span><button class="equip-select-btn" onclick="event.stopPropagation();selectEquip('${e.id}')">선택</button>`;div.onclick=()=>selectEquip(e.id);list.appendChild(div);});});}
+function selectedValues(cls){return qsa(cls+':checked').map(x=>x.value)}
+const purposeOptions = {
+  '절단/커팅 공정': {
+    replace: [
+      '노후 커팅기 반복 고장으로 생산 중단 발생 → 설비 안정성 확보·납기 신뢰도 향상 목표',
+      '절단 정밀도 저하로 불량 및 재작업 증가 → 불량률 감소·품질 안정화 목표',
+      '최대 커팅 사이즈 부족으로 대형 소재 외주 의존 → 대형 소재 내재화·원가 절감 목표',
+      '두꺼운 소재(아크릴·폼보드·합판 등) 절단 불가 → 소재 가공 범위 확대 목표',
+      '커팅 속도 저하로 소량 다품종 납기 대응 어려움 → 생산성 향상·납기 단축 목표',
+      '작업자 수동 보정 의존도 높아 인건비·작업 시간 과다 → 자동화·인력 효율화 목표',
+      'DXF·PDF 데이터 직접 연동 불가로 반복 세팅 작업 발생 → 작업 준비 시간 단축 목표',
+      '소모품(칼날·척) 수급 어려움 및 유지보수 비용 급증 → 운영비 절감 목표',
+      '분진·소음 등 작업환경 열악으로 작업자 건강 위협 → 작업환경 개선·안전사고 예방 목표',
+      '작업 이력·생산 데이터 관리 불가로 품질 추적 어려움 → 생산관리 체계화 목표'
+    ],
+    new: [
+      '커팅 전량 외주로 납기 통제 불가·긴급 주문 대응 어려움 → 내재화·납기 단축 목표',
+      '외주 커팅비·운송비 발생으로 원가 부담 지속 증가 → 외주비 절감·수익성 개선 목표',
+      '소량 다품종·단납기 주문에 즉시 대응 불가 → 소량 주문 대응력 확보·수주 경쟁력 강화 목표',
+      '인쇄 후 커팅 연계 공정 외주로 공정 비효율 발생 → 인쇄·커팅 공정 일원화 내재화 목표',
+      '샘플·목업·시제품 제작 외주로 리드타임 증가 → 자체 샘플 제작 능력 확보 목표',
+      '스티커·패키지·POP·아크릴 커팅 등 신규 후가공 품목 생산 불가 → 매출 품목 다각화 목표',
+      '수정 주문·긴급 납품 요청 당일 대응 불가 → 고객 만족도·재주문율 향상 목표',
+      '외주업체 품질 편차로 납품 일관성 저하 → 자체 품질관리 체계 구축 목표'
+    ]
+  },
+  '인쇄 공정': {
+    replace: [
+      '노후 프린터 잦은 고장으로 생산 중단·납기 지연 반복 → 설비 안정성 확보 목표',
+      '헤드 막힘·밴딩 불량으로 재출력·잉크 낭비 증가 → 불량률 감소·재료비 절감 목표',
+      '출력 속도 저하로 시간당 생산량 감소·야간 연장 작업 → 생산성 향상 목표',
+      '색상 편차(Color Management 불안정)로 납품 불만·재출력 → 색 재현성 안정화·품질 향상 목표',
+      '화이트·바니시 등 특수 잉크 출력 불가로 고부가 작업 외주 → 특수 인쇄 내재화 목표',
+      '최대 출력 폭 부족으로 대형 출력 전량 외주 → 대형 출력 내재화·원가 절감 목표',
+      'UV 경화 기능 없어 아크릴·금속·유리 등 특수 소재 인쇄 불가 → 소재 다양화 목표',
+      '잉크 소모량 과다 및 잉크 비용 증가로 수익성 악화 → 잉크 효율화·원가 절감 목표',
+      'RIP 소프트웨어 호환 불가로 작업 준비 시간 과다 → 작업 효율화·전처리 시간 단축 목표',
+      'AS 부품 단종·수급 불가로 장비 유지 어려움 → 장비 신뢰성 확보·유지비 절감 목표'
+    ],
+    new: [
+      '인쇄 전량 외주로 납기·품질 통제 불가·외주비 증가 → 내재화·원가 절감 목표',
+      '아크릴·목재·금속·가죽 등 다양한 소재 직접 인쇄 설비 없음 → 소재 다양화·신규 수주 확대 목표',
+      '소량 다품종·맞춤형 디지털 인쇄 수요 대응 불가 → 소량 주문 내재화·수주 경쟁력 향상 목표',
+      '화이트·바니시 특수 인쇄 기능 없어 고부가 작업 수주 불가 → 매출 다각화·고부가 작업 수용 목표',
+      '샘플 출력·수정·재출력 즉시 대응 환경 없어 납기·품질 저하 → 영업 속도 향상·고객 신뢰 확보 목표',
+      '굿즈·기념품·판촉물·아크릴 간판 등 신규 품목 생산 불가 → 매출 품목 확대·신규 고객 개척 목표',
+      '외주 인쇄비·운송비 발생으로 원가 경쟁력 열위 → 외주비 절감·수익성 개선 목표',
+      '긴급 납품 요청(당일·익일) 대응 불가로 고객 이탈 → 납기 대응력 강화·고객 만족도 향상 목표',
+      '인쇄 후 커팅 연계 공정 없어 후가공 외주 발생 → 공정 효율화·리드타임 단축 목표',
+      '대형 소재(B1·B0 이상) 직접 출력 설비 없어 전량 외주 → 대형 출력 내재화 목표'
+    ]
+  },
+  '기타': {
+    replace: [
+      '노후 장비 반복 고장으로 생산 중단·납기 차질 → 설비 안정성 확보 목표',
+      '생산 속도 저하로 가동률 감소·야간 연장 작업 증가 → 생산성 향상 목표',
+      '품질 편차 및 재작업 증가로 원가·납기 부담 → 품질 안정화·불량률 감소 목표',
+      '소모품 수급 어려움 및 유지보수 비용 증가 → 운영비 절감 목표',
+      '작업자 수작업 의존도 높아 인력 효율 저하 → 자동화·인력 효율화 목표',
+      '안전장치 미흡·작업환경 불량으로 작업자 피로도 증가 → 작업환경 개선 목표'
+    ],
+    new: [
+      '외주 공정 내재화를 통한 원가 절감 및 납기 통제 필요 → 공정 내재화·경쟁력 확보 목표',
+      '소량 다품종 주문 대응력 확보로 고객 신뢰 향상 필요 → 수주 경쟁력 강화 목표',
+      '신규 제품군 생산 설비 확보로 매출 다각화 필요 → 매출 품목 확대 목표',
+      '수작업 공정 자동화를 통한 생산성 향상 필요 → 자동화·인력 효율화 목표',
+      '납기 단축과 긴급 주문 대응력 강화 필요 → 고객 만족도·재주문율 향상 목표'
+    ]
+  }
+};
+function renderPurposeOptions(){const p=qs('#problemProcess').value; const t=qs('#adoptionType').value; const list=qs('#purposeList'); const hint=qs('#purposeHint'); list.innerHTML=''; if(!p||!t){hint.className='result warn'; hint.textContent='문제 공정과 장비 도입 목적을 선택해 주세요.'; return;} const arr=(purposeOptions[p]&&purposeOptions[p][t])||[]; arr.forEach(v=>{const label=document.createElement('label');label.className='check';label.innerHTML=`<input type="checkbox" class="issue" value="${v}">${v}`; list.appendChild(label);}); qsa('.issue').forEach(x=>x.addEventListener('change',recommendEquip)); hint.className='result ok'; hint.textContent='해당되는 문제·개선 목적을 복수로 선택하세요.'; recommendEquip();}
+function recommendEquip(){const p=qs('#problemProcess').value;const box=qs('#recommendBox');if(!p){box.className='result warn';box.textContent='공정 문제를 입력하면 추천 장비 카테고리가 표시됩니다.';return;}const catName=p.includes('커팅')?'평판커팅기':p.includes('인쇄')?'프린터':'전체';box.className='result ok';box.innerHTML=`추천 카테고리: <b>${catName}</b>&nbsp;&nbsp;<span style="font-weight:500">아래 목록에서 도입 희망 장비를 하나 선택해 주세요.</span>`;}
+function val(id){return qs('#'+id)?.value||''}function checks(cls){return selectedValues(cls).join(', ')}function eqNames(){return selectedEquip.map(id=>equipment.find(e=>e.id===id)?.name).filter(Boolean).join(', ')}
+function getProcessFlow(){return [1,2,3,4,5].map(i=>(qs('#processFlow'+i)?.value||'').trim()).filter(v=>v).join(' → ');}
+function updateProcessPreview(){const p=qs('#processFlowPreview');const t=getProcessFlow();if(t){p.style.display='block';p.textContent='공정 흐름: '+t;}else{p.style.display='none';}}
+function buildSummary(){
+  recommendEquip();
+  const b=(id)=>qs('#'+id)?.checked?'<span class="sum-chk ok">✔ 예</span>':'<span class="sum-chk no">✘ 아니오</span>';
+  const e=(v)=>v||'<span style="color:#bbb">미입력</span>';
+  const issues=selectedValues('.issue');
+  const issueHtml=issues.length?issues.map(i=>`<span class="sum-tag">${i}</span>`).join(''):'<span style="color:#bbb">선택 없음</span>';
+  const html=`
+<div class="sum-section"><div class="sum-title">신청기업 정보</div>
+  <div class="sum-row"><span class="sum-label">업체명</span><span class="sum-val">${e(val('company'))}</span></div>
+  <div class="sum-row"><span class="sum-label">사업자등록번호</span><span class="sum-val">${e(val('bizNo'))}</span></div>
+  <div class="sum-row"><span class="sum-label">대표자명</span><span class="sum-val">${e(val('ceo'))}</span></div>
+  <div class="sum-row"><span class="sum-label">담당자 연락처</span><span class="sum-val">${e(val('phone'))}</span></div>
+  <div class="sum-row"><span class="sum-label">이메일</span><span class="sum-val">${e(val('email'))}</span></div>
+  <div class="sum-row"><span class="sum-label">사업장 주소</span><span class="sum-val">${e(val('address'))}</span></div>
+</div>
+<div class="sum-section"><div class="sum-title">자가진단 결과</div>
+  <div class="sum-row"><span class="sum-label">① 사업자등록증상 제조업·제조현장</span><span class="sum-val">${b('chkManufacturing')}</span></div>
+  <div class="sum-row"><span class="sum-label">② 제조매출 50% 초과</span><span class="sum-val">${b('chkMfrSite')}</span></div>
+  <div class="sum-row"><span class="sum-label">③ 부가세 제출매출 50%↑</span><span class="sum-val">${b('chkVatRatio')}</span></div>
+  <div class="sum-row"><span class="sum-label">④ 상시근로자 10인 미만</span><span class="sum-val">${b('chkWorkers')}</span></div>
+  <div class="sum-row"><span class="sum-label">2026.1.1 이전 설립</span><span class="sum-val">${b('chkBefore2026')}</span></div>
+  <div class="sum-row"><span class="sum-label">자부담 현금 가능</span><span class="sum-val">${b('chkCash')}</span></div>
+  <div class="sum-row"><span class="sum-label">중복수혜·참여제한 없음</span><span class="sum-val">${b('chkNoDuplicate')}</span></div>
+  <div class="sum-row"><span class="sum-label">5년 유지관리 이해</span><span class="sum-val">${b('chkMaintain')}</span></div>
+  <div class="sum-row"><span class="sum-label">사업자등록일</span><span class="sum-val">${e(val('foundDate'))}</span></div>
+  <div class="sum-row"><span class="sum-label">주업종</span><span class="sum-val">${e(qs('#industry').selectedOptions[0]?.text)}</span></div>
+  <div class="sum-row"><span class="sum-label">2023년 매출</span><span class="sum-val">${val('rev2023')||'—'}</span></div>
+  <div class="sum-row"><span class="sum-label">2024년 매출</span><span class="sum-val">${val('rev2024')||'—'}</span></div>
+  <div class="sum-row"><span class="sum-label">2025년 매출</span><span class="sum-val">${val('rev2025')||'—'}</span></div>
+</div>
+<div class="sum-section"><div class="sum-title">개인정보 동의</div>
+  <div class="sum-row"><span class="sum-label">수집·이용 동의</span><span class="sum-val">${b('privacyAgree')}</span></div>
+  <div class="sum-row"><span class="sum-label">상담 연락 동의</span><span class="sum-val">${b('contactAgree')}</span></div>
+</div>
+<div class="sum-section"><div class="sum-title">공정 문제 분석</div>
+  <div class="sum-row"><span class="sum-label">주요 생산 공정</span><span class="sum-val">${e(getProcessFlow())}</span></div>
+  <div class="sum-row"><span class="sum-label">문제 공정</span><span class="sum-val">${e(val('problemProcess'))}</span></div>
+  <div class="sum-row"><span class="sum-label">장비 도입 목적</span><span class="sum-val">${e(qs('#adoptionType').selectedOptions[0]?.text)}</span></div>
+  <div class="sum-row"><span class="sum-label">선택한 문제·목표</span><span class="sum-val" style="flex-wrap:wrap">${issueHtml}</span></div>
+</div>
+<div class="sum-section"><div class="sum-title">도입 희망 장비</div>
+  <div class="sum-row"><span class="sum-label">선택 장비</span><span class="sum-val"><b style="color:#123d70;font-size:15px">${eqNames()||'<span style="color:#bbb;font-size:14px">미선택</span>'}</b></span></div>
+  <div class="sum-row"><span class="sum-label">요청사항</span><span class="sum-val">${e(val('equipRequest'))}</span></div>
+</div>
+<div class="sum-section"><div class="sum-title">최종 확인</div>
+  <div class="sum-row"><span class="sum-label">신청기업 직접 신청</span><span class="sum-val">${b('finalDirect')}</span></div>
+  <div class="sum-row"><span class="sum-label">사실 기반 입력</span><span class="sum-val">${b('finalTrue')}</span></div>
+  <div class="sum-row"><span class="sum-label">(주)재현테크 역할 확인</span><span class="sum-val">${b('finalQuote')}</span></div>
+  <div class="sum-row"><span class="sum-label">페이백·이면계약 없음</span><span class="sum-val">${b('finalNoPayback')}</span></div>
+</div>`;
+  qs('#summaryText').innerHTML=html;
+  return buildPlainText();
+}
+function buildPlainText(){
+  const issues=selectedValues('.issue').join('\n   · ');
+  return `[(주)재현테크 2026 소공인 스마트제조 지원사업 사전검토]
+
+1. 신청기업 정보
+ · 업체명: ${val('company')}
+ · 사업자등록번호: ${val('bizNo')}
+ · 대표자명: ${val('ceo')}
+ · 담당자 연락처: ${val('phone')}
+ · 이메일: ${val('email')}
+ · 사업장 주소: ${val('address')}
+
+2. 자가진단
+ · ① 사업자등록증상 제조업·제조현장: ${qs('#chkManufacturing').checked?'예':'아니오'}
+ · ② 제조매출 50% 초과: ${qs('#chkMfrSite').checked?'예':'아니오'}
+ · ③ 부가세 제출매출 50% 이상: ${qs('#chkVatRatio').checked?'예':'아니오'}
+ · ④ 상시근로자 10인 미만: ${qs('#chkWorkers').checked?'예':'아니오'}
+ · 2026.1.1 이전 설립: ${qs('#chkBefore2026').checked?'예':'아니오'}
+ · 자부담 현금 가능: ${qs('#chkCash').checked?'예':'아니오'}
+ · 중복수혜·참여제한 없음: ${qs('#chkNoDuplicate').checked?'예':'아니오'}
+ · 5년 유지관리 이해: ${qs('#chkMaintain').checked?'예':'아니오'}
+ · 사업자등록일: ${val('foundDate')}
+ · 주업종: ${qs('#industry').selectedOptions[0]?.text||''}
+ · 2023년 매출: ${val('rev2023')||'—'}
+ · 2024년 매출: ${val('rev2024')||'—'}
+ · 2025년 매출: ${val('rev2025')||'—'}
+
+3. 개인정보 동의
+ · 수집·이용 동의: ${qs('#privacyAgree').checked?'예':'아니오'}
+ · 상담 연락 동의: ${qs('#contactAgree').checked?'예':'아니오'}
+
+4. 공정 문제 분석
+ · 주요 생산 공정: ${getProcessFlow()}
+ · 문제 공정: ${val('problemProcess')}
+ · 장비 도입 목적: ${qs('#adoptionType').selectedOptions[0]?.text||''}
+ · 선택한 문제·목표:
+   · ${issues||'선택 없음'}
+
+5. 도입 희망 장비
+ · 선택 장비: ${eqNames()}
+ · 요청사항: ${val('equipRequest')}
+
+6. 최종 확인
+ · 신청기업 직접 신청: ${qs('#finalDirect').checked?'예':'아니오'}
+ · 사실 기반 입력: ${qs('#finalTrue').checked?'예':'아니오'}
+ · (주)재현테크 역할 확인: ${qs('#finalQuote').checked?'예':'아니오'}
+ · 페이백·이면계약 없음: ${qs('#finalNoPayback').checked?'예':'아니오'}
+`;}
+function requestQuote(){
+  const finals=[qs('#finalDirect'),qs('#finalTrue'),qs('#finalQuote'),qs('#finalNoPayback')];
+  if(!finals.every(x=>x.checked)){alert('최종 확인사항을 모두 체크해 주세요.');return;}
+  if(!val('company').trim()||!val('bizNo').trim()||!val('ceo').trim()||!val('phone').trim()||!val('email').trim()||!val('address').trim()){alert('2단계 신청기업 정보(업체명, 사업자등록번호, 대표자명, 사업장 주소, 연락처, 이메일)를 먼저 입력해 주세요.');return;}
+  if(!eqNames()){alert('4단계에서 도입 희망 장비를 선택해 주세요.');return;}
+  buildSummary();
+  if(!APPS_SCRIPT_URL){alert('시스템 오류: 담당자에게 문의해 주세요.');return;}
+  const form=document.createElement('form');
+  form.method='POST';form.action=APPS_SCRIPT_URL;form.target='submitFrame';form.style.display='none';
+  const fields={action:'submit',company:val('company'),bizNo:val('bizNo'),ceo:val('ceo'),phone:val('phone'),email:val('email'),address:val('address'),foundDate:val('foundDate'),industry:qs('#industry').selectedOptions[0]?.text||'',rev2023:val('rev2023'),rev2024:val('rev2024'),rev2025:val('rev2025'),problemProcess:val('problemProcess'),adoptionType:qs('#adoptionType').selectedOptions[0]?.text||'',issues:selectedValues('.issue').join('|'),equipment:eqNames(),equipRequest:val('equipRequest')};
+  Object.entries(fields).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i);});
+  document.body.appendChild(form);form.submit();setTimeout(()=>form.remove(),2000);
+  alert('견적 요청이 접수되었습니다!\n(주)재현테크 담당자가 확인 후 연락드리겠습니다.\n\n접수 업체: '+val('company')+'\n연락처: '+val('phone'));
+}
+renderEquip();updateRevenueMode();renderPurposeOptions();
+['finalDirect','finalTrue','finalQuote','finalNoPayback'].forEach(id=>{qs('#'+id).addEventListener('change',()=>{if(step===5)buildSummary();});});
+</script>
+<iframe name="submitFrame" style="display:none"></iframe>
+</body>
+</html>

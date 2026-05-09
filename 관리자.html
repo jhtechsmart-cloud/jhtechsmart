@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>재현테크 관리자 · 견적 관리 시스템</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    :root{
+      --blue:#1e56c8;--blue2:#0d3778;--orange:#f97316;--yellow:#fbbf24;
+      --bg:#f0f5fb;--line:#dce8f5;--text:#0f172a;--muted:#64748b;
+      --ok:#0d9f6e;--danger:#e53e3e;--soft:#eff6ff;
+      --shadow-sm:0 2px 8px rgba(13,55,120,.07);
+      --shadow-md:0 6px 24px rgba(13,55,120,.12);
+      --radius:14px;--radius-sm:9px;--radius-lg:20px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
+    header{background:linear-gradient(135deg,var(--blue2) 0%,var(--blue) 100%);color:#fff;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(13,55,120,.18)}
+    header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+    .hdr-right{display:flex;align-items:center;gap:12px}
+    .hdr-right span{font-size:13px;opacity:.9;font-weight:500}
+    .login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px);background:linear-gradient(145deg,#dde9f7,#f0f5fb)}
+    .login-box{background:#fff;border-radius:var(--radius-lg);padding:44px 52px;box-shadow:0 12px 48px rgba(13,55,120,.16);width:380px;text-align:center}
+    .login-box h2{font-size:22px;font-weight:800;margin-bottom:7px;color:var(--blue2);letter-spacing:-.4px}
+    .login-box p{color:var(--muted);font-size:14px;margin-bottom:28px}
+    .login-box input{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:13px 15px;font-size:14px;font-family:inherit;outline:none;margin-bottom:13px;transition:border-color .15s,box-shadow .15s;color:var(--text)}
+    .login-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3.5px rgba(30,86,200,.1)}
+    .btn{border:0;border-radius:var(--radius-sm);padding:11px 20px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;letter-spacing:-.1px;transition:all .18s}
+    .btn.primary{background:var(--orange);color:#fff;box-shadow:0 3px 12px rgba(249,115,22,.25)}
+    .btn.primary:hover:not(:disabled){background:#ea6c06;box-shadow:0 5px 18px rgba(249,115,22,.35);transform:translateY(-1px)}
+    .btn.blue{background:var(--blue);color:#fff;box-shadow:0 3px 12px rgba(30,86,200,.22)}
+    .btn.blue:hover:not(:disabled){background:#1748b0;transform:translateY(-1px)}
+    .btn.secondary{background:#eef2f8;color:#334155;border:1.5px solid var(--line)}
+    .btn.secondary:hover:not(:disabled){background:#e2eaf5;border-color:#b8cfe8}
+    .btn.ok{background:#f0fdf4;color:var(--ok);border:1.5px solid #86efac}
+    .btn.ok:hover:not(:disabled){background:#dcfce7}
+    .btn.danger{background:#fef2f2;color:var(--danger);border:1.5px solid #fca5a5}
+    .btn.danger:hover:not(:disabled){background:#fee2e2}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .btn.full{width:100%}
+    #app{display:none}
+    .layout{display:grid;grid-template-columns:330px 1fr;min-height:calc(100vh - 56px)}
+    .sidebar{background:#fff;border-right:1.5px solid var(--line);display:flex;flex-direction:column;box-shadow:2px 0 10px rgba(13,55,120,.05)}
+    .sidebar-head{padding:16px 20px;border-bottom:1.5px solid var(--line);display:flex;align-items:center;gap:8px}
+    .sidebar-head h2{font-size:15px;color:var(--blue2);flex:1;font-weight:700}
+    .tab-btns{display:flex;gap:7px;padding:12px 14px;border-bottom:1.5px solid var(--line)}
+    .tab-btn{flex:1;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:8px;font-size:12px;font-weight:700;cursor:pointer;background:#f7fafe;color:#64748b;font-family:inherit;transition:all .15s}
+    .tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 10px rgba(30,86,200,.2)}
+    .tab-btn:hover:not(.active){background:#eef4fb;border-color:#b8cfe8;color:var(--blue2)}
+    .req-list{flex:1;overflow-y:auto;padding:10px}
+    .req-item{border:1.5px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin-bottom:9px;cursor:pointer;background:#fff;transition:all .18s;box-shadow:var(--shadow-sm)}
+    .req-item:hover{border-color:#93b4d8;background:#f5f9ff;box-shadow:var(--shadow-md);transform:translateX(2px)}
+    .req-item.active{border-color:var(--orange);background:#fff8f3;box-shadow:0 4px 16px rgba(249,115,22,.14)}
+    .req-item .req-company{font-weight:800;font-size:14px;color:var(--blue2);margin-bottom:3px}
+    .req-item .req-meta{font-size:12px;color:var(--muted)}
+    .req-item .req-equip{font-size:12px;color:#3a5f8a;margin-top:5px;font-weight:500}
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+    .badge.new{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+    .badge.confirmed{background:#f0fdf4;color:var(--ok);border:1px solid #86efac}
+    .badge.draft{background:var(--soft);color:var(--blue);border:1px solid #c7dff9}
+    .main-area{padding:30px 36px;overflow-y:auto;background:var(--bg)}
+    .placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:15px;text-align:center}
+    .section-title{font-size:18px;font-weight:800;color:var(--blue2);margin-bottom:18px;display:flex;align-items:center;gap:10px;letter-spacing:-.3px}
+    .card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+    .card h3{font-size:14px;font-weight:700;color:var(--blue2);margin-bottom:14px;border-left:3.5px solid var(--blue);padding-left:9px}
+    .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .info-item label{font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;letter-spacing:.2px}
+    .info-item span{font-size:13px;color:var(--text);display:block;font-weight:500}
+    .equip-card{display:flex;gap:18px;align-items:flex-start}
+    .equip-photo{width:160px;height:110px;border-radius:var(--radius-sm);background:#f7faff;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+    .equip-photo img{max-width:100%;max-height:100%;object-fit:contain}
+    .equip-info{flex:1}
+    .equip-info strong{font-size:17px;color:var(--blue2);display:block;margin-bottom:5px;font-weight:800}
+    .equip-info span{font-size:13px;color:var(--muted)}
+    .options-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+    .opt-check{display:flex;align-items:flex-start;gap:9px;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px;font-size:13px;cursor:pointer;background:#fff;transition:all .15s}
+    .opt-check:hover{background:#f5f9ff;border-color:#93b4d8}
+    .opt-check input{flex-shrink:0;accent-color:var(--orange);width:15px;height:15px;margin-top:1px}
+    .extra-table{width:100%;border-collapse:collapse;font-size:13px}
+    .extra-table th{background:#f5f9ff;color:var(--blue2);font-weight:700;padding:10px 13px;border:1px solid var(--line);text-align:left}
+    .extra-table td{border:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+    .extra-table input{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:7px 10px;width:100%;font-family:inherit;font-size:13px;outline:none;transition:border-color .15s}
+    .extra-table input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,86,200,.08)}
+    .extra-table .del-btn{background:#fef2f2;border:1px solid #fca5a5;color:var(--danger);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700}
+    .extra-table .del-btn:hover{background:#fee2e2}
+    .price-summary{background:linear-gradient(135deg,#f0f7ff,#eff6ff);border:1.5px solid #c7dff9;border-radius:var(--radius);padding:18px 22px}
+    .price-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;border-bottom:1px dashed #d0e4f5}
+    .price-row:last-child{border-bottom:0;font-size:16px;font-weight:800;color:var(--blue2);margin-top:6px}
+    .price-row label{color:var(--muted);font-size:13px;font-weight:500}
+    .price-input{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:8px 13px;font-family:inherit;font-size:14px;text-align:right;width:190px;outline:none;transition:border-color .15s}
+    .price-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,86,200,.08)}
+    .action-bar{display:flex;gap:10px;justify-content:flex-end;padding-top:12px;flex-wrap:wrap}
+    .config-bar{background:#fffbeb;border-bottom:1.5px solid #fde68a;padding:11px 32px;display:flex;align-items:center;gap:12px;font-size:13px}
+    .config-bar input{border:1.5px solid #fde68a;border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;width:420px;font-family:inherit;outline:none;background:#fffdf5;transition:border-color .15s}
+    .config-bar input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(249,115,22,.1)}
+    .empty-list{padding:28px;text-align:center;color:var(--muted);font-size:13px}
+    .note-ta{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;font-family:inherit;font-size:13px;line-height:1.65;resize:vertical;min-height:90px;outline:none;background:#fff;transition:border-color .15s}
+    .note-ta:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,86,200,.08)}
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(10,30,60,.52);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+    .modal-bg.open{display:flex}
+    .modal{background:#fff;border-radius:var(--radius-lg);width:800px;max-width:96vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 70px rgba(10,30,60,.3)}
+    .modal-hd{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;padding:20px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .modal-hd h2{font-size:17px;font-weight:700;letter-spacing:-.3px}
+    .modal-close{background:rgba(255,255,255,.18);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;font-family:inherit;transition:.15s}
+    .modal-close:hover{background:rgba(255,255,255,.32)}
+    .modal-body{padding:26px;overflow-y:auto}
+    .user-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+    .user-table th{background:#f5f9ff;color:var(--blue2);font-weight:700;padding:10px 13px;border:1px solid var(--line);text-align:left}
+    .user-table td{border:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+    .user-add-form{display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr auto;gap:9px;align-items:center;background:#f5f9ff;border:1.5px solid #c7dff9;border-radius:var(--radius);padding:15px;margin-bottom:18px}
+    .user-add-form input{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;font-family:inherit;font-size:13px;outline:none;width:100%;transition:border-color .15s}
+    .user-add-form input:focus{border-color:var(--blue)}
+    .modal-tabs{display:flex;border-bottom:1.5px solid var(--line);background:#f5f8fc;flex-shrink:0}
+    .modal-tab{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:13px 0;font-family:inherit;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s}
+    .modal-tab.active{color:var(--blue2);border-bottom-color:var(--blue);background:#fff}
+    .modal-tab:hover:not(.active){color:var(--blue)}
+    .equip-mgmt-item{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:7px;cursor:pointer;background:#fff;font-size:13px;font-weight:700;color:#2a3f6b;transition:all .15s;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow-sm)}
+    .equip-mgmt-item:hover{border-color:#93b4d8;background:#f5f9ff;box-shadow:var(--shadow-md)}
+    .equip-mgmt-item.active{border-color:var(--orange);background:#fff8f3;color:#c2410c}
+    .equip-cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;flex-shrink:0}
+    .equip-cat-badge.printer{background:var(--soft);color:var(--blue)}
+    .equip-cat-badge.cutter{background:#f0fdf4;color:var(--ok)}
+    .opt-row-list{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+    .opt-row-item{display:flex;align-items:center;gap:9px;padding:7px 10px;background:#f7faff;border:1.5px solid #d0e4f5;border-radius:var(--radius-sm);font-size:13px}
+    .opt-row-item span{flex:1}
+    .opt-del-btn{background:#fef2f2;border:1px solid #fca5a5;color:var(--danger);border-radius:6px;padding:3px 9px;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0}
+    .opt-del-btn:hover{background:#fee2e2}
+    .opt-add-row{display:flex;gap:7px;margin-top:5px}
+    .opt-add-row input{flex:1;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:7px 11px;font-family:inherit;font-size:13px;outline:none;transition:border-color .15s}
+    .opt-add-row input:focus{border-color:var(--blue)}
+    @media print{body{display:none}}
+    /* Drive 저장 토스트 */
+    #driveToast{position:fixed;bottom:28px;right:28px;z-index:9999;display:none;flex-direction:column;gap:8px;max-width:360px}
+    .d-toast{background:#1a2e4a;color:#fff;border-radius:12px;padding:14px 18px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(10,30,60,.32);display:flex;align-items:center;gap:12px;animation:slideUp .25s ease}
+    .d-toast.ok{background:#0a3d1e;border-left:4px solid #22c55e}
+    .d-toast.err{background:#3d0a0a;border-left:4px solid #ef4444}
+    .d-toast a{color:#86efac;text-decoration:underline;font-weight:700}
+    .d-spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>(주)재현테크 · 견적 관리 시스템</h1>
+  <div class="hdr-right">
+    <span id="loginUser"></span>
+    <button id="settingsBtn" class="btn secondary" style="display:none;padding:7px 14px;font-size:13px" onclick="openSettings()">⚙ 관리자 설정</button>
+  </div>
+</header>
+
+<!-- 로그인 -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h2>담당자 로그인</h2>
+    <p>(주)재현테크 견적 관리 시스템</p>
+    <input type="text" id="idInput" placeholder="아이디" onkeydown="if(event.key==='Enter')document.getElementById('pwInput').focus()">
+    <input type="password" id="pwInput" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn primary full" onclick="doLogin()">로그인</button>
+  </div>
+</div>
+
+<!-- 앱 본체 -->
+<div id="app">
+  <div class="config-bar">
+    <span style="font-weight:700;color:#9b5200">Google Apps Script URL:</span>
+    <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveGasUrl()">
+    <button class="btn secondary" style="padding:6px 14px" onclick="loadRequests()">데이터 불러오기</button>
+    <label style="cursor:pointer;font-size:12px;font-weight:700;color:#1e56c8;padding:6px 12px;background:#eff6ff;border:1.5px solid #c7dff9;border-radius:8px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap" title="견적서 도장(PNG) 이미지 선택 → 브라우저에 저장">
+      🔏 직인 설정<span id="stampOk" style="color:#0d9f6e;display:${localStorage.getItem('jhtech_stamp_b64')?'inline':'none'}">&nbsp;✓</span>
+      <input type="file" accept="image/*" style="display:none" onchange="setStampFromFile(this);document.getElementById('stampOk').style.display='inline'">
+    </label>
+  </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2>견적 신청 목록</h2>
+        <button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="loadRequests()">새로고침</button>
+      </div>
+      <div class="tab-btns">
+        <button class="tab-btn active" onclick="filterList('all',this)">전체</button>
+        <button class="tab-btn" onclick="filterList('new',this)">신청중</button>
+        <button class="tab-btn" onclick="filterList('confirmed',this)">견적완료</button>
+      </div>
+      <div class="req-list" id="reqList">
+        <div class="empty-list">데이터를 불러오려면<br>상단 URL 입력 후 새로고침을 누르세요.<br><br>
+          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button>
+        </div>
+      </div>
+    </aside>
+    <main class="main-area" id="mainArea">
+      <div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-bg" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal" style="width:900px">
+    <div class="modal-hd">
+      <h2>관리자 설정</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="stab-user" onclick="switchSettingsTab('user')">👤 담당자 관리</button>
+      <button class="modal-tab" id="stab-equip" onclick="switchSettingsTab('equip')">🔧 장비 관리</button>
+    </div>
+    <!-- 담당자 관리 탭 -->
+    <div class="modal-body" id="stabBody-user">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">담당자별로 아이디/비밀번호를 등록하면 각자 로그인하여 견적서에 본인 이름이 자동 표시됩니다.</p>
+      <h3 style="font-size:14px;font-weight:800;color:#123d70;margin-bottom:12px;border-left:3px solid var(--blue);padding-left:8px">신규 담당자 등록</h3>
+      <div class="user-add-form">
+        <input id="newUserId" placeholder="아이디 (영문/숫자)">
+        <input id="newUserPw" type="password" placeholder="비밀번호">
+        <input id="newUserName" placeholder="이름 (예: 홍길동 대리)">
+        <input id="newUserPhone" placeholder="연락처 (예: 010-0000-0000)">
+        <button class="btn primary" style="padding:9px 16px;font-size:13px;white-space:nowrap" onclick="addUser()">+ 추가</button>
+      </div>
+      <h3 style="font-size:14px;font-weight:800;color:#123d70;margin-bottom:12px;border-left:3px solid var(--blue);padding-left:8px">등록된 담당자 목록</h3>
+      <table class="user-table" id="userTable">
+        <thead><tr><th>아이디</th><th>이름</th><th>연락처</th><th>권한</th><th style="width:80px"></th></tr></thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div>
+    <!-- 장비 관리 탭 -->
+    <div class="modal-body" id="stabBody-equip" style="display:none">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">장비별 공급가액, 포함옵션 목록, 선택옵션 목록을 설정합니다. 설정한 값이 견적서 작성 시 기본으로 표시됩니다.</p>
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;min-height:420px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">공급물품 목록</div>
+          <div id="equipMgmtList"></div>
+        </div>
+        <div id="equipMgmtEdit" style="border:1px solid var(--line);border-radius:14px;padding:20px;background:#fafcff">
+          <p style="color:var(--muted);font-size:13px;text-align:center;margin-top:60px">왼쪽에서 장비를 선택하세요</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── 기본 특기사항 ─── */
+const DEFAULT_SPECIAL_NOTES = '상기금액은 부가세(V.A.T) 별도 금액 입니다.\nPC 셋트는 고객 준비사항 입니다.\n본 견적서의 유효기간은 발행일로 부터 15일 입니다.\n유지보수 기간은 5년이며, 무상A/S기간은 2년입니다. 무상A/S기간 내라도 귀사의 귀책사유(사용상 과실 등)또는 천재지변에 의한 경우에는 유상처리 될 수 있습니다.';
+
+/* ─── 담당자 관리 ─── */
+const DEFAULT_USERS = [
+  {id:'admin', name:'박현석', title:'부장', phone:'010-6247-6261', pw:'jhtech2026', isAdmin:true}
+];
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem('jhtech_users')) || DEFAULT_USERS; }
+  catch{ return DEFAULT_USERS; }
+}
+function saveUsers(users){ localStorage.setItem('jhtech_users', JSON.stringify(users)); }
+
+let currentUser = null;
+let stampBase64 = localStorage.getItem('jhtech_stamp_b64') || '';
+let isRevising = false;
+
+function loadStamp(){
+  if(stampBase64) return Promise.resolve();
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '견적서/법인도장.png', true);
+    xhr.responseType = 'blob';
+    xhr.onload = function(){
+      if(xhr.status === 200 || xhr.status === 0){
+        const reader = new FileReader();
+        reader.onload = e => {
+          stampBase64 = e.target.result;
+          try{ localStorage.setItem('jhtech_stamp_b64', stampBase64); } catch{}
+          resolve();
+        };
+        reader.readAsDataURL(xhr.response);
+      } else { resolve(); }
+    };
+    xhr.onerror = () => resolve();
+    xhr.send();
+  });
+}
+loadStamp();
+
+function setStampFromFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    stampBase64 = e.target.result;
+    try{ localStorage.setItem('jhtech_stamp_b64', stampBase64); } catch{}
+    input.value = '';
+    alert('직인 이미지가 저장되었습니다.\n이제 견적서 출력 시 직인이 자동 적용됩니다.');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ─── 장비 데이터 ─── */
+const equipment = [
+  {id:'or16',   name:'XTRA OR16',  cat:'printer', img:'장비사진/프린터 XTRA OR16.png'},
+  {id:'or32',   name:'XTRA OR32',  cat:'printer', img:'장비사진/프린터 XTRA OR32.png'},
+  {id:'r20',    name:'XTRA R20',   cat:'printer', img:'장비사진/프린터 XTRA R20.png'},
+  {id:'s2512',  name:'XTRA 2512S', cat:'printer', img:'장비사진/프린터 XTRA 2512S.png'},
+  {id:'x20',    name:'X20',        cat:'printer', img:'장비사진/프린터 X20.png'},
+  {id:'ju2513', name:'JU2513+',    cat:'printer', img:'장비사진/프린터 JP2513+.png'},
+  {id:'ju1810', name:'JU1810+',    cat:'printer', img:'장비사진/프린터 JU180+.png'},
+  {id:'ju9060', name:'JU9060+',    cat:'printer', img:'장비사진/프린터 JP9060+.png'},
+  {id:'ju1361', name:'JU1361',     cat:'printer', img:'장비사진/프린터JU1361.png'},
+  {id:'t8q',    name:'T8Q',        cat:'printer', img:'장비사진/프린터 T8Q.png'},
+  {id:'t9m',    name:'T9M',        cat:'printer', img:'장비사진/프린터 T9M.png'},
+  {id:'jp0806', name:'JP0806',     cat:'cutter',  img:'장비사진/평판커팅기 JP0806.png'},
+  {id:'jp1311', name:'JP1311',     cat:'cutter',  img:'장비사진/평판커팅기 JP1311.png'},
+  {id:'jp1625', name:'JP1625',     cat:'cutter',  img:'장비사진/평판커팅기 JP1625.png'},
+  {id:'sg1625', name:'SG1625',     cat:'cutter',  img:'장비사진/평판커팅기 SG1625.png'},
+];
+
+const INCLUDE_OPTS_PRINTER = [
+  'RIP 소프트웨어 (Photoprint/Ergosoft 등)','잉크 기본 세트 포함',
+  '설치 및 기초 사용 교육','1년 무상 A/S','미디어 클램프/앵커 세트','전원 케이블 및 연결 자재'
+];
+const INCLUDE_OPTS_CUTTER = [
+  '커팅 전용 소프트웨어','칼날 기본 세트','설치 및 기초 사용 교육','1년 무상 A/S','절단 공구 키트','전원 케이블 및 연결 자재'
+];
+const EXTRA_OPTS_PRINTER = ['화이트 잉크 키트','바니시 잉크 키트','롤 피더 유닛','LED 경화 업그레이드','잉크 추가 세트 (1세트)','연장 보증 2년','연장 보증 3년','현장 출장 설치비'];
+const EXTRA_OPTS_CUTTER  = ['크리스 나이프 세트','하프 컷 모듈','마킹 툴 세트','밀링 툴','진공 테이블 업그레이드','연장 보증 2년','연장 보증 3년','현장 출장 설치비'];
+
+/* ─── 장비별 옵션 관리 ─── */
+function getEquipOpts(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('jhtech_equip_opts'));
+    if(saved) return saved;
+  } catch(e){}
+  // 기본값 초기화
+  const defaults = {};
+  equipment.forEach(eq=>{
+    defaults[eq.id] = {
+      basePrice: '',
+      includeOpts: eq.cat==='cutter' ? [...INCLUDE_OPTS_CUTTER] : [...INCLUDE_OPTS_PRINTER],
+      extraOpts:   eq.cat==='cutter' ? [...EXTRA_OPTS_CUTTER]   : [...EXTRA_OPTS_PRINTER]
+    };
+  });
+  return defaults;
+}
+function saveEquipOpts(opts){ localStorage.setItem('jhtech_equip_opts', JSON.stringify(opts)); }
+function getEquipOptsById(equipId){
+  if(!equipId) return { basePrice:'', includeOpts:[...INCLUDE_OPTS_PRINTER], extraOpts:[...EXTRA_OPTS_PRINTER] };
+  const all = getEquipOpts();
+  if(all[equipId]) return all[equipId];
+  const eq = equipment.find(e=>e.id===equipId);
+  return {
+    basePrice: '',
+    includeOpts: eq && eq.cat==='cutter' ? [...INCLUDE_OPTS_CUTTER] : [...INCLUDE_OPTS_PRINTER],
+    extraOpts:   eq && eq.cat==='cutter' ? [...EXTRA_OPTS_CUTTER]   : [...EXTRA_OPTS_PRINTER]
+  };
+}
+
+let currentEquipMgmtId = null;
+
+let allRequests = [];
+let currentReq = null;
+let filterStatus = 'all';
+
+/* ─── 로그인 ─── */
+function doLogin(){
+  const id = document.getElementById('idInput').value.trim();
+  const pw = document.getElementById('pwInput').value;
+  if(!id || !pw){ alert('아이디와 비밀번호를 입력하세요.'); return; }
+  const users = getUsers();
+  const user = users.find(u => u.id === id && u.pw === pw);
+  if(user){
+    currentUser = user;
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('loginUser').textContent = user.name + ' ' + user.title;
+    if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
+    const defaultUrl = 'https://script.google.com/macros/s/AKfycbweqPFxHWyROe6YbvSJOr-EiOBIM9Z76kpNZxtOe6NhCPQZoAZgWARKvp9xRjiLj49r/exec';
+    document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || defaultUrl;
+  } else {
+    alert('아이디 또는 비밀번호가 틀렸습니다.');
+  }
+}
+
+function saveGasUrl(){ localStorage.setItem('gasUrl', document.getElementById('gasUrl').value.trim()); }
+
+/* ─── 영업일지 ─── */
+function getSalesNote(reqId){
+  try{ return (JSON.parse(localStorage.getItem('jhtech_sales_notes')||'{}'))[reqId]||''; }
+  catch{ return ''; }
+}
+function saveSalesNote(reqId, note){
+  try{
+    const notes = JSON.parse(localStorage.getItem('jhtech_sales_notes')||'{}');
+    notes[reqId] = note;
+    localStorage.setItem('jhtech_sales_notes', JSON.stringify(notes));
+  } catch(e){}
+}
+
+/* ─── 데이터 로드 ─── */
+function loadRequests(){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url){alert('Google Apps Script URL을 입력하세요.');return;}
+  const listEl = document.getElementById('reqList');
+  listEl.innerHTML = '<div class="empty-list">불러오는 중...</div>';
+  fetch(url + '?action=list')
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      if(data && Array.isArray(data.rows)){ allRequests = data.rows; renderList(); }
+      else { listEl.innerHTML = '<div class="empty-list">데이터 없음</div>'; }
+    })
+    .catch(err => {
+      console.error(err);
+      listEl.innerHTML = '<div class="empty-list">불러오기 실패<br><small>'+err.message+'</small><br><br><button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button></div>';
+    });
+}
+
+function loadDemoData(){
+  allRequests = [
+    {id:'REQ-001',submittedAt:'2026-05-07 10:23',company:'(주)홍길동인쇄',bizNo:'123-45-67890',ceo:'홍길동',phone:'010-1234-5678',email:'hong@print.co.kr',address:'서울시 마포구 성산동 123',foundDate:'2018-03-15',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'280,000,000',rev2024:'320,000,000',rev2025:'350,000,000',problemProcess:'인쇄 공정',adoptionType:'기존장비 교체',issues:'노후 프린터 잦은 고장으로 생산 중단·납기 지연 반복 → 설비 안정성 확보 목표',equipment:'XTRA OR16',equipRequest:'아크릴 직접 인쇄 가능 여부 확인 필요',status:'new',includeOpts:[],extraOpts:[],supplyPrice:'',taxPrice:'',totalPrice:'',validUntil:'',quoteNo:''},
+    {id:'REQ-002',submittedAt:'2026-05-07 14:05',company:'스마트커팅 주식회사',bizNo:'234-56-78901',ceo:'김미래',phone:'010-9876-5432',email:'kim@smartcut.kr',address:'경기도 파주시 문발로 456',foundDate:'2020-08-01',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'',rev2024:'310,000,000',rev2025:'290,000,000',problemProcess:'절단/커팅 공정',adoptionType:'신규 장비 도입',issues:'커팅 전량 외주로 납기 통제 불가|외주 커팅비·운송비 발생으로 원가 부담 지속 증가',equipment:'JP1311',equipRequest:'아크릴 20mm 커팅 가능 여부',status:'new',includeOpts:[],extraOpts:[],supplyPrice:'',taxPrice:'',totalPrice:'',validUntil:'',quoteNo:''},
+    {id:'REQ-003',submittedAt:'2026-05-06 09:11',company:'대한프린팅',bizNo:'345-67-89012',ceo:'이대한',phone:'010-5555-7777',email:'lee@dahan.com',address:'부산시 해운대구 우동 789',foundDate:'2015-01-20',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'410,000,000',rev2024:'390,000,000',rev2025:'420,000,000',problemProcess:'인쇄 공정',adoptionType:'신규 장비 도입',issues:'아크릴·목재·금속·가죽 등 다양한 소재 직접 인쇄 설비 없음 → 소재 다양화·신규 수주 확대 목표',equipment:'XTRA 2512S',equipRequest:'대형 아크릴 인쇄, 2500×1200mm 풀사이즈 가능 확인',status:'confirmed',includeOpts:['RIP 소프트웨어 (Photoprint/Ergosoft 등)','잉크 기본 세트 포함','설치 및 기초 사용 교육','1년 무상 A/S'],extraOpts:[{name:'화이트 잉크 키트',price:'1500000'},{name:'현장 출장 설치비',price:'300000'}],supplyPrice:'42000000',taxPrice:'4200000',totalPrice:'42000000',validUntil:'2026-05-31',quoteNo:'Q2026-001'},
+  ];
+  renderList();
+}
+
+/* ─── 목록 렌더링 ─── */
+function renderList(){
+  const list = document.getElementById('reqList');
+  const filtered = filterStatus==='all' ? allRequests : allRequests.filter(r => r.status === filterStatus);
+  if(!filtered.length){list.innerHTML='<div class="empty-list">해당 건이 없습니다.</div>';return;}
+  list.innerHTML = filtered.map(r => `
+    <div class="req-item ${currentReq?.id===r.id?'active':''}" onclick="selectReq('${r.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+        <span class="req-company">${r.company}</span>
+        <span class="badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중'}</span>
+      </div>
+      <div class="req-meta">${r.submittedAt} · ${r.id}</div>
+      <div class="req-equip">장비: ${r.equipment||'미선택'}</div>
+    </div>
+  `).join('');
+}
+
+function filterList(status, btn){
+  filterStatus = status;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+/* ─── 견적번호 자동 생성 ─── */
+function generateQuoteNo(){
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const prefix = yy + mm + dd;
+  const todayCount = allRequests.filter(r => r.quoteNo && r.quoteNo.startsWith(prefix)).length;
+  return prefix + '-' + String(todayCount + 1).padStart(4,'0');
+}
+
+/* ─── 신청 상세 ─── */
+function selectReq(id){
+  currentReq = allRequests.find(r=>r.id===id);
+  if(!currentReq) return;
+  isRevising = false;
+  renderDetail();
+  renderList();
+}
+
+function getEquipObj(name){ return equipment.find(e=>e.name===name) || null; }
+
+function renderDetail(){
+  const r = currentReq;
+  const eq = getEquipObj(r.equipment);
+  const isCutter = eq && eq.cat==='cutter';
+  const eqOpts = getEquipOptsById(eq ? eq.id : null);
+  const includeOpts = eqOpts.includeOpts;
+  const extraOptsSugg = eqOpts.extraOpts;
+  // 공급가액: 이미 입력된 값 우선, 없으면 장비 관리에서 설정한 기본값 사용
+  if(!r.supplyPrice && eqOpts.basePrice) r.supplyPrice = eqOpts.basePrice;
+  const checkedIncludes = r.includeOpts || [];
+  const extraOpts = r.extraOpts || [];
+  const isConfirmed = r.status === 'confirmed';
+  const editMode = !isConfirmed || isRevising;
+  if(editMode && !r.quoteNo) r.quoteNo = generateQuoteNo();
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="section-title">
+      <span>${r.company}</span>
+      <span class="badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중'}</span>
+      ${isRevising?`<span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">✏️ 수정 모드</span>`:''}
+    </div>
+
+    ${isRevising?`
+    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#78350f;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">⚠️</span>
+      <span>기존 버전 <b>${r.quoteNo}</b> 수정 중입니다. 수정 확정 시 새 버전(<b>${getNextVersion(r.quoteNo)}</b>)이 발급되고 이전 버전은 이력에 보존됩니다.</span>
+    </div>`:''}
+
+    ${(()=>{const hist=getVersionHistory(r.id);return hist.length?`
+    <div class="card" style="border-color:#c7dff9;background:#f7fafe">
+      <h3 style="border-color:#1e56c8">버전 이력 (${hist.length}건)</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f0f5fb">
+          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">버전</th>
+          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">견적번호</th>
+          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">수정일시</th>
+          <th style="padding:8px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">합계금액</th>
+          <th style="padding:8px 12px;border:1px solid var(--line);text-align:center;font-weight:700;color:var(--blue2)">출력</th>
+        </tr></thead>
+        <tbody>${hist.map((v,i)=>`
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">v${i+1}</span></td>
+            <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px">${v.quoteNo}</td>
+            <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.revisedAt}</td>
+            <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:600">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
+            <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="printHistoryQuote('${r.id}',${i})" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
+          </tr>`).join('')}
+          <tr style="background:#eff6ff">
+            <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#1e56c8;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">현재</span></td>
+            <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px;font-weight:700">${r.quoteNo}</td>
+            <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${r.submittedAt||'—'}</td>
+            <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">${Number(r.totalPrice||0).toLocaleString('ko-KR')}원</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`:'';})()}
+
+    <!-- 신청기업 정보 -->
+    <div class="card">
+      <h3>신청기업 정보</h3>
+      <div class="info-grid">
+        <div class="info-item"><label>업체명</label><span>${r.company}</span></div>
+        <div class="info-item"><label>사업자등록번호</label><span>${r.bizNo}</span></div>
+        <div class="info-item"><label>대표자명</label><span>${r.ceo||'—'}</span></div>
+        <div class="info-item"><label>담당자 연락처</label><span>${r.phone}</span></div>
+        <div class="info-item"><label>이메일</label><span>${r.email}</span></div>
+        <div class="info-item"><label>사업장 주소</label><span>${r.address||'—'}</span></div>
+        <div class="info-item"><label>사업자등록일</label><span>${r.foundDate||'—'}</span></div>
+        <div class="info-item"><label>주업종</label><span>${r.industry||'—'}</span></div>
+        <div class="info-item"><label>접수번호</label><span>${r.id}</span></div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)">
+        <b style="color:#34475c">문제공정:</b> ${r.problemProcess||'—'} &nbsp;|&nbsp;
+        <b style="color:#34475c">도입목적:</b> ${r.adoptionType||'—'}
+      </div>
+      ${r.issues?`<div style="margin-top:8px;font-size:12px;color:#34475c;background:#f8fbff;border-radius:8px;padding:8px 12px;line-height:1.7">${r.issues.split('|').map(i=>'· '+i).join('<br>')}</div>`:''}
+      ${r.equipRequest?`<div style="margin-top:8px;font-size:13px"><b style="color:#34475c">요청사항:</b> ${r.equipRequest}</div>`:''}
+    </div>
+
+    <!-- 영업일지 (내부용) -->
+    <div class="card" style="background:#fffcf0;border-color:#ffd39c">
+      <h3 style="border-color:var(--orange);color:#9b5200">영업일지 <span style="font-size:11px;color:#b07030;font-weight:400">(내부용 — 견적서에 미출력)</span></h3>
+      <textarea class="note-ta" id="salesNote"
+        placeholder="상담 내용, 고객 요청사항, 방문 일정, 특이사항 등 내부 메모를 입력하세요."
+        oninput="saveSalesNote('${r.id}',this.value)">${getSalesNote(r.id)}</textarea>
+    </div>
+
+    <!-- 선택 장비 -->
+    <div class="card">
+      <h3>선택 장비</h3>
+      <div class="equip-card">
+        <div class="equip-photo">
+          ${eq?`<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span style=font-size:13px;color:#aaa>사진없음</span>'">`:'<span style="font-size:13px;color:#aaa">미선택</span>'}
+        </div>
+        <div class="equip-info">
+          <strong>${r.equipment||'미선택'}</strong>
+          <span>${eq?(eq.cat==='cutter'?'평판커팅기':'프린터'):''}</span>
+          <div style="margin-top:10px">
+            <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">견적번호 (자동 생성)</label>
+            <input id="quoteNo" class="price-input" style="width:200px" value="${r.quoteNo||''}" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 포함옵션 -->
+    <div class="card">
+      <h3>포함 옵션</h3>
+      <div class="options-grid" id="includeOptList">
+        ${includeOpts.map(opt=>`
+          <label class="opt-check">
+            <input type="checkbox" class="inc-opt" value="${opt}" ${checkedIncludes.includes(opt)?'checked':''} ${editMode?'':'disabled'}>
+            ${opt}
+          </label>`).join('')}
+      </div>
+    </div>
+
+    <!-- 추가옵션 -->
+    <div class="card">
+      <h3>추가 옵션</h3>
+      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap" id="extraSugg">
+        ${extraOptsSugg.map(s=>`<button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="addExtraOpt('${s}')" ${editMode?'':'disabled'}>+ ${s}</button>`).join('')}
+      </div>
+      <table class="extra-table">
+        <thead><tr><th>옵션명</th><th style="width:160px">단가 (원)</th><th style="width:50px"></th></tr></thead>
+        <tbody id="extraOptBody">
+          ${extraOpts.map((o,i)=>`
+            <tr id="extraRow_${i}">
+              <td><input value="${o.name}" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
+              <td><input value="${o.price}" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
+              <td>${editMode?'<button class="del-btn" onclick="removeExtra('+i+')">삭제</button>':''}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      ${editMode?
+        `<button class="btn secondary" style="margin-top:10px;font-size:13px;padding:8px 14px" onclick="addExtraOpt('')">+ 직접 입력</button>`:''}
+    </div>
+
+    <!-- 견적 금액 -->
+    <div class="card">
+      <h3>견적 금액</h3>
+      <div class="price-summary">
+        <div class="price-row" style="border-bottom:0">
+          <label style="font-size:14px;font-weight:700">합계 (원)</label>
+          ${editMode
+            ? `<input id="supplyPrice" class="price-input" value="${r.supplyPrice||''}" placeholder="금액 입력" oninput="formatPriceInput(this)" style="font-size:15px;font-weight:800;width:210px">`
+            : `<span style="font-size:20px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
+        </div>
+        <input type="hidden" id="taxPrice" value="">
+        <input type="hidden" id="totalPrice" value="${r.totalPrice||''}">
+        ${editMode?'':`<input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">`}
+      </div>
+      ${editMode?`<div style="text-align:right;margin-top:12px">
+        <button class="btn blue" onclick="recalcPrice()" style="padding:10px 24px;font-size:14px">🧮 계산하기</button>
+      </div>`:''}
+    </div>
+
+    <!-- 특기사항 -->
+    <div class="card">
+      <h3>특기사항 (견적서 출력용)</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">각 항목을 한 줄씩 입력하세요. 출력 시 번호가 자동으로 붙습니다.</p>
+      <textarea class="note-ta" id="specialNotes" rows="6"
+        placeholder="특기사항을 입력하세요.">${r.specialNotes || DEFAULT_SPECIAL_NOTES}</textarea>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="action-bar">
+      ${isConfirmed && !isRevising
+        ? `<button class="btn secondary" onclick="startRevise()" style="border-color:#fde68a;color:#92400e;background:#fffbeb">✏️ 견적 수정</button>
+           <button class="btn blue" onclick="printQuote()">견적서 출력</button>
+           <button class="btn secondary" onclick="printEquipPhoto()">장비사진 출력</button>`
+        : isRevising
+          ? `<button class="btn secondary" onclick="cancelRevise()">취소</button>
+             <button class="btn primary" onclick="confirmRevise()">수정 확정 (버전업)</button>`
+          : `<button class="btn secondary" onclick="saveDraft()">임시 저장</button>
+             <button class="btn primary" onclick="confirmQuote()">견적 확정</button>`}
+    </div>
+  `;
+
+  recalcPrice();
+}
+
+/* ─── 추가옵션 관리 ─── */
+function syncFormState(){
+  if(!currentReq) return;
+  currentReq.includeOpts = [...document.querySelectorAll('.inc-opt:checked')].map(x=>x.value);
+  const rows = document.querySelectorAll('#extraOptBody tr');
+  currentReq.extraOpts = [];
+  rows.forEach(tr=>{
+    const ins = tr.querySelectorAll('input');
+    if(ins.length>=2) currentReq.extraOpts.push({name:ins[0].value, price:(ins[1].value||'').replace(/,/g,'')});
+  });
+  const sp = document.getElementById('supplyPrice');
+  if(sp) currentReq.supplyPrice = sp.value.replace(/,/g,'');
+}
+function addExtraOpt(name){
+  syncFormState();
+  currentReq.extraOpts = currentReq.extraOpts || [];
+  currentReq.extraOpts.push({name:name, price:''});
+  renderDetail();
+  const inputs = document.querySelectorAll('#extraOptBody input');
+  if(inputs.length) inputs[inputs.length-2].focus();
+}
+function removeExtra(i){ syncFormState(); currentReq.extraOpts.splice(i,1); renderDetail(); }
+function updateExtra(i, field, val){
+  if(!currentReq.extraOpts[i]) return;
+  currentReq.extraOpts[i][field] = val.replace(/,/g,'');
+}
+function fmtExtraPrice(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
+function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
+
+/* ─── 가격 계산 ─── */
+function recalcPrice(){
+  const sp = document.getElementById('supplyPrice');
+  if(!sp) return;
+  const supply = Number(sp.value.replace(/,/g,'')) || 0;
+  let extraTotal = 0;
+  document.querySelectorAll('#extraOptBody tr').forEach(tr => {
+    const ins = tr.querySelectorAll('input');
+    if(ins.length >= 2) extraTotal += Number(ins[1].value.replace(/,/g,'')) || 0;
+  });
+  const total = supply + extraTotal;
+  // 합계 입력 필드에 직접 반영
+  sp.value = total ? Number(total).toLocaleString('ko-KR') : '';
+  const td = document.getElementById('totalDisplay');
+  if(td) td.textContent = '';
+  const taxEl = document.getElementById('taxPrice');
+  if(taxEl) taxEl.value = '';
+  const totalEl = document.getElementById('totalPrice');
+  if(totalEl) totalEl.value = total ? String(total) : '';
+}
+
+/* ─── 저장 / 확정 ─── */
+function collectFormData(){
+  currentReq.quoteNo = document.getElementById('quoteNo')?.value || '';
+  currentReq.includeOpts = [...document.querySelectorAll('.inc-opt:checked')].map(x=>x.value);
+  const rows = document.querySelectorAll('#extraOptBody tr');
+  currentReq.extraOpts = [];
+  rows.forEach(tr=>{
+    const inputs = tr.querySelectorAll('input');
+    if(inputs.length>=2) currentReq.extraOpts.push({name:inputs[0].value, price:inputs[1].value.replace(/,/g,'')});
+  });
+  currentReq.supplyPrice = (document.getElementById('supplyPrice')?.value||'').replace(/,/g,'');
+  currentReq.taxPrice = '';
+  const tpEl = document.getElementById('totalPrice');
+  currentReq.totalPrice = tpEl?.value || currentReq.supplyPrice || '';
+  currentReq.specialNotes = document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES;
+}
+
+function saveDraft(){
+  collectFormData();
+  currentReq.status = 'draft';
+  syncToSheet('draft');
+  renderList();
+  alert('임시 저장되었습니다.');
+}
+
+function confirmQuote(){
+  collectFormData();
+  if(!currentReq.quoteNo.trim()){alert('견적번호 오류: 새로고침 후 다시 시도해 주세요.');return;}
+  if(!currentReq.supplyPrice){alert('공급가액을 입력해 주세요.');return;}
+  if(!confirm(`[${currentReq.company}] 견적을 확정하시겠습니까?\n확정 후에는 수정이 불가합니다.`)) return;
+  currentReq.status = 'confirmed';
+  syncToSheet('confirmed');
+  renderDetail();
+  renderList();
+  alert('견적이 확정되었습니다.\n출력 버튼으로 견적서와 장비사진을 각각 출력하세요.');
+}
+
+function syncToSheet(status){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url) return;
+  const form = document.createElement('form');
+  form.method='POST'; form.action=url; form.target='adminSubmitFrame'; form.style.display='none';
+  const i=document.createElement('input'); i.type='hidden'; i.name='action'; i.value='confirm'; form.appendChild(i);
+  const j=document.createElement('input'); j.type='hidden'; j.name='data'; j.value=JSON.stringify(currentReq); form.appendChild(j);
+  document.body.appendChild(form); form.submit(); setTimeout(()=>form.remove(), 2000);
+}
+
+/* ─── Google Drive 견적서 저장 ─── */
+function showDriveToast(type, msg){
+  const box = document.getElementById('driveToast');
+  const el = document.createElement('div');
+  el.className = 'd-toast' + (type==='loading'?'': ' '+type);
+  el.innerHTML = type==='loading'
+    ? '<div class="d-spinner"></div><span>Google Drive 저장 중…</span>'
+    : type==='ok'
+      ? '✅ <span>'+msg+'</span>'
+      : '❌ <span>Drive 저장 실패: '+msg+'</span>';
+  box.style.display='flex';
+  box.innerHTML=''; box.appendChild(el);
+  if(type!=='loading') setTimeout(()=>{box.style.display='none';}, 7000);
+}
+
+async function saveQuoteToDrive(html, quoteNo, company){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url){ showDriveToast('err','GAS URL이 설정되지 않았습니다.'); return; }
+  showDriveToast('loading');
+  const filename = ('견적서_'+(quoteNo||'')+'_'+(company||'')).replace(/\s+/g,'_');
+  const body = new URLSearchParams({
+    action: 'saveQuote',
+    data: JSON.stringify({html, filename})
+  });
+  try{
+    const resp = await fetch(url, {method:'POST', body});
+    const json = await resp.json();
+    if(json.status==='ok'){
+      showDriveToast('ok','저장 완료 → <a href="'+json.url+'" target="_blank">드라이브에서 열기</a>');
+    } else {
+      showDriveToast('err', json.message||'알 수 없는 오류');
+    }
+  } catch(e){
+    showDriveToast('err', e.message);
+  }
+}
+
+/* ─── 버전 관리 ─── */
+const VER_KEY = 'jhtech_quote_versions';
+
+function getVersionHistory(reqId){
+  try{ return (JSON.parse(localStorage.getItem(VER_KEY))||{})[reqId]||[]; }
+  catch{ return []; }
+}
+function pushVersionHistory(reqId, snapshot){
+  try{
+    const all = JSON.parse(localStorage.getItem(VER_KEY))||{};
+    if(!all[reqId]) all[reqId]=[];
+    all[reqId].push(snapshot);
+    localStorage.setItem(VER_KEY, JSON.stringify(all));
+  } catch{}
+}
+function getNextVersion(qNo){
+  const m = (qNo||'').match(/^(.+)-R(\d+)$/);
+  return m ? m[1]+'-R'+(+m[2]+1) : (qNo||'QT')+'-R2';
+}
+function startRevise(){
+  isRevising = true;
+  renderDetail();
+  document.getElementById('mainArea').scrollTop = 0;
+}
+function cancelRevise(){
+  isRevising = false;
+  renderDetail();
+}
+function confirmRevise(){
+  if(!confirm('수정 내용을 확정하고 새 버전을 발급하시겠습니까?\n\n현재 버전이 이력에 저장되고 새 버전번호가 발급됩니다.')) return;
+  collectFormData();
+  const oldQuoteNo = currentReq.quoteNo;
+  pushVersionHistory(currentReq.id, {
+    quoteNo: oldQuoteNo,
+    revisedAt: new Date().toLocaleString('ko-KR'),
+    supplyPrice: currentReq.supplyPrice,
+    taxPrice: currentReq.taxPrice,
+    totalPrice: currentReq.totalPrice,
+    includeOpts: [...(currentReq.includeOpts||[])],
+    extraOpts: JSON.parse(JSON.stringify(currentReq.extraOpts||[])),
+    specialNotes: currentReq.specialNotes || DEFAULT_SPECIAL_NOTES
+  });
+  currentReq.quoteNo = getNextVersion(oldQuoteNo);
+  currentReq.status = 'confirmed';
+  isRevising = false;
+  syncToSheet('confirmed');
+  renderList();
+  renderDetail();
+  alert('수정 완료!\n새 버전: ' + currentReq.quoteNo);
+}
+
+/* ─── 한글금액 변환 (일 생략 규칙 적용) ─── */
+function numToKorean(num) {
+  const n = Math.floor(Number(num));
+  if (!n) return '영';
+  const units = ['','일','이','삼','사','오','육','칠','팔','구'];
+  function conv4(v, leading) {
+    if (!v) return '';
+    let s = '';
+    let firstDigit = true;
+    [{d:1000,u:'천'},{d:100,u:'백'},{d:10,u:'십'},{d:1,u:''}].forEach(({d,u}) => {
+      const x = Math.floor(v/d)%10;
+      if (x) {
+        if (x===1 && u!=='' && firstDigit && leading) s += u;
+        else s += units[x]+u;
+        firstDigit = false;
+      }
+    });
+    return s;
+  }
+  let res = '';
+  const eok = Math.floor(n/100000000);
+  const man = Math.floor((n%100000000)/10000);
+  const rest = n%10000;
+  if (eok) res += conv4(eok, !res)+'억';
+  if (man) res += conv4(man, !res)+'만';
+  if (rest) res += conv4(rest, !res);
+  return res;
+}
+
+/* ─── 장비 설명 ─── */
+function getEquipDesc(name, cat) {
+  const n = (name||'').toUpperCase();
+  const hl = s => '<b style="font-weight:900;color:#ffb400">'+s+'</b>';
+  if (cat==='cutter') return {bar:'Flatbed Cutting System '+hl(name), detail:'평판 커팅기 시스템'};
+  if (n.includes('OR16')||n.includes('OR32')||n.includes('R20'))
+    return {bar:'UV LED Roll-to-Roll printer '+hl(name), detail:'UV LED 롤투롤 프린터 시스템'};
+  if (n.includes('T8Q')||n.includes('T9M'))
+    return {bar:'UV LED Textile Printer '+hl(name), detail:'UV LED 텍스타일 프린터 시스템'};
+  if (n.includes('JU9060'))
+    return {bar:'Industrial UV LED FLATBED printer '+hl('JU-9060Plus')+' Gen5i', detail:'UV LED 플랫베드 프린터 시스템'};
+  if (n.includes('JU'))
+    return {bar:'Industrial UV LED FLATBED printer '+hl(name), detail:'UV LED 플랫베드 프린터 시스템'};
+  return {bar:'UV LED FLATBED printer '+hl(name), detail:'UV LED 플랫베드 프린터 시스템'};
+}
+
+/* ─── 견적서 출력 ─── */
+function printHistoryQuote(reqId, verIdx){
+  const hist = getVersionHistory(reqId);
+  const v = hist[verIdx];
+  if(!v){ alert('이전 버전 데이터를 찾을 수 없습니다.'); return; }
+  printQuote({
+    ...currentReq,
+    quoteNo: v.quoteNo,
+    supplyPrice: v.supplyPrice,
+    taxPrice: v.taxPrice,
+    totalPrice: v.totalPrice,
+    includeOpts: v.includeOpts || [],
+    extraOpts: v.extraOpts || [],
+    specialNotes: v.specialNotes || DEFAULT_SPECIAL_NOTES
+  });
+}
+
+function printQuote(reqOverride){
+  const r = reqOverride || currentReq;
+  if(!r) return;
+
+  if(!reqOverride) collectFormData();
+
+  const eq = getEquipObj(r.equipment);
+  const supply = Number(r.supplyPrice||0);
+  const inclOpts = r.includeOpts||[];
+  const extraOpts = (r.extraOpts||[]).filter(o=>o.name);
+  const extraTotal = extraOpts.reduce((s,o)=>s+Number(o.price||0),0);
+  const grandTotal = supply + extraTotal;
+  const desc = getEquipDesc(r.equipment, eq?eq.cat:'printer');
+  const now = new Date();
+  const dateStr = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
+  const fmt = n => n ? Number(n).toLocaleString('ko-KR') : '';
+
+  const managerName  = currentUser ? currentUser.name+' '+currentUser.title : '박현석 부장';
+  const managerPhone = currentUser ? currentUser.phone : '010-6247-6261';
+
+  const specialNotes = (document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES)
+    .split('\n').map(s=>s.trim()).filter(s=>s);
+
+  let inclSection = '';
+  if(inclOpts.length>0){
+    let s = '<tr class="sec-hdr"><td colspan="6">포함옵션</td></tr>';
+    inclOpts.forEach((o,i)=>{
+      s += '<tr class="opt-row"><td></td><td>- '+o+'</td><td></td><td></td><td></td>';
+      if(i===0) s += '<td rowspan="'+inclOpts.length+'" style="text-align:center;vertical-align:middle;font-weight:700;background:#fffae0;color:#8a6400;border:1px solid #c0d0e0">포함</td>';
+      s += '</tr>';
+    });
+    s += '<tr class="sub-row"><td></td><td colspan="3" style="text-align:center;font-weight:700">소&nbsp;&nbsp;계</td><td style="text-align:right;font-weight:700">'+fmt(supply)+'</td><td></td></tr>';
+    inclSection = s;
+  }
+
+  let extraSection = '';
+  if(extraOpts.length>0){
+    let s = '<tr class="sec-hdr"><td colspan="6">추가옵션</td></tr>';
+    extraOpts.forEach(o=>{
+      s += '<tr class="opt-row"><td></td><td>- '+o.name+'</td><td style="text-align:center">1 PCS</td>'
+         +'<td style="text-align:right">'+fmt(o.price)+'</td><td style="text-align:right">'+fmt(o.price)+'</td><td></td></tr>';
+    });
+    s += '<tr class="sub-row"><td></td><td colspan="3" style="text-align:center;font-weight:700">소&nbsp;&nbsp;계</td><td style="text-align:right;font-weight:700">'+fmt(extraTotal)+'</td><td></td></tr>';
+    extraSection = s;
+  }
+
+  const stampImg = stampBase64 ? '<img src="'+stampBase64+'" style="position:absolute;bottom:6px;right:6px;width:62px;height:62px;opacity:0.85;z-index:5;pointer-events:none">' : '';
+
+  const css =
+    '*{box-sizing:border-box;margin:0;padding:0}'
+   +'body{font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",sans-serif;color:#1c2f45;padding:28px 32px;font-size:12px;line-height:1.5;background:#fff}'
+   +'.site-url{text-align:right;font-size:11px;color:#8a9bb0;margin-bottom:6px}'
+   +'.title-bar{background:#0f3768;color:#fff;text-align:center;padding:16px 0;font-size:30px;font-weight:900;letter-spacing:8px}'
+   +'.subtitle-bar{background:#1a56a0;color:#fff;padding:8px 14px;font-size:12px;font-weight:500}'
+   +'.info-row{display:flex;gap:20px;margin:16px 0 12px;align-items:flex-start}'
+   +'.info-left{flex:1;font-size:12px;line-height:2.2}'
+   +'.info-lbl{color:#8a9bb0;display:inline-block;width:68px}'
+   +'.recipient{font-size:17px;font-weight:900;text-decoration:underline;margin-top:10px;letter-spacing:1px}'
+   +'.sup-wrap{position:relative;flex-shrink:0}'
+   +'.sup-box{width:380px;border:1px solid #b0c4da}'
+   +'.sup-title{background:#1a56a0;color:#fff;text-align:center;padding:6px;font-weight:700;font-size:12px;letter-spacing:4px}'
+   +'.sup-box table{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}'
+   +'.sup-box td{border:1px solid #b0c4da;padding:4px 7px;vertical-align:middle;word-break:keep-all;overflow-wrap:break-word}'
+   +'.sup-hd{background:#f3f7fb;font-weight:700;text-align:center;width:46px;white-space:nowrap}'
+   +'.sup-addr{font-size:10px;line-height:1.4}'
+   +'.amt-bar{display:flex;align-items:stretch;border:1px solid #f5a623;margin:0 0 12px}'
+   +'.amt-badge{background:#ff8c00;color:#fff;font-weight:900;font-size:13px;padding:10px 16px;white-space:nowrap;display:flex;align-items:center}'
+   +'.amt-body{padding:10px 16px;font-size:14px;font-weight:900;letter-spacing:.5px;display:flex;align-items:center;gap:10px}'
+   +'.amt-num{font-size:12px;font-weight:700;color:#5c7080}'
+   +'.vat-tag{font-size:11px;font-weight:700;color:#c7362f;border:1px solid #ffc0bc;border-radius:3px;padding:2px 5px;background:#fff1f0}'
+   +'table.qt{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:10px}'
+   +'table.qt th{background:#1a2e4a;color:#fff;font-weight:700;padding:7px 8px;border:1px solid #2d4a68;text-align:center}'
+   +'table.qt td{border:1px solid #c0d0e0;padding:5px 8px;vertical-align:middle}'
+   +'.main-model{background:#0f3768;color:#fff;font-weight:900;text-align:center;font-size:12px}'
+   +'.main-row td:not(.main-model){background:#eef4ff}'
+   +'.sec-hdr td{background:#d8e5f5;font-weight:700;padding:5px 10px;color:#1a2e4a}'
+   +'.opt-row td{background:#fff}'
+   +'.sub-row td{background:#e8f0fa}'
+   +'.ink-hdr td{background:#d8e5f5;font-weight:700;padding:5px 10px;color:#1a2e4a}'
+   +'.ink-row td{height:22px;background:#fff}'
+   +'.total-row td{background:#ff8c00;color:#fff;font-weight:900;text-align:center;padding:9px 8px;font-size:13px}'
+   +'.note{margin-top:14px;font-size:11.5px;line-height:1.85}'
+   +'.note .nt{font-weight:900;font-size:12px;margin-bottom:5px}'
+   +'.note ol{padding-left:20px}'
+   +'.note li{margin-bottom:2px}'
+   +'.footer{margin-top:14px;padding-top:10px;border-top:1px solid #c8d7e8;display:flex;justify-content:space-between;align-items:center}'
+   +'.logo-text{font-weight:900;font-size:13px;color:#0f3768;line-height:1.4}'
+   +'.logo-sub{font-size:10px;font-weight:400;color:#6c7f95}'
+   +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'
+   +'@media print{@page{size:A4;margin:1.2cm 1.4cm}body{padding:0}}';
+
+  const noteItems = specialNotes.map((item,i)=>'<li>'+item+'</li>').join('');
+
+  const html =
+    '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">'
+   +'<title>견적서_'+r.quoteNo+'_'+r.company+'</title>'
+   +'<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" as="style" crossorigin>'
+   +'<style>'+css+'</style></head><body>'
+
+   +'<div class="site-url">www.jhtech.co.kr</div>'
+   +'<div class="title-bar">견 적 서</div>'
+   +'<div class="subtitle-bar">'+desc.bar+'</div>'
+
+   +'<div class="info-row">'
+     +'<div class="info-left">'
+       +'<div><span class="info-lbl">견적일자:</span> '+dateStr+'</div>'
+       +'<div><span class="info-lbl">견적번호:</span> '+(r.quoteNo||'—')+'</div>'
+       +'<div><span class="info-lbl">담&nbsp;당&nbsp;자:</span> '+managerName+' / '+managerPhone+'</div>'
+       +'<div class="recipient">'+(r.company||'XXXXXXX')+'&nbsp;&nbsp;귀하</div>'
+     +'</div>'
+     +'<div class="sup-wrap">'
+       +'<div class="sup-box">'
+         +'<div class="sup-title">공 급 자</div>'
+         +'<table>'
+           +'<tr><td class="sup-hd">등록번호</td><td colspan="3">113-81-80804</td></tr>'
+           +'<tr><td class="sup-hd">상&nbsp;&nbsp;호</td><td>(주)재현테크</td><td class="sup-hd">성&nbsp;&nbsp;명</td><td>이무직</td></tr>'
+           +'<tr><td class="sup-hd">주&nbsp;&nbsp;소</td><td colspan="3" class="sup-addr">서울시 구로구 구로동 235-2 에이스하이엔드타워 705호</td></tr>'
+           +'<tr><td class="sup-hd">업&nbsp;&nbsp;태</td><td>제조, 도소매, 도매</td><td class="sup-hd">종&nbsp;&nbsp;목</td><td>인쇄, 인쇄기기 외</td></tr>'
+         +'</table>'
+       +'</div>'
+       +stampImg
+     +'</div>'
+   +'</div>'
+
+   +'<div class="amt-bar">'
+     +'<div class="amt-badge">합계금액</div>'
+     +'<div class="amt-body">'
+       +'일금 '+numToKorean(grandTotal)+'원정'
+       +' <span class="amt-num">( ₩'+fmt(grandTotal)+' - )</span>'
+     +'</div>'
+   +'</div>'
+
+   +'<table class="qt"><thead><tr>'
+     +'<th style="width:90px">모&nbsp;델</th><th>상&nbsp;세</th>'
+     +'<th style="width:55px">수량</th><th style="width:95px">단&nbsp;가</th>'
+     +'<th style="width:105px">공급가액</th><th style="width:70px">비고</th>'
+   +'</tr></thead><tbody>'
+     +'<tr class="main-row">'
+       +'<td class="main-model">'+r.equipment+'</td>'
+       +'<td>'+desc.detail+'</td>'
+       +'<td style="text-align:center">1식</td>'
+       +'<td style="text-align:right">'+fmt(supply)+'</td>'
+       +'<td style="text-align:right">'+fmt(supply)+'</td>'
+       +'<td></td>'
+     +'</tr>'
+     +inclSection
+     +extraSection
+     +'<tr class="ink-hdr"><td colspan="6">잉크가격</td></tr>'
+     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+     +'<tr class="total-row">'
+       +'<td colspan="4" style="letter-spacing:4px">합&nbsp;&nbsp;계</td>'
+       +'<td style="text-align:right">'+fmt(grandTotal)+'</td>'
+       +'<td></td>'
+     +'</tr>'
+   +'</tbody></table>'
+
+   +'<div class="note">'
+     +'<div class="nt">*** 특기사항 ****</div>'
+     +'<ol>'+noteItems+'</ol>'
+   +'</div>'
+
+   +'<div class="footer">'
+     +'<div style="flex:1;text-align:center;font-size:11px;color:#6c7f95">&lt;1&gt;</div>'
+     +'<div class="logo-text">(주)재현테크<div class="logo-sub">JaeHyun tech Co., Ltd.</div></div>'
+   +'</div>'
+
+   +'<scr'+'ipt>window.onload=function(){if(document.fonts){document.fonts.ready.then(function(){setTimeout(window.print,200);});}else{setTimeout(window.print,500);}}<\/scr'+'ipt>'
+   +'</body></html>';
+
+  const w = window.open('','_blank','width=860,height=1100');
+  if(w){w.document.write(html);w.document.close();}
+  saveQuoteToDrive(html, r.quoteNo, r.company);
+}
+
+function printEquipPhoto(){
+  const r = currentReq;
+  if(!r) return;
+  const eq = getEquipObj(r.equipment);
+  if(!eq){alert('장비 사진 정보가 없습니다.');return;}
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+  <title>장비사진_${r.equipment}_${r.company}</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" as="style" crossorigin>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px;color:#1c2f45}
+    .title{font-size:13px;color:#6c7f95;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
+    .equip-name{font-size:28px;font-weight:900;color:#0f3768;margin-bottom:6px}
+    .equip-cat{font-size:14px;color:#174f8f;margin-bottom:24px}
+    .photo-wrap{border:1px solid #d8e2ee;border-radius:16px;padding:24px;background:#f8fbff;max-width:640px;width:100%;display:flex;align-items:center;justify-content:center}
+    .photo-wrap img{max-width:100%;max-height:420px;object-fit:contain}
+    .quote-info{margin-top:20px;font-size:13px;color:#6c7f95;text-align:center;line-height:1.8}
+    .footer{margin-top:24px;font-size:12px;color:#aaa}
+    @media print{body{padding:20px}}
+  </style></head><body>
+  <div class="title">(주)재현테크 · 2026 소공인 스마트제조 지원사업</div>
+  <div class="equip-name">${r.equipment}</div>
+  <div class="equip-cat">${eq.cat==='cutter'?'평판커팅기':'프린터'}</div>
+  <div class="photo-wrap"><img src="${eq.img}" alt="${r.equipment}" onerror="this.alt='사진을 불러올 수 없습니다'"></div>
+  <div class="quote-info">
+    견적번호: ${r.quoteNo||'—'} &nbsp;|&nbsp; 수신: ${r.company} &nbsp;|&nbsp; 발급일: ${new Date().toLocaleDateString('ko-KR')}
+  </div>
+  <div class="footer">(주)재현테크 영업팀</div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=720,height=820');
+  w.document.write(html);
+  w.document.close();
+}
+
+/* ─── 설정 모달 ─── */
+function openSettings(){
+  document.getElementById('settingsModal').classList.add('open');
+  switchSettingsTab('user');
+}
+function closeSettings(){
+  document.getElementById('settingsModal').classList.remove('open');
+}
+function switchSettingsTab(tab){
+  ['user','equip'].forEach(t=>{
+    document.getElementById('stab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('stabBody-'+t).style.display = t===tab ? '' : 'none';
+  });
+  if(tab==='user') renderUserTable();
+  if(tab==='equip') renderEquipMgmtList();
+}
+
+/* 담당자 관리 */
+function renderUserTable(){
+  const users = getUsers();
+  const tbody = document.getElementById('userTableBody');
+  tbody.innerHTML = users.map(u=>`
+    <tr>
+      <td><code>${u.id}</code></td>
+      <td>${u.name} ${u.title}</td>
+      <td>${u.phone}</td>
+      <td>${u.isAdmin?'<span style="color:var(--orange);font-weight:700">전체관리자</span>':'담당자'}</td>
+      <td>${u.isAdmin?'':'<button class="btn danger" style="padding:4px 10px;font-size:12px" onclick="deleteUser(\''+u.id+'\')">삭제</button>'}</td>
+    </tr>
+  `).join('');
+}
+function addUser(){
+  const id    = document.getElementById('newUserId').value.trim();
+  const pw    = document.getElementById('newUserPw').value;
+  const name  = document.getElementById('newUserName').value.trim();
+  const phone = document.getElementById('newUserPhone').value.trim();
+  if(!id||!pw||!name){alert('아이디, 비밀번호, 이름을 모두 입력하세요.');return;}
+  const users = getUsers();
+  if(users.find(u=>u.id===id)){alert('이미 사용 중인 아이디입니다.');return;}
+  users.push({id, pw, name, title:'', phone, isAdmin:false});
+  saveUsers(users);
+  document.getElementById('newUserId').value='';
+  document.getElementById('newUserPw').value='';
+  document.getElementById('newUserName').value='';
+  document.getElementById('newUserPhone').value='';
+  renderUserTable();
+  alert('담당자 ['+name+']이(가) 등록되었습니다.');
+}
+function deleteUser(id){
+  if(!confirm('담당자 ['+id+']를 삭제하시겠습니까?')) return;
+  const users = getUsers().filter(u=>u.id!==id);
+  saveUsers(users);
+  renderUserTable();
+}
+
+/* 장비 관리 */
+function renderEquipMgmtList(){
+  const listEl = document.getElementById('equipMgmtList');
+  listEl.innerHTML = equipment.map(eq=>`
+    <div class="equip-mgmt-item ${currentEquipMgmtId===eq.id?'active':''}" onclick="selectEquipMgmt('${eq.id}')">
+      <span class="equip-cat-badge ${eq.cat}">${eq.cat==='cutter'?'커터':'프린터'}</span>
+      ${eq.name}
+    </div>
+  `).join('');
+}
+
+function selectEquipMgmt(equipId){
+  currentEquipMgmtId = equipId;
+  renderEquipMgmtList();
+  const eq = equipment.find(e=>e.id===equipId);
+  const opts = getEquipOptsById(equipId);
+  const editEl = document.getElementById('equipMgmtEdit');
+
+  editEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <span class="equip-cat-badge ${eq.cat}" style="font-size:12px;padding:4px 10px">${eq.cat==='cutter'?'평판커팅기':'프린터'}</span>
+      <strong style="font-size:17px;color:#123d70">${eq.name}</strong>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">기본 공급가액 (원, VAT 별도)</label>
+      <input id="em-basePrice" type="text" value="${opts.basePrice?Number(opts.basePrice).toLocaleString('ko-KR'):''}"
+        placeholder="예: 42,000,000"
+        style="border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-family:inherit;font-size:14px;width:220px;outline:none"
+        oninput="this.value=this.value.replace(/[^0-9,]/g,'');let n=this.value.replace(/,/g,'');if(n)this.value=Number(n).toLocaleString('ko-KR');"
+        onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--line)'">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          <span>포함옵션 목록</span>
+          <span style="font-weight:400;font-size:11px">${opts.includeOpts.length}개</span>
+        </div>
+        <div class="opt-row-list" id="em-incList">
+          ${opts.includeOpts.map((o,i)=>`
+            <div class="opt-row-item" id="em-inc-${i}">
+              <span>${o}</span>
+              <button class="opt-del-btn" onclick="removeEquipOpt('include',${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="opt-add-row">
+          <input id="em-incNew" placeholder="새 포함옵션 입력" onkeydown="if(event.key==='Enter')addEquipOpt('include')">
+          <button class="btn blue" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="addEquipOpt('include')">+ 추가</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          <span>선택옵션 목록</span>
+          <span style="font-weight:400;font-size:11px">${opts.extraOpts.length}개</span>
+        </div>
+        <div class="opt-row-list" id="em-extList">
+          ${opts.extraOpts.map((o,i)=>`
+            <div class="opt-row-item" id="em-ext-${i}">
+              <span>${o}</span>
+              <button class="opt-del-btn" onclick="removeEquipOpt('extra',${i})">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="opt-add-row">
+          <input id="em-extNew" placeholder="새 선택옵션 입력" onkeydown="if(event.key==='Enter')addEquipOpt('extra')">
+          <button class="btn blue" style="padding:7px 12px;font-size:12px;white-space:nowrap" onclick="addEquipOpt('extra')">+ 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn secondary" onclick="resetEquipOpts('${equipId}')">초기화</button>
+      <button class="btn primary" onclick="saveEquipMgmt('${equipId}')">💾 저장</button>
+    </div>
+    <div id="em-saved-msg" style="display:none;text-align:right;margin-top:8px;font-size:13px;color:var(--ok);font-weight:700">✔ 저장되었습니다.</div>
+  `;
+}
+
+function addEquipOpt(type){
+  const inputId = type==='include' ? 'em-incNew' : 'em-extNew';
+  const val = document.getElementById(inputId)?.value.trim();
+  if(!val){alert('옵션명을 입력하세요.');return;}
+  if(!currentEquipMgmtId) return;
+  const all = getEquipOpts();
+  if(!all[currentEquipMgmtId]) all[currentEquipMgmtId] = getEquipOptsById(currentEquipMgmtId);
+  const arr = type==='include' ? all[currentEquipMgmtId].includeOpts : all[currentEquipMgmtId].extraOpts;
+  arr.push(val);
+  // 공급가액도 현재 입력값으로 보존
+  const priceEl = document.getElementById('em-basePrice');
+  if(priceEl) all[currentEquipMgmtId].basePrice = priceEl.value.replace(/,/g,'');
+  saveEquipOpts(all);
+  selectEquipMgmt(currentEquipMgmtId);
+}
+
+function removeEquipOpt(type, idx){
+  if(!currentEquipMgmtId) return;
+  const all = getEquipOpts();
+  if(!all[currentEquipMgmtId]) all[currentEquipMgmtId] = getEquipOptsById(currentEquipMgmtId);
+  const arr = type==='include' ? all[currentEquipMgmtId].includeOpts : all[currentEquipMgmtId].extraOpts;
+  arr.splice(idx, 1);
+  const priceEl = document.getElementById('em-basePrice');
+  if(priceEl) all[currentEquipMgmtId].basePrice = priceEl.value.replace(/,/g,'');
+  saveEquipOpts(all);
+  selectEquipMgmt(currentEquipMgmtId);
+}
+
+function saveEquipMgmt(equipId){
+  const all = getEquipOpts();
+  if(!all[equipId]) all[equipId] = getEquipOptsById(equipId);
+  const priceEl = document.getElementById('em-basePrice');
+  if(priceEl) all[equipId].basePrice = priceEl.value.replace(/,/g,'');
+  saveEquipOpts(all);
+  const msg = document.getElementById('em-saved-msg');
+  if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none', 2000); }
+}
+
+function resetEquipOpts(equipId){
+  if(!confirm('['+equipId+'] 장비의 옵션 목록을 기본값으로 초기화하시겠습니까?')) return;
+  const all = getEquipOpts();
+  const eq = equipment.find(e=>e.id===equipId);
+  all[equipId] = {
+    basePrice: '',
+    includeOpts: eq && eq.cat==='cutter' ? [...INCLUDE_OPTS_CUTTER] : [...INCLUDE_OPTS_PRINTER],
+    extraOpts:   eq && eq.cat==='cutter' ? [...EXTRA_OPTS_CUTTER]   : [...EXTRA_OPTS_PRINTER]
+  };
+  saveEquipOpts(all);
+  selectEquipMgmt(equipId);
+}
+</script>
+<iframe name="adminSubmitFrame" style="display:none"></iframe>
+<div id="driveToast"></div>
+</body>
+</html>

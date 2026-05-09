@@ -1,0 +1,13 @@
+# 브라우저 캐시 / 시스템 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code 세션 데이터
+.claude/
+
+# 법인도장 이미지 (보안 자산 — 로컬에만 보관)
+견적서/법인도장.png
+
+# 작업 메모 (선택)
+# 작업내역.md
