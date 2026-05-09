@@ -88,8 +88,8 @@
     .extra-table td{border:1px solid var(--line);padding:9px 11px;vertical-align:middle}
     .extra-table input{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:7px 10px;width:100%;font-family:inherit;font-size:13px;outline:none;transition:border-color .15s}
     .extra-table input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,86,200,.08)}
-    .extra-table .del-btn{background:#fef2f2;border:1px solid #fca5a5;color:var(--danger);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700}
-    .extra-table .del-btn:hover{background:#fee2e2}
+    .extra-table .del-btn{background:#fef2f2;border:1px solid #fca5a5;color:var(--danger);border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+    .extra-table .del-btn:hover{background:#fee2e2;border-color:var(--danger)}
     .price-summary{background:linear-gradient(135deg,#f0f7ff,#eff6ff);border:1.5px solid #c7dff9;border-radius:var(--radius);padding:18px 22px}
     .price-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;border-bottom:1px dashed #d0e4f5}
     .price-row:last-child{border-bottom:0;font-size:16px;font-weight:800;color:var(--blue2);margin-top:6px}
@@ -826,7 +826,7 @@ function renderDetail(){
             <tr id="extraRow_${i}">
               <td><input value="${o.name}" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
               <td><input value="${o.price}" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
-              <td>${editMode?'<button class="del-btn" onclick="removeExtra('+i+')">삭제</button>':''}</td>
+              <td style="width:36px;text-align:center">${editMode?'<button class="del-btn" onclick="removeExtra('+i+')" title="삭제">✕</button>':''}</td>
             </tr>`).join('')}
         </tbody>
       </table>
@@ -866,7 +866,7 @@ function renderDetail(){
         <input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">
       </div>
       ${editMode?`<div style="text-align:right;margin-top:12px">
-        <button class="btn blue" onclick="recalcPrice()" style="padding:10px 24px;font-size:14px">🧮 계산하기</button>
+        <button class="btn primary" id="savePriceBtn" onclick="savePrice(this)" style="padding:10px 24px;font-size:14px">💾 저장</button>
       </div>`:''}
     </div>
 
@@ -1168,6 +1168,18 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   }
 }
 
+function savePrice(btn){
+  collectFormData();
+  recalcPrice();
+  syncToSheet(currentReq.status || 'draft');
+  if(btn){
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ 저장됨';
+    btn.disabled = true;
+    setTimeout(()=>{ btn.innerHTML = orig; btn.disabled = false; }, 1800);
+  }
+}
+
 /* ─── 버전 관리 ─── */
 const VER_KEY = 'jhtech_quote_versions';
 
@@ -1214,10 +1226,10 @@ function confirmRevise(){
   currentReq.status = 'confirmed';
   isRevising = false;
   syncToSheet('confirmed');
-  renderList();
   renderDetail();
-  alert('수정 완료! 새 버전: ' + currentReq.quoteNo);
-  printQuote(currentReq, true);
+  renderList();
+  const _req = Object.assign({}, currentReq);
+  printQuote(_req, true);
 }
 
 /* ─── 한글금액 변환 (일 생략 규칙 적용) ─── */
