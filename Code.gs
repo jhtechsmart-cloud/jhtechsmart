@@ -29,7 +29,7 @@ function initSheets() {
     sheet1.appendRow([
       '접수번호', '접수일시', '업체명', '사업자번호', '대표자', '연락처', '이메일', '주소',
       '사업자등록일', '주업종', '매출2023', '매출2024', '매출2025',
-      '문제공정', '도입목적', '선택문제목표', '선택장비', '요청사항', '상태', '담당자'
+      '문제공정', '도입목적', '선택문제목표', '선택장비', '요청사항', '상태', '담당자', '공정흐름도'
     ]);
     sheet1.getRange(1, 1, 1, 20).setFontWeight('bold').setBackground('#f3f7fb');
   }
@@ -81,8 +81,8 @@ function handleSubmit(p) {
   let sheet = ss.getSheetByName('신청관리');
   if (!sheet) {
     sheet = ss.insertSheet('신청관리');
-    sheet.appendRow(['접수번호','접수일시','업체명','사업자번호','대표자','연락처','이메일','주소','사업자등록일','주업종','매출2023','매출2024','매출2025','문제공정','도입목적','선택문제목표','선택장비','요청사항','상태']);
-    sheet.getRange(1,1,1,19).setFontWeight('bold').setBackground('#f3f7fb');
+    sheet.appendRow(['접수번호','접수일시','업체명','사업자번호','대표자','연락처','이메일','주소','사업자등록일','주업종','매출2023','매출2024','매출2025','문제공정','도입목적','선택문제목표','선택장비','요청사항','상태','담당자','공정흐름도']);
+    sheet.getRange(1,1,1,21).setFontWeight('bold').setBackground('#f3f7fb');
   }
   const id = generateId('REQ');
   const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
@@ -92,7 +92,7 @@ function handleSubmit(p) {
     p.email || '', p.address || '', p.foundDate || '', p.industry || '',
     p.rev2023 || '', p.rev2024 || '', p.rev2025 || '',
     p.problemProcess || '', p.adoptionType || '', p.issues || '',
-    p.equipment || '', p.equipRequest || '', 'new', ''
+    p.equipment || '', p.equipRequest || '', 'new', '', p.processFlow || ''
   ]);
 
   return jsonResponse({status: 'ok', id: id});
@@ -209,6 +209,7 @@ function listRequests() {
       rev2023: r[10], rev2024: r[11], rev2025: r[12],
       problemProcess: r[13], adoptionType: r[14], issues: r[15],
       equipment: r[16], equipRequest: r[17], status: r[18] || 'new', assignee: r[19] || '',
+      processFlow: r[20] || '',
       quoteNo: q.quoteNo || '', validUntil: q.validUntil || '',
       includeOpts: q.includeOpts || [], extraOpts: q.extraOpts || [],
       supplyPrice: q.supplyPrice || '', taxPrice: q.taxPrice || '', totalPrice: q.totalPrice || ''

@@ -219,13 +219,13 @@
         <h2>1단계 · 자가진단 및 평균매출 검토</h2>
         <p class="section-desc">기본 자격과 평균매출 조건을 먼저 확인합니다.</p>
         <div class="box"><h3>기본 자가진단</h3><div style="display:flex;flex-direction:column;gap:10px">
-          <label class="check"><input type="checkbox" id="chkManufacturing"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">①</b>사업자 등록증상 제조업이며 실제 제조 현장이 있습니다.</label>
-          <label class="check"><input type="checkbox" id="chkMfrSite"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">②</b>부가세 신고서에서 제조 매출이 전체매출의 50% 초과입니다.</label>
-          <label class="check"><input type="checkbox" id="chkWorkers"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">③</b>상시근로자 수가 10인 미만입니다.</label>
-          <label class="check"><input type="checkbox" id="chkBefore2026"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">④</b>2026년 1월 1일 이전 설립 사업자입니까?</label>
-          <label class="check"><input type="checkbox" id="chkCash"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">⑤</b>자부담 현금 1,200만원 이상 납부가 가능합니다.</label>
-          <label class="check"><input type="checkbox" id="chkNoDuplicate"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">⑥</b>최근 유사 정부지원사업 중복수혜 또는 참여제한 사항이 없습니다.</label>
-          <label class="check"><input type="checkbox" id="chkMaintain"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">⑦</b>선정 시 5년간 장비 보유·사용·유지관리 의무를 이해했습니다.</label>
+          <label class="check"><input type="checkbox" id="chkManufacturing"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">1.</b>사업자 등록증상 제조업이며 실제 제조 현장이 있습니다.</label>
+          <label class="check"><input type="checkbox" id="chkMfrSite"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">2.</b>부가세 신고서에서 제조 매출이 전체매출의 50% 초과입니다.</label>
+          <label class="check"><input type="checkbox" id="chkWorkers"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">3.</b>상시근로자 수가 10인 미만입니다.</label>
+          <label class="check"><input type="checkbox" id="chkBefore2026"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">4.</b>2026년 1월 1일 이전 설립 사업자입니까?</label>
+          <label class="check"><input type="checkbox" id="chkCash"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">5.</b>자부담 현금 1,200만원 이상 납부가 가능합니다.</label>
+          <label class="check"><input type="checkbox" id="chkNoDuplicate"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">6.</b>최근 유사 정부지원사업 중복수혜 또는 참여제한 사항이 없습니다.</label>
+          <label class="check"><input type="checkbox" id="chkMaintain"><b style="color:#174f8f;margin-right:8px;font-size:16px;min-width:24px;display:inline-block">7.</b>선정 시 5년간 장비 보유·사용·유지관리 의무를 이해했습니다.</label>
         </div><div id="selfResult" class="result warn">자가진단 항목을 모두 확인해 주세요.</div></div>
         <div class="box"><h3>평균매출 계산</h3><div class="grid">
           <div class="field"><label>사업자등록일 <span class="required">*</span></label><input type="text" id="foundDate" inputmode="numeric" maxlength="10" placeholder="예: 20190315 → 자동 변환" oninput="formatDateInput(this);updateRevenueMode()"><p class="hint">숫자 8자리만 입력하면 자동으로 YYYY-MM-DD 형식으로 변환됩니다.</p></div>
@@ -310,10 +310,10 @@
         <h2>5단계 · 제출 내용 확인</h2>
         <p class="section-desc">입력 내용을 확인한 뒤 저장하거나 담당자에게 전달하세요.</p>
         <div class="box soft"><h3>최종 확인사항</h3><div style="display:flex;flex-direction:column;gap:8px">
-          <label class="check"><input type="checkbox" id="finalDirect"><b style="color:#174f8f;margin-right:6px">①</b>신청 및 최종 제출은 신청기업이 직접 진행합니다.</label>
-          <label class="check"><input type="checkbox" id="finalTrue"><b style="color:#174f8f;margin-right:6px">②</b>입력한 내용은 사실에 근거한 내용입니다.</label>
-          <label class="check"><input type="checkbox" id="finalQuote"><b style="color:#174f8f;margin-right:6px">③</b>(주)재현테크는 견적 및 기술자료 제공 역할임을 확인했습니다.</label>
-          <label class="check"><input type="checkbox" id="finalNoPayback"><b style="color:#174f8f;margin-right:6px">④</b>페이백, 이면계약, 자부담 지원 요청을 하지 않습니다.</label>
+          <label class="check"><input type="checkbox" id="finalDirect"><b style="color:#174f8f;margin-right:6px">1.</b>신청 및 최종 제출은 신청기업이 직접 진행합니다.</label>
+          <label class="check"><input type="checkbox" id="finalTrue"><b style="color:#174f8f;margin-right:6px">2.</b>입력한 내용은 사실에 근거한 내용입니다.</label>
+          <label class="check"><input type="checkbox" id="finalQuote"><b style="color:#174f8f;margin-right:6px">3.</b>(주)재현테크는 견적 및 기술자료 제공 역할임을 확인했습니다.</label>
+          <label class="check"><input type="checkbox" id="finalNoPayback"><b style="color:#174f8f;margin-right:6px">4.</b>페이백, 이면계약, 자부담 지원 요청을 하지 않습니다.</label>
         </div></div>
         <div class="box"><h3>입력 내용 요약</h3><div class="summary-html" id="summaryText"></div></div>
         <div class="nav"><button class="btn secondary" onclick="prevStep()">← 이전</button><button class="btn primary" onclick="requestQuote()">견적 요청 접수</button></div>
@@ -566,7 +566,7 @@ function requestQuote(){
   if(!APPS_SCRIPT_URL){alert('시스템 오류: 담당자에게 문의해 주세요.');return;}
   const form=document.createElement('form');
   form.method='POST';form.action=APPS_SCRIPT_URL;form.target='submitFrame';form.style.display='none';
-  const fields={action:'submit',company:val('company'),bizNo:val('bizNo'),ceo:val('ceo'),phone:val('phone'),email:val('email'),address:val('address'),foundDate:val('foundDate'),industry:qs('#industry').selectedOptions[0]?.text||'',rev2023:val('rev2023'),rev2024:val('rev2024'),rev2025:val('rev2025'),problemProcess:val('problemProcess'),adoptionType:qs('#adoptionType').selectedOptions[0]?.text||'',issues:selectedValues('.issue').join('|'),equipment:eqNames(),equipRequest:val('equipRequest')};
+  const fields={action:'submit',company:val('company'),bizNo:val('bizNo'),ceo:val('ceo'),phone:val('phone'),email:val('email'),address:val('address'),foundDate:val('foundDate'),industry:qs('#industry').selectedOptions[0]?.text||'',rev2023:val('rev2023'),rev2024:val('rev2024'),rev2025:val('rev2025'),processFlow:getProcessFlow(),problemProcess:val('problemProcess'),adoptionType:qs('#adoptionType').selectedOptions[0]?.text||'',issues:selectedValues('.issue').join('|'),equipment:eqNames(),equipRequest:val('equipRequest')};
   Object.entries(fields).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i);});
   document.body.appendChild(form);form.submit();setTimeout(()=>form.remove(),2000);
 
