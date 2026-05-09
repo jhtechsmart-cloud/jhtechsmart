@@ -346,7 +346,16 @@ function getUsers(){
   try{ return JSON.parse(localStorage.getItem('jhtech_users')) || DEFAULT_USERS; }
   catch{ return DEFAULT_USERS; }
 }
-function saveUsers(users){ localStorage.setItem('jhtech_users', JSON.stringify(users)); }
+function saveUsers(users){
+  localStorage.setItem('jhtech_users', JSON.stringify(users));
+  _pushUsersToGAS(users);
+}
+async function _pushUsersToGAS(users){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url) return;
+  try{ await fetch(url, {method:'POST', body:new URLSearchParams({action:'saveUserConfig', data:JSON.stringify({users})})}); }
+  catch(e){ console.warn('GAS user sync:', e); }
+}
 
 let currentUser = null;
 let stampBase64 = localStorage.getItem('jhtech_stamp_b64') || '';
@@ -434,7 +443,20 @@ function getEquipOpts(){
   });
   return defaults;
 }
-function saveEquipOpts(opts){ localStorage.setItem('jhtech_equip_opts', JSON.stringify(opts)); }
+function saveEquipOpts(opts){
+  localStorage.setItem('jhtech_equip_opts', JSON.stringify(opts));
+  _pushEquipOptsToGAS(opts);
+}
+async function _pushEquipOptsToGAS(opts){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url) return;
+  const items = equipment.map(eq=>{
+    const o = opts[eq.id] || {basePrice:'', includeOpts:[], extraOpts:[]};
+    return {id:eq.id, name:eq.name, cat:eq.cat, basePrice:o.basePrice||'', includeOpts:o.includeOpts||[], extraOpts:o.extraOpts||[]};
+  });
+  try{ await fetch(url, {method:'POST', body:new URLSearchParams({action:'saveEquipConfig', data:JSON.stringify({items})})}); }
+  catch(e){ console.warn('GAS equip sync:', e); }
+}
 function getEquipOptsById(equipId){
   if(!equipId) return { basePrice:'', includeOpts:[...INCLUDE_OPTS_PRINTER], extraOpts:[...EXTRA_OPTS_PRINTER] };
   const all = getEquipOpts();
@@ -469,6 +491,7 @@ function doLogin(){
     document.getElementById('logoutBtn').style.display='';
     const defaultUrl = 'https://script.google.com/macros/s/AKfycbzcl9GZ--OaM7DkcxYcteRbE843Jnq75KnfipLuD7ixBBRXnOxCuQuTZB96eWSwrxhl/exec';
     document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || defaultUrl;
+    loadConfigFromGAS();
   } else {
     alert('아이디 또는 비밀번호가 틀렸습니다.');
   }
@@ -487,6 +510,34 @@ function logout(){
 }
 
 function saveGasUrl(){ localStorage.setItem('gasUrl', document.getElementById('gasUrl').value.trim()); }
+
+/* ─── GAS에서 장비·담당자 설정 로드 (로그인 시 1회) ─── */
+async function loadConfigFromGAS(){
+  const url = document.getElementById('gasUrl').value.trim();
+  if(!url) return;
+  try{
+    const [equipRes, userRes] = await Promise.all([
+      fetch(url+'?action=getEquipConfig').then(r=>r.json()).catch(()=>null),
+      fetch(url+'?action=getUserConfig').then(r=>r.json()).catch(()=>null)
+    ]);
+    // 장비 옵션 병합 (GAS가 소스 오브 트루스)
+    if(equipRes && Array.isArray(equipRes.items) && equipRes.items.length > 0){
+      const all = {};
+      equipRes.items.forEach(item=>{
+        if(item.id) all[item.id] = {
+          basePrice: item.basePrice||'',
+          includeOpts: item.includeOpts||[],
+          extraOpts: item.extraOpts||[]
+        };
+      });
+      localStorage.setItem('jhtech_equip_opts', JSON.stringify(all));
+    }
+    // 담당자 목록 병합
+    if(userRes && Array.isArray(userRes.users) && userRes.users.length > 0){
+      localStorage.setItem('jhtech_users', JSON.stringify(userRes.users));
+    }
+  }catch(e){ console.warn('loadConfigFromGAS:', e); }
+}
 
 /* ─── 영업일지 ─── */
 function getSalesNote(reqId){
@@ -932,10 +983,15 @@ function confirmQuote(){
 function syncToSheet(status){
   const url = document.getElementById('gasUrl').value.trim();
   if(!url) return;
+  const users = getUsers();
+  const assignedUser = currentReq.assignee ? users.find(u=>u.id===currentReq.assignee) : null;
+  const managerUser = assignedUser || currentUser;
+  const assigneeName = managerUser ? managerUser.name + ' ' + managerUser.title : '';
+  const dataToSend = Object.assign({}, currentReq, {assigneeName});
   const form = document.createElement('form');
   form.method='POST'; form.action=url; form.target='adminSubmitFrame'; form.style.display='none';
   const i=document.createElement('input'); i.type='hidden'; i.name='action'; i.value='confirm'; form.appendChild(i);
-  const j=document.createElement('input'); j.type='hidden'; j.name='data'; j.value=JSON.stringify(currentReq); form.appendChild(j);
+  const j=document.createElement('input'); j.type='hidden'; j.name='data'; j.value=JSON.stringify(dataToSend); form.appendChild(j);
   document.body.appendChild(form); form.submit(); setTimeout(()=>form.remove(), 2000);
 }
 
