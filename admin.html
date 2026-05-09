@@ -248,18 +248,47 @@ const DEFAULT_SPECIAL_NOTES = '상기금액은 부가세(V.A.T) 별도 금액 �
 /* ─── 담당자 배정 ─── */
 function getAssignees(){ try{ return JSON.parse(localStorage.getItem('jhtech_assignees')) || {}; } catch{ return {}; } }
 function saveAssignees(map){ localStorage.setItem('jhtech_assignees', JSON.stringify(map)); }
-function getAssignee(reqId){ return getAssignees()[reqId] || ''; }
-function assignReq(userId){
+function getAssignee(reqId){
+  // Sheets에서 로드된 값 우선, 없으면 localStorage
+  const fromSheet = allRequests.find(r=>r.id===reqId)?.assignee || '';
+  return fromSheet || getAssignees()[reqId] || '';
+}
+async function saveAssignee(){
   if(!currentReq) return;
+  const sel = document.getElementById('assigneeSelect');
+  if(!sel) return;
+  const userId = sel.value;
+  const gasUrl = document.getElementById('gasUrl').value.trim();
+
+  // localStorage 저장
   const map = getAssignees();
   map[currentReq.id] = userId;
   saveAssignees(map);
   currentReq.assignee = userId;
-  renderList();
-  const users = getUsers();
-  const u = users.find(u=>u.id===userId);
-  const label = document.getElementById('assigneeLabel');
-  if(label) label.textContent = u ? u.name+' '+u.title : '미지정';
+  // allRequests 업데이트
+  const req = allRequests.find(r=>r.id===currentReq.id);
+  if(req) req.assignee = userId;
+
+  // GAS 동기화
+  const btn = document.getElementById('assigneeSaveBtn');
+  if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
+  try {
+    if(gasUrl){
+      const body = new URLSearchParams({action:'updateAssignee', data: JSON.stringify({id:currentReq.id, assignee:userId})});
+      const resp = await fetch(gasUrl, {method:'POST', body});
+      const json = await resp.json();
+      if(json.status!=='ok') throw new Error(json.message||'오류');
+    }
+    const users = getUsers();
+    const u = users.find(u=>u.id===userId);
+    const label = document.getElementById('assigneeLabel');
+    if(label) label.textContent = u ? u.name+' '+u.title : '미지정';
+    if(btn){ btn.disabled=false; btn.textContent='저장'; btn.style.background='#16a34a'; setTimeout(()=>{ if(btn) btn.style.background=''; },1500); }
+    renderList();
+  } catch(e) {
+    if(btn){ btn.disabled=false; btn.textContent='저장'; }
+    alert('담당자 저장 실패: '+e.message);
+  }
 }
 
 /* ─── 담당자 관리 ─── */
@@ -391,7 +420,7 @@ function doLogin(){
     document.getElementById('loginUser').textContent = user.name + ' ' + user.title;
     if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
     document.getElementById('logoutBtn').style.display='';
-    const defaultUrl = 'https://script.google.com/macros/s/AKfycbweqPFxHWyROe6YbvSJOr-EiOBIM9Z76kpNZxtOe6NhCPQZoAZgWARKvp9xRjiLj49r/exec';
+    const defaultUrl = 'https://script.google.com/macros/s/AKfycbwLQHXTVwLG4R5bfFPIUYjZTFd1BumTyU72-flCa_oIYmkynQqs2eXyhtqI6BdyWpQ/exec';
     document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || defaultUrl;
   } else {
     alert('아이디 또는 비밀번호가 틀렸습니다.');
@@ -504,7 +533,7 @@ function generateQuoteNo(){
 function selectReq(id){
   currentReq = allRequests.find(r=>r.id===id);
   if(!currentReq) return;
-  currentReq.assignee = getAssignee(id);
+  currentReq.assignee = currentReq.assignee || getAssignees()[id] || '';
   isRevising = false;
   renderDetail();
   renderList();
@@ -524,7 +553,9 @@ function renderDetail(){
   const checkedIncludes = r.includeOpts || [];
   const extraOpts = r.extraOpts || [];
   const isConfirmed = r.status === 'confirmed';
-  const editMode = !isConfirmed || isRevising;
+  // 관리자이거나, 본인에게 배정된 건이면 편집 가능
+  const isAssignedToMe = currentUser && (currentUser.isAdmin || (r.assignee && r.assignee === currentUser.id));
+  const editMode = isAssignedToMe && (!isConfirmed || isRevising);
   if(editMode && !r.quoteNo) r.quoteNo = generateQuoteNo();
 
   document.getElementById('mainArea').innerHTML = `
@@ -580,9 +611,10 @@ function renderDetail(){
           const opts = users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name} ${u.title}</option>`).join('');
           return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9">
             <label style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">담당자 지정</label>
-            <select id="assigneeSelect" onchange="assignReq(this.value)" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:pointer">
+            <select id="assigneeSelect" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:pointer">
               <option value="">미지정</option>${opts}
             </select>
+            <button id="assigneeSaveBtn" class="btn primary" onclick="saveAssignee()" style="padding:7px 18px;font-size:13px;white-space:nowrap">저장</button>
             <span id="assigneeLabel" style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">${assigneeName}</span>
           </div>`;
         } else {
@@ -705,14 +737,16 @@ function renderDetail(){
     <!-- 액션 버튼 -->
     <div class="action-bar">
       ${isConfirmed && !isRevising
-        ? `<button class="btn secondary" onclick="startRevise()" style="border-color:#fde68a;color:#92400e;background:#fffbeb">✏️ 견적 수정</button>
+        ? `${isAssignedToMe?`<button class="btn secondary" onclick="startRevise()" style="border-color:#fde68a;color:#92400e;background:#fffbeb">✏️ 견적 수정</button>`:''}
            <button class="btn blue" onclick="printQuote()">견적서 출력</button>
            <button class="btn secondary" onclick="printEquipPhoto()">장비사진 출력</button>`
         : isRevising
           ? `<button class="btn secondary" onclick="cancelRevise()">취소</button>
              <button class="btn primary" onclick="confirmRevise()">수정 확정 (버전업)</button>`
-          : `<button class="btn secondary" onclick="saveDraft()">임시 저장</button>
-             <button class="btn primary" onclick="confirmQuote()">견적 확정</button>`}
+          : isAssignedToMe
+            ? `<button class="btn secondary" onclick="saveDraft()">임시 저장</button>
+               <button class="btn primary" onclick="confirmQuote()">견적 확정</button>`
+            : `<div style="font-size:13px;color:var(--muted);padding:8px 4px">담당자로 지정된 후 편집할 수 있습니다.</div>`}
     </div>
   `;
 

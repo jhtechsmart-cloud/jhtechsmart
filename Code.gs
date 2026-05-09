@@ -29,9 +29,9 @@ function initSheets() {
     sheet1.appendRow([
       '접수번호', '접수일시', '업체명', '사업자번호', '대표자', '연락처', '이메일', '주소',
       '사업자등록일', '주업종', '매출2023', '매출2024', '매출2025',
-      '문제공정', '도입목적', '선택문제목표', '선택장비', '요청사항', '상태'
+      '문제공정', '도입목적', '선택문제목표', '선택장비', '요청사항', '상태', '담당자'
     ]);
-    sheet1.getRange(1, 1, 1, 19).setFontWeight('bold').setBackground('#f3f7fb');
+    sheet1.getRange(1, 1, 1, 20).setFontWeight('bold').setBackground('#f3f7fb');
   }
 
   let sheet2 = ss.getSheetByName('견적서발급관리');
@@ -66,6 +66,9 @@ function doPost(e) {
     } else if (action === 'saveQuote') {
       const data = JSON.parse(params.data || '{}');
       return handleSaveQuote(data);
+    } else if (action === 'updateAssignee') {
+      const data = JSON.parse(params.data || '{}');
+      return handleUpdateAssignee(data);
     }
     return jsonResponse({status: 'error', message: '알 수 없는 action'});
   } catch (err) {
@@ -89,7 +92,7 @@ function handleSubmit(p) {
     p.email || '', p.address || '', p.foundDate || '', p.industry || '',
     p.rev2023 || '', p.rev2024 || '', p.rev2025 || '',
     p.problemProcess || '', p.adoptionType || '', p.issues || '',
-    p.equipment || '', p.equipRequest || '', 'new'
+    p.equipment || '', p.equipRequest || '', 'new', ''
   ]);
 
   return jsonResponse({status: 'ok', id: id});
@@ -205,7 +208,7 @@ function listRequests() {
       phone: r[5], email: r[6], address: r[7], foundDate: r[8], industry: r[9],
       rev2023: r[10], rev2024: r[11], rev2025: r[12],
       problemProcess: r[13], adoptionType: r[14], issues: r[15],
-      equipment: r[16], equipRequest: r[17], status: r[18] || 'new',
+      equipment: r[16], equipRequest: r[17], status: r[18] || 'new', assignee: r[19] || '',
       quoteNo: q.quoteNo || '', validUntil: q.validUntil || '',
       includeOpts: q.includeOpts || [], extraOpts: q.extraOpts || [],
       supplyPrice: q.supplyPrice || '', taxPrice: q.taxPrice || '', totalPrice: q.totalPrice || ''
@@ -235,6 +238,21 @@ function listQuotes() {
     });
   }
   return {rows: result};
+}
+
+// ─── 담당자 배정 업데이트 ───
+function handleUpdateAssignee(data) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet1 = ss.getSheetByName('신청관리');
+  if (!sheet1) return jsonResponse({status: 'error', message: '시트 없음'});
+  const rows = sheet1.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      sheet1.getRange(i + 1, 20).setValue(data.assignee || '');
+      return jsonResponse({status: 'ok'});
+    }
+  }
+  return jsonResponse({status: 'error', message: '접수번호를 찾을 수 없음'});
 }
 
 // ─── Google Drive 견적서 저장 ───
