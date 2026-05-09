@@ -307,14 +307,15 @@ async function saveAssignee(){
 
 function changeEquip(name){
   if(!currentReq) return;
+  syncFormState();
   currentReq.equipment = name;
+  // 장비 변경 시 포함옵션·추가옵션을 새 장비 기본값으로 초기화
   const eq = getEquipObj(name);
-  const photo = document.getElementById('equipPhotoArea');
-  if(photo){
-    photo.innerHTML = eq
-      ? `<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span style=font-size:13px;color:#aaa>사진없음</span>'">`
-      : '<span style="font-size:13px;color:#aaa">미선택</span>';
-  }
+  const newOpts = getEquipOptsById(eq ? eq.id : null);
+  currentReq.includeOpts = [...newOpts.includeOpts];
+  currentReq.extraOpts = [];
+  currentReq.supplyPrice = newOpts.basePrice || '';
+  renderDetail();
 }
 
 function editAssignee(){
@@ -1055,7 +1056,9 @@ function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
     showDriveToast('err','PDF 생성 실패: '+msg);
   };
 
-  const pw = window.open('','','width=860,height=10,top='+(screen.height)+',left=0,scrollbars=no,status=no,toolbar=no');
+  // top=screen.height 는 Chrome이 off-screen으로 인식해 렌더링 스로틀 → 타임아웃 발생
+  // 화면 우측 하단에 작은 창으로 열어 정상 렌더링 보장
+  const pw = window.open('','','width=860,height=200,top='+(Math.max(0,screen.height-240))+',left='+(Math.max(0,screen.width-880))+',scrollbars=no,status=no,toolbar=no');
   if(!pw){
     cleanup();
     showDriveToast('err','팝업이 차단되었습니다. 주소창 오른쪽의 팝업 허용 버튼을 클릭해 주세요.');
