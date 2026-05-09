@@ -255,27 +255,34 @@ function handleUpdateAssignee(data) {
   return jsonResponse({status: 'error', message: '접수번호를 찾을 수 없음'});
 }
 
-// ─── Google Drive 견적서 저장 ───
+// ─── Google Drive 견적서 저장 (PDF) ───
 function handleSaveQuote(data) {
-  const html = data.html || '';
-  const filename = (data.filename || 'quote').replace(/[\/\\:*?"<>|]/g, '_');
+  const now = new Date();
+  const company = (data.company || 'quote').replace(/[\/\\:*?"<>|]/g, '_').replace(/\s+/g, '_');
+  const dateStr = Utilities.formatDate(now, 'Asia/Seoul', 'yyyyMMdd');
+  const filename = (data.filename || (company + '_' + dateStr)).replace(/[\/\\:*?"<>|]/g, '_');
 
-  // 최상위 폴더 확보
   const folderName = '재현테크_견적서';
   const folderIter = DriveApp.getFoldersByName(folderName);
   const folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder(folderName);
 
-  // 년월 서브폴더
-  const now = new Date();
-  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const ym = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM');
   const subIter = folder.getFoldersByName(ym);
   const subFolder = subIter.hasNext() ? subIter.next() : folder.createFolder(ym);
 
-  // HTML 파일 생성 및 공유 설정
-  const blob = Utilities.newBlob(html, 'text/html', filename + '.html');
-  const file = subFolder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  let file;
+  if (data.pdf) {
+    // 클라이언트에서 생성한 PDF (base64 디코딩 후 저장)
+    const pdfBytes = Utilities.base64Decode(data.pdf);
+    const pdfBlob = Utilities.newBlob(pdfBytes, 'application/pdf', filename + '.pdf');
+    file = subFolder.createFile(pdfBlob);
+  } else {
+    // 폴백: HTML 저장
+    const blob = Utilities.newBlob(data.html || '', 'text/html', filename + '.html');
+    file = subFolder.createFile(blob);
+  }
 
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return jsonResponse({status: 'ok', url: file.getUrl(), name: file.getName(), folderId: subFolder.getId()});
 }
 
