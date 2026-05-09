@@ -320,6 +320,23 @@
       </section>
     </main>
   </div>
+
+  <!-- 견적신청 완료 화면 -->
+  <div id="completeScreen" style="display:none;min-height:calc(100vh - 80px);display:none;align-items:center;justify-content:center;padding:60px 20px">
+    <div style="background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(13,55,120,.13);padding:52px 48px;max-width:520px;width:100%;text-align:center">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#1e56c8,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:36px">✓</div>
+      <h2 style="font-size:26px;font-weight:900;color:#123d70;margin-bottom:10px;letter-spacing:-.5px">견적 신청 완료</h2>
+      <p style="font-size:15px;color:#4a5a72;margin-bottom:6px">접수가 정상적으로 완료되었습니다.</p>
+      <p style="font-size:14px;color:#6c7f95;margin-bottom:28px">(주)재현테크 담당자가 확인 후 연락드리겠습니다.</p>
+      <div style="background:#f0f7ff;border-radius:12px;padding:18px 22px;text-align:left;margin-bottom:28px;font-size:14px;line-height:1.9">
+        <div><b style="color:#34475c;display:inline-block;width:80px">업체명</b><span id="cmpName" style="font-weight:700;color:#123d70"></span></div>
+        <div><b style="color:#34475c;display:inline-block;width:80px">연락처</b><span id="cmpPhone" style="color:#34475c"></span></div>
+        <div><b style="color:#34475c;display:inline-block;width:80px">선택장비</b><span id="cmpEquip" style="color:#34475c"></span></div>
+        <div><b style="color:#34475c;display:inline-block;width:80px">접수일시</b><span id="cmpDate" style="color:#34475c"></span></div>
+      </div>
+      <button class="btn primary" onclick="location.reload()" style="padding:13px 36px;font-size:15px;width:100%">처음으로 돌아가기</button>
+    </div>
+  </div>
 </div>
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLQHXTVwLG4R5bfFPIUYjZTFd1BumTyU72-flCa_oIYmkynQqs2eXyhtqI6BdyWpQ/exec';
@@ -552,7 +569,21 @@ function requestQuote(){
   const fields={action:'submit',company:val('company'),bizNo:val('bizNo'),ceo:val('ceo'),phone:val('phone'),email:val('email'),address:val('address'),foundDate:val('foundDate'),industry:qs('#industry').selectedOptions[0]?.text||'',rev2023:val('rev2023'),rev2024:val('rev2024'),rev2025:val('rev2025'),problemProcess:val('problemProcess'),adoptionType:qs('#adoptionType').selectedOptions[0]?.text||'',issues:selectedValues('.issue').join('|'),equipment:eqNames(),equipRequest:val('equipRequest')};
   Object.entries(fields).forEach(([k,v])=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i);});
   document.body.appendChild(form);form.submit();setTimeout(()=>form.remove(),2000);
-  alert('견적 요청이 접수되었습니다!\n(주)재현테크 담당자가 확인 후 연락드리겠습니다.\n\n접수 업체: '+val('company')+'\n연락처: '+val('phone'));
+
+  // 완료 화면 표시
+  const now = new Date();
+  const dateStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')
+    +' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  qs('#cmpName').textContent = val('company');
+  qs('#cmpPhone').textContent = val('phone');
+  qs('#cmpEquip').textContent = eqNames() || '미선택';
+  qs('#cmpDate').textContent = dateStr;
+
+  // 폼 영역 숨기고 완료 화면 표시
+  qs('.wrap').style.display = 'none';
+  qs('.form-topbar') && (qs('.form-topbar').style.display = 'none');
+  const cs = qs('#completeScreen');
+  cs.style.display = 'flex';
 }
 renderEquip();updateRevenueMode();renderPurposeOptions();
 ['finalDirect','finalTrue','finalQuote','finalNoPayback'].forEach(id=>{qs('#'+id).addEventListener('change',()=>{if(step===5)buildSummary();});});
