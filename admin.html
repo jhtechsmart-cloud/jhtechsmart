@@ -289,12 +289,32 @@ async function saveAssignee(){
     const u = users.find(u=>u.id===userId);
     const label = document.getElementById('assigneeLabel');
     if(label) label.textContent = u ? u.name+' '+u.title : '미지정';
-    if(btn){ btn.disabled=false; btn.textContent='저장'; btn.style.background='#16a34a'; setTimeout(()=>{ if(btn) btn.style.background=''; },1500); }
+    // 저장 완료 → 잠금(수정 버튼)으로 전환
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='수정';
+      btn.className='btn secondary';
+      btn.setAttribute('onclick','editAssignee()');
+    }
+    const sel2 = document.getElementById('assigneeSelect');
+    if(sel2){ sel2.disabled=true; sel2.style.background='#f8fafc'; sel2.style.cursor='default'; }
     renderList();
   } catch(e) {
     if(btn){ btn.disabled=false; btn.textContent='저장'; }
     alert('담당자 저장 실패: '+e.message);
   }
+}
+
+function editAssignee(){
+  const sel = document.getElementById('assigneeSelect');
+  const btn = document.getElementById('assigneeSaveBtn');
+  if(!sel || !btn) return;
+  sel.disabled = false;
+  sel.style.background = '#fff';
+  sel.style.cursor = 'pointer';
+  btn.textContent = '저장';
+  btn.className = 'btn primary';
+  btn.setAttribute('onclick','saveAssignee()');
 }
 
 /* ─── 담당자 관리 ─── */
@@ -615,12 +635,14 @@ function renderDetail(){
         const assigneeName = assignedUser ? assignedUser.name+' '+assignedUser.title : '미지정';
         if(currentUser && currentUser.isAdmin){
           const opts = users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name} ${u.title}</option>`).join('');
+          // 이미 담당자가 지정되어 있으면 잠금 상태로 시작
+          const isLocked = !!(r.assignee);
           return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9">
             <label style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">담당자 지정</label>
-            <select id="assigneeSelect" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:pointer">
+            <select id="assigneeSelect" ${isLocked?'disabled':''} style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:${isLocked?'default':'pointer'};background:${isLocked?'#f8fafc':'#fff'}">
               <option value="">미지정</option>${opts}
             </select>
-            <button id="assigneeSaveBtn" class="btn primary" onclick="saveAssignee()" style="padding:7px 18px;font-size:13px;white-space:nowrap">저장</button>
+            <button id="assigneeSaveBtn" class="btn ${isLocked?'secondary':'primary'}" onclick="${isLocked?'editAssignee()':'saveAssignee()'}" style="padding:7px 18px;font-size:13px;white-space:nowrap">${isLocked?'수정':'저장'}</button>
             <span id="assigneeLabel" style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">${assigneeName}</span>
           </div>`;
         } else {
