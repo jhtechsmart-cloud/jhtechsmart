@@ -489,6 +489,7 @@ let currentEquipMgmtId = null;
 let allRequests = [];
 let currentReq = null;
 let filterStatus = 'all';
+let _reqVersions = []; // GAS에서 로드된 현재 신청건의 견적 버전 목록
 
 /* ─── 로그인 ─── */
 function doLogin(){
@@ -661,8 +662,55 @@ function selectReq(id){
   if(!currentReq) return;
   currentReq.assignee = currentReq.assignee || getAssignees()[id] || '';
   isRevising = false;
+  _reqVersions = [];
   renderDetail();
   renderList();
+  loadVersionsForReq(id);
+}
+
+async function loadVersionsForReq(reqId){
+  const url = getGasUrl();
+  if(!url) return;
+  try{
+    const res = await fetch(`${url}?action=getVersions&id=${encodeURIComponent(reqId)}`).then(r=>r.json());
+    if(res && Array.isArray(res.rows) && res.rows.length > 0){
+      _reqVersions = res.rows;
+      renderVersionHistory();
+    }
+  }catch(e){ console.warn('loadVersionsForReq:', e); }
+}
+
+function renderVersionHistory(){
+  const el = document.getElementById('versionHistorySection');
+  if(!el) return;
+  if(_reqVersions.length <= 1){ el.innerHTML=''; return; }
+
+  const sorted = [..._reqVersions].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1);
+  const curQNo = _reqVersions.reduce((latest,v)=>String(v.quoteNo)>String(latest.quoteNo)?v:latest, _reqVersions[0]).quoteNo;
+
+  el.innerHTML = `<div class="card" style="border-color:#c7dff9;background:#f7fafe;margin-bottom:16px">
+    <h3 style="border-color:#1e56c8">버전 이력 (${sorted.length}개 버전)</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f0f5fb">
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">버전</th>
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">견적번호</th>
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">발급일시</th>
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">합계금액</th>
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:center;font-weight:700;color:var(--blue2)">출력</th>
+      </tr></thead>
+      <tbody>${sorted.map(v=>{
+        const isCur = v.quoteNo === curQNo;
+        const vl = getVersionLabel(v.quoteNo);
+        return `<tr${isCur?' style="background:#eff6ff"':''}>
+          <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:${isCur?'#1e56c8':'#e0e7ff'};color:${isCur?'#fff':'#3730a3'};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${vl}${isCur?' 현재':''}</span></td>
+          <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px">${v.quoteNo}</td>
+          <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.issuedAt||'—'}</td>
+          <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:${isCur?'700':'600'};${isCur?'color:var(--blue2)':''}">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
+          <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="printHistoryQuote('${v.quoteNo}')" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`;
 }
 
 function getEquipObj(name){ return equipment.find(e=>e.name===name) || null; }
@@ -697,34 +745,7 @@ function renderDetail(){
       <span>기존 버전 <b>${r.quoteNo}</b> 수정 중입니다. 수정 확정 시 새 버전(<b>${getNextVersion(r.quoteNo)}</b>)이 발급되고 이전 버전은 이력에 보존됩니다.</span>
     </div>`:''}
 
-    ${(()=>{const hist=getVersionHistory(r.id);return hist.length?`
-    <div class="card" style="border-color:#c7dff9;background:#f7fafe">
-      <h3 style="border-color:#1e56c8">버전 이력 (${hist.length}건)</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:#f0f5fb">
-          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">버전</th>
-          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">견적번호</th>
-          <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">수정일시</th>
-          <th style="padding:8px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">합계금액</th>
-          <th style="padding:8px 12px;border:1px solid var(--line);text-align:center;font-weight:700;color:var(--blue2)">출력</th>
-        </tr></thead>
-        <tbody>${hist.map((v,i)=>`
-          <tr>
-            <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">v${i+1}</span></td>
-            <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px">${v.quoteNo}</td>
-            <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.revisedAt}</td>
-            <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:600">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
-            <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="printHistoryQuote('${r.id}',${i})" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
-          </tr>`).join('')}
-          <tr style="background:#eff6ff">
-            <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#1e56c8;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">현재</span></td>
-            <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px;font-weight:700">${r.quoteNo}</td>
-            <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${r.submittedAt||'—'}</td>
-            <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">${Number(r.totalPrice||0).toLocaleString('ko-KR')}원</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>`:'';})()}
+    <div id="versionHistorySection"></div>
 
     <!-- 신청기업 정보 -->
     <div class="card">
@@ -1053,11 +1074,9 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   const url = document.getElementById('gasUrl').value.trim();
   if(!url){ showDriveToast('err','GAS URL이 설정되지 않았습니다.'); return; }
 
-  const now = new Date();
-  const dateStr = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
   const safeName = (company||'견적서').replace(/[\s\/\\:*?"<>|]/g,'_');
-  const quoteFilename = safeName + '_' + dateStr;
-  const equipFilename = '장비사진_' + safeName + '_' + dateStr;
+  const quoteFilename = '견적서_' + safeName;
+  const equipFilename = '장비사진_' + safeName;
 
   showPdfOverlay(5, 'PDF 생성 준비 중…');
 
@@ -1284,20 +1303,19 @@ function getEquipDesc(name, cat) {
 }
 
 /* ─── 견적서 출력 ─── */
-function printHistoryQuote(reqId, verIdx){
-  const hist = getVersionHistory(reqId);
-  const v = hist[verIdx];
-  if(!v){ alert('이전 버전 데이터를 찾을 수 없습니다.'); return; }
-  printQuote({
-    ...currentReq,
+function printHistoryQuote(quoteNo){
+  const v = _reqVersions.find(row=>row.quoteNo===quoteNo);
+  if(!v){ alert('버전 데이터를 찾을 수 없습니다.\n견적서발급관리 시트에서 확인하세요.'); return; }
+  printQuote(Object.assign({}, currentReq, {
     quoteNo: v.quoteNo,
+    equipment: v.equipment || currentReq.equipment,
     supplyPrice: v.supplyPrice,
     taxPrice: v.taxPrice,
     totalPrice: v.totalPrice,
     includeOpts: v.includeOpts || [],
     extraOpts: v.extraOpts || [],
-    specialNotes: v.specialNotes || DEFAULT_SPECIAL_NOTES
-  });
+    assignee: v.assignee || currentReq.assignee
+  }));
 }
 
 function printQuote(reqOverride, skipPrint){

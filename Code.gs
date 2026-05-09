@@ -184,6 +184,7 @@ function doGet(e) {
     else if (action === 'listQuotes')    data = listQuotes();
     else if (action === 'getEquipConfig') data = getEquipConfig();
     else if (action === 'getUserConfig')  data = getUserConfig();
+    else if (action === 'getVersions')    data = getVersions(params.id||'');
     else data = {status:'error', message:'알 수 없는 action'};
   } catch (err) {
     data = {status:'error', message:err.toString()};
@@ -238,6 +239,28 @@ function listRequests() {
 
 function getRequest(id) {
   return listRequests().rows.find(r => r.id === id) || null;
+}
+
+function getVersions(reqId) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('견적서발급관리');
+  if (!sheet || sheet.getLastRow() <= 1) return {rows:[]};
+  const rows = sheet.getDataRange().getValues();
+  const result = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (String(r[1]) === String(reqId)) {
+      result.push({
+        quoteNo:String(r[0]||''), reqId:String(r[1]||''), issuedAt:r[2]||'',
+        company:String(r[3]||''), equipment:String(r[4]||''),
+        includeOpts: r[5] ? String(r[5]).split(' | ') : [],
+        extraOpts: safeParseJSON(r[6]),
+        supplyPrice:r[7]||'', taxPrice:r[8]||'', totalPrice:r[9]||'',
+        validUntil:r[10]||'', status:String(r[11]||''), assignee:String(r[12]||'')
+      });
+    }
+  }
+  return {rows: result};
 }
 
 function listQuotes() {
@@ -353,33 +376,32 @@ function handleUpdateAssignee(data) {
   return jsonResponse({status:'error', message:'접수번호를 찾을 수 없음'});
 }
 
-// ─── Google Drive 견적서 저장 (PDF) ───
+// ─── Google Drive 견적서 저장 (PDF, 덮어쓰기) ───
 function handleSaveQuote(data) {
-  const now = new Date();
-  const company = (data.company||'quote').replace(/[\/\\:*?"<>|]/g,'_').replace(/\s+/g,'_');
-  const dateStr = Utilities.formatDate(now, 'Asia/Seoul', 'yyyyMMdd');
-  const filename = (data.filename||(company+'_'+dateStr)).replace(/[\/\\:*?"<>|]/g,'_');
+  const filename = (data.filename||'견적서').replace(/[\/\\:*?"<>|]/g,'_');
 
   const folderName = '재현테크_견적서';
   const folderIter = DriveApp.getFoldersByName(folderName);
   const folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder(folderName);
 
-  const ym = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM');
-  const subIter = folder.getFoldersByName(ym);
-  const subFolder = subIter.hasNext() ? subIter.next() : folder.createFolder(ym);
+  // 같은 이름 파일이 있으면 휴지통으로 이동 (덮어쓰기 효과)
+  const pdfIter = folder.getFilesByName(filename + '.pdf');
+  while (pdfIter.hasNext()) pdfIter.next().setTrashed(true);
+  const htmlIter = folder.getFilesByName(filename + '.html');
+  while (htmlIter.hasNext()) htmlIter.next().setTrashed(true);
 
   let file;
   if (data.pdf) {
     const pdfBytes = Utilities.base64Decode(data.pdf);
-    const pdfBlob = Utilities.newBlob(pdfBytes, 'application/pdf', filename+'.pdf');
-    file = subFolder.createFile(pdfBlob);
+    const pdfBlob = Utilities.newBlob(pdfBytes, 'application/pdf', filename + '.pdf');
+    file = folder.createFile(pdfBlob);
   } else {
-    const blob = Utilities.newBlob(data.html||'', 'text/html', filename+'.html');
-    file = subFolder.createFile(blob);
+    const blob = Utilities.newBlob(data.html||'', 'text/html', filename + '.html');
+    file = folder.createFile(blob);
   }
 
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return jsonResponse({status:'ok', url:file.getUrl(), name:file.getName(), folderId:subFolder.getId()});
+  return jsonResponse({status:'ok', url:file.getUrl(), name:file.getName(), folderId:folder.getId()});
 }
 
 // ─── 유틸 ───
