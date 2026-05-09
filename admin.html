@@ -1097,8 +1097,11 @@ function printQuote(reqOverride){
   const dateStr = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
   const fmt = n => n ? Number(n).toLocaleString('ko-KR') : '';
 
-  const managerName  = currentUser ? currentUser.name+' '+currentUser.title : '박현석 부장';
-  const managerPhone = currentUser ? currentUser.phone : '010-6247-6261';
+  // 배정된 담당자 우선, 없으면 로그인 사용자, 없으면 기본값
+  const assignedUser = r.assignee ? getUsers().find(u=>u.id===r.assignee) : null;
+  const managerUser  = assignedUser || currentUser;
+  const managerName  = managerUser ? managerUser.name+' '+managerUser.title : '박현석 부장';
+  const managerPhone = managerUser ? managerUser.phone : '010-6247-6261';
 
   const specialNotes = (document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES)
     .split('\n').map(s=>s.trim()).filter(s=>s);
