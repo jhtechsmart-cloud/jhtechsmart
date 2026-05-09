@@ -609,15 +609,21 @@ function renderDetail(){
     <div class="card">
       <h3>견적 금액</h3>
       <div class="price-summary">
+        <div class="price-row">
+          <label style="font-size:13px;color:var(--muted)">기본 가격 (원)</label>
+          ${editMode
+            ? `<input id="basePrice" class="price-input" value="${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR'):''}" placeholder="기본 가격 입력" oninput="formatPriceInput(this)" style="font-size:15px;font-weight:700;width:210px">`
+            : `<span style="font-size:15px;font-weight:700">${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
+        </div>
         <div class="price-row" style="border-bottom:0">
           <label style="font-size:14px;font-weight:700">합계 (원)</label>
           ${editMode
-            ? `<input id="supplyPrice" class="price-input" value="${r.supplyPrice||''}" placeholder="금액 입력" oninput="formatPriceInput(this)" style="font-size:15px;font-weight:800;width:210px">`
+            ? `<span id="totalDisplay" style="font-size:18px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`
             : `<span style="font-size:20px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
         </div>
         <input type="hidden" id="taxPrice" value="">
         <input type="hidden" id="totalPrice" value="${r.totalPrice||''}">
-        ${editMode?'':`<input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">`}
+        <input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">
       </div>
       ${editMode?`<div style="text-align:right;margin-top:12px">
         <button class="btn blue" onclick="recalcPrice()" style="padding:10px 24px;font-size:14px">🧮 계산하기</button>
@@ -659,8 +665,10 @@ function syncFormState(){
     const ins = tr.querySelectorAll('input');
     if(ins.length>=2) currentReq.extraOpts.push({name:ins[0].value, price:(ins[1].value||'').replace(/,/g,'')});
   });
-  const sp = document.getElementById('supplyPrice');
-  if(sp) currentReq.supplyPrice = sp.value.replace(/,/g,'');
+  const bp = document.getElementById('basePrice');
+  if(bp) currentReq.supplyPrice = bp.value.replace(/,/g,'');
+  const tpEl2 = document.getElementById('totalPrice');
+  if(tpEl2 && tpEl2.value) currentReq.totalPrice = tpEl2.value;
 }
 function addExtraOpt(name){
   syncFormState();
@@ -680,23 +688,23 @@ function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?
 
 /* ─── 가격 계산 ─── */
 function recalcPrice(){
-  const sp = document.getElementById('supplyPrice');
-  if(!sp) return;
-  const supply = Number(sp.value.replace(/,/g,'')) || 0;
+  const bp = document.getElementById('basePrice');
+  if(!bp) return;
+  const base = Number(bp.value.replace(/,/g,'')) || 0;
   let extraTotal = 0;
   document.querySelectorAll('#extraOptBody tr').forEach(tr => {
     const ins = tr.querySelectorAll('input');
     if(ins.length >= 2) extraTotal += Number(ins[1].value.replace(/,/g,'')) || 0;
   });
-  const total = supply + extraTotal;
-  // 합계 입력 필드에 직접 반영
-  sp.value = total ? Number(total).toLocaleString('ko-KR') : '';
+  const total = base + extraTotal;
   const td = document.getElementById('totalDisplay');
-  if(td) td.textContent = '';
+  if(td) td.textContent = total ? Number(total).toLocaleString('ko-KR')+'원' : '—';
   const taxEl = document.getElementById('taxPrice');
   if(taxEl) taxEl.value = '';
   const totalEl = document.getElementById('totalPrice');
   if(totalEl) totalEl.value = total ? String(total) : '';
+  const spEl = document.getElementById('supplyPrice');
+  if(spEl) spEl.value = String(base);
 }
 
 /* ─── 저장 / 확정 ─── */
@@ -709,7 +717,8 @@ function collectFormData(){
     const inputs = tr.querySelectorAll('input');
     if(inputs.length>=2) currentReq.extraOpts.push({name:inputs[0].value, price:inputs[1].value.replace(/,/g,'')});
   });
-  currentReq.supplyPrice = (document.getElementById('supplyPrice')?.value||'').replace(/,/g,'');
+  const bpEl = document.getElementById('basePrice');
+  currentReq.supplyPrice = (bpEl?.value||'').replace(/,/g,'');
   currentReq.taxPrice = '';
   const tpEl = document.getElementById('totalPrice');
   currentReq.totalPrice = tpEl?.value || currentReq.supplyPrice || '';
