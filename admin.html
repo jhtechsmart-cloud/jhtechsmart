@@ -145,6 +145,14 @@
     .d-spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    /* PDF 생성 오버레이 */
+    #pdfOverlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:none;align-items:center;justify-content:center}
+    #pdfOverlay.show{display:flex}
+    #pdfOverlayBox{background:#fff;border-radius:16px;padding:36px 48px;text-align:center;min-width:320px;box-shadow:0 16px 48px rgba(0,0,0,.35)}
+    #pdfOverlayLabel{font-size:16px;font-weight:700;color:#1a2e4a;margin-bottom:18px}
+    #pdfProgressTrack{height:10px;background:#e8f0fa;border-radius:99px;overflow:hidden;width:280px;margin:0 auto 12px}
+    #pdfProgressBar{height:100%;background:linear-gradient(90deg,#1a56a0,#22c55e);border-radius:99px;width:0%;transition:width .4s ease}
+    #pdfOverlaySub{font-size:12px;color:#8a9bb0}
   </style>
 </head>
 <body>
@@ -918,7 +926,6 @@ function confirmQuote(){
   syncToSheet('confirmed');
   renderDetail();
   renderList();
-  alert('견적이 확정되었습니다.\nGoogle Drive에 PDF 자동 저장 중…');
   printQuote(currentReq, true);
 }
 
@@ -948,10 +955,19 @@ function showDriveToast(type, msg){
 }
 
 
-function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
+function showPdfOverlay(pct, label){
+  document.getElementById('pdfOverlay').classList.add('show');
+  document.getElementById('pdfOverlayLabel').textContent = label || 'PDF 생성 중…';
+  document.getElementById('pdfProgressBar').style.width = (pct || 0) + '%';
+}
+function hidePdfOverlay(){
+  document.getElementById('pdfOverlay').classList.remove('show');
+  document.getElementById('pdfProgressBar').style.width = '0%';
+}
+
+async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   const url = document.getElementById('gasUrl').value.trim();
   if(!url){ showDriveToast('err','GAS URL이 설정되지 않았습니다.'); return; }
-  showDriveToast('loading');
 
   const now = new Date();
   const dateStr = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
@@ -959,113 +975,113 @@ function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   const quoteFilename = safeName + '_' + dateStr;
   const equipFilename = '장비사진_' + safeName + '_' + dateStr;
 
-  // 팝업에서 장비사진 상대경로 해석에 필요한 base href 주입
-  const baseHref = location.href.substring(0, location.href.lastIndexOf('/')+1);
-  const htmlNoPrint = quoteHtml
-    .replace('<head>', '<head><base href="'+baseHref+'">')
-    .replace(/<script[\s\S]*?<\/script>/gi, '');
+  showPdfOverlay(5, 'PDF 생성 준비 중…');
 
-  // 장비사진 HTML을 JSON으로 팝업 스크립트에 삽입
-  const equipJson = equipHtml ? JSON.stringify(equipHtml) : 'null';
-
-  const pdfScript =
-    '<scr'+'ipt>'
-   +'var _EH='+equipJson+';'
-   +'(async function(){'
-   +'function wait(ms){return new Promise(function(r){setTimeout(r,ms);});}'
-   +'function b64(blob){return new Promise(function(res){var rd=new FileReader();rd.onload=function(){res(rd.result.split(\',\')[1]);};rd.readAsDataURL(blob);});}'
-   +'try{'
-   +'await new Promise(function(res,rej){'
-   +'var s=document.createElement(\'script\');'
-   +'s.src=\'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js\';'
-   +'s.onload=res;s.onerror=function(){rej(new Error(\'CDN load fail\'));};'
-   +'document.head.appendChild(s);});'
-   +'if(document.fonts)await document.fonts.ready;'
-   +'await wait(800);'
-   +'var opt={margin:0,image:{type:\'jpeg\',quality:0.97},'
-   +'html2canvas:{scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0},'
-   +'jsPDF:{unit:\'mm\',format:\'a4\',orientation:\'portrait\'}};'
-   // 1. 견적서 PDF (document.body 전체)
-   +'var qBlob=await html2pdf().set(opt).from(document.body).toPdf().output(\'blob\');'
-   +'var qB64=await b64(qBlob);'
-   // 2. 장비사진 PDF (별도 wrapper div)
-   +'var eB64=\'\';'
-   +'if(_EH){'
-   +'var ep=new DOMParser().parseFromString(_EH,\'text/html\');'
-   +'var eSty=[].slice.call(ep.querySelectorAll(\'style\')).map(function(s){'
-   +'return s.textContent.replace(/\\bbody\\b/g,\'.eqpdf\');}).join(\'\');'
-   +'var ew=document.createElement(\'div\');'
-   +'ew.className=\'eqpdf\';'
-   +'ew.style.cssText=\'position:absolute;left:0;top:0;width:720px;min-height:820px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;\';'
-   +'ew.innerHTML=\'<style>\'+eSty+\'</style>\'+ep.body.innerHTML;'
-   +'document.body.appendChild(ew);'
-   +'var img=ew.querySelector(\'img\');'
-   +'if(img&&!img.complete){await new Promise(function(res){img.onload=res;img.onerror=res;setTimeout(res,5000);});}'
-   +'await wait(600);'
-   +'var eBlob=await html2pdf().set(opt).from(ew).toPdf().output(\'blob\');'
-   +'eB64=await b64(eBlob);'
-   +'document.body.removeChild(ew);'
-   +'}'
-   +'if(window.opener&&!window.opener.closed)window.opener.__pdfBoth__(qB64,eB64);'
-   +'setTimeout(function(){window.close();},300);'
-   +'}catch(e){'
-   +'if(window.opener&&!window.opener.closed)window.opener.__pdfNG__(e.message);'
-   +'setTimeout(function(){window.close();},300);'
-   +'}'
-   +'})();<\/scr'+'ipt>';
-
-  const htmlForPopup = htmlNoPrint.replace('</body>', pdfScript + '</body>');
-
-  const tid = setTimeout(function(){
-    cleanup();
-    showDriveToast('err','PDF 생성 시간 초과 (30초)');
-  }, 30000);
+  // iframe을 DOM에 삽입 (position:fixed, z-index:9999, 오버레이 뒤)
+  // opacity:1, visibility:visible 이어야 html2canvas가 렌더링
+  const fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;left:0;top:0;width:860px;height:1200px;border:none;z-index:9999;pointer-events:none;background:#fff;';
+  document.body.appendChild(fr);
 
   function cleanup(){
-    clearTimeout(tid);
-    delete window.__pdfBoth__;
-    delete window.__pdfNG__;
+    hidePdfOverlay();
+    if(fr.parentNode) fr.parentNode.removeChild(fr);
   }
 
-  window.__pdfBoth__ = async function(quoteB64, equipB64){
-    cleanup();
-    try{
-      const r1 = await fetch(url, {method:'POST', body:new URLSearchParams({
-        action:'saveQuote', data:JSON.stringify({pdf:quoteB64, filename:quoteFilename, company:company})
+  function blobToB64(blob){
+    return new Promise((res,rej)=>{
+      const rd = new FileReader();
+      rd.onload = ()=>res(rd.result.split(',')[1]);
+      rd.onerror = rej;
+      rd.readAsDataURL(blob);
+    });
+  }
+
+  function prepareHtml(html){
+    const baseHref = location.href.substring(0, location.href.lastIndexOf('/')+1);
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<base[^>]*>/gi, '')
+      .replace('<head>', '<head><base href="'+baseHref+'">');
+  }
+
+  async function generatePdf(html){
+    return new Promise((resolve, reject)=>{
+      const tid = setTimeout(()=>reject(new Error('PDF 렌더링 시간 초과 (40초)')), 40000);
+
+      fr.onload = async ()=>{
+        fr.onload = null;
+        try{
+          const cw = fr.contentWindow;
+          const cd = fr.contentDocument;
+          // 폰트 및 레이아웃 대기
+          if(cd.fonts) await cd.fonts.ready;
+          await new Promise(r=>setTimeout(r,1000));
+          // iframe 컨텍스트에 html2pdf.js 로드
+          await new Promise((res2,rej2)=>{
+            const s = cd.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            s.onload = res2;
+            s.onerror = ()=>rej2(new Error('CDN 로드 실패'));
+            cd.head.appendChild(s);
+          });
+          // 이미지 로드 대기
+          const imgs = [...cd.querySelectorAll('img')];
+          await Promise.all(imgs.map(img=>
+            img.complete ? Promise.resolve() :
+            new Promise(r=>{img.onload=r;img.onerror=r;setTimeout(r,5000);})
+          ));
+          await new Promise(r=>setTimeout(r,300));
+          const opt = {
+            margin:0,
+            image:{type:'jpeg',quality:0.97},
+            html2canvas:{scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0},
+            jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+          };
+          const blob = await cw.html2pdf().set(opt).from(cd.body).toPdf().output('blob');
+          const b64 = await blobToB64(blob);
+          clearTimeout(tid);
+          resolve(b64);
+        }catch(e){
+          clearTimeout(tid);
+          reject(e);
+        }
+      };
+      fr.srcdoc = prepareHtml(html);
+    });
+  }
+
+  try{
+    showPdfOverlay(15, '견적서 렌더링 중…');
+    const qB64 = await generatePdf(quoteHtml);
+
+    showPdfOverlay(45, '견적서 PDF 업로드 중…');
+    const r1 = await fetch(url, {method:'POST', body:new URLSearchParams({
+      action:'saveQuote', data:JSON.stringify({pdf:qB64, filename:quoteFilename, company:company})
+    })});
+    const j1 = await r1.json();
+    if(j1.status!=='ok') throw new Error('견적서: '+(j1.message||'오류'));
+    let driveUrl = j1.url;
+
+    if(equipHtml){
+      showPdfOverlay(65, '장비사진 렌더링 중…');
+      const eB64 = await generatePdf(equipHtml);
+
+      showPdfOverlay(85, '장비사진 PDF 업로드 중…');
+      const r2 = await fetch(url, {method:'POST', body:new URLSearchParams({
+        action:'saveQuote', data:JSON.stringify({pdf:eB64, filename:equipFilename, company:company})
       })});
-      const j1 = await r1.json();
-      if(j1.status!=='ok') throw new Error('견적서: '+(j1.message||'오류'));
-
-      let driveUrl = j1.url;
-      if(equipB64){
-        const r2 = await fetch(url, {method:'POST', body:new URLSearchParams({
-          action:'saveQuote', data:JSON.stringify({pdf:equipB64, filename:equipFilename, company:company})
-        })});
-        const j2 = await r2.json();
-        if(j2.status==='ok') driveUrl = j2.url;
-      }
-      const label = equipB64 ? '견적서 + 장비사진' : '견적서';
-      showDriveToast('ok', label+' PDF 저장 완료 → <a href="'+driveUrl+'" target="_blank">드라이브 열기</a>');
-    }catch(e){
-      showDriveToast('err','Drive 저장 실패: '+e.message);
+      const j2 = await r2.json();
+      if(j2.status==='ok') driveUrl = j2.url;
     }
-  };
 
-  window.__pdfNG__ = function(msg){
     cleanup();
-    showDriveToast('err','PDF 생성 실패: '+msg);
-  };
-
-  // top=screen.height 는 Chrome이 off-screen으로 인식해 렌더링 스로틀 → 타임아웃 발생
-  // 화면 우측 하단에 작은 창으로 열어 정상 렌더링 보장
-  const pw = window.open('','','width=860,height=200,top='+(Math.max(0,screen.height-240))+',left='+(Math.max(0,screen.width-880))+',scrollbars=no,status=no,toolbar=no');
-  if(!pw){
+    const label = equipHtml ? '견적서 + 장비사진' : '견적서';
+    showDriveToast('ok', label+' PDF 저장 완료 → <a href="'+driveUrl+'" target="_blank">드라이브 열기</a>');
+  }catch(err){
     cleanup();
-    showDriveToast('err','팝업이 차단되었습니다. 주소창 오른쪽의 팝업 허용 버튼을 클릭해 주세요.');
-    return;
+    showDriveToast('err','Drive 저장 실패: '+err.message);
   }
-  pw.document.write(htmlForPopup);
-  pw.document.close();
 }
 
 /* ─── 버전 관리 ─── */
@@ -1116,7 +1132,7 @@ function confirmRevise(){
   syncToSheet('confirmed');
   renderList();
   renderDetail();
-  alert('수정 완료!\n새 버전: ' + currentReq.quoteNo + '\nGoogle Drive에 PDF 자동 저장 중…');
+  alert('수정 완료! 새 버전: ' + currentReq.quoteNo);
   printQuote(currentReq, true);
 }
 
@@ -1587,5 +1603,12 @@ function resetEquipOpts(equipId){
 </script>
 <iframe name="adminSubmitFrame" style="display:none"></iframe>
 <div id="driveToast"></div>
+<div id="pdfOverlay">
+  <div id="pdfOverlayBox">
+    <div id="pdfOverlayLabel">PDF 생성 중…</div>
+    <div id="pdfProgressTrack"><div id="pdfProgressBar"></div></div>
+    <div id="pdfOverlaySub">잠시만 기다려 주세요</div>
+  </div>
+</div>
 </body>
 </html>
