@@ -1197,7 +1197,13 @@ function pushVersionHistory(reqId, snapshot){
 }
 function getNextVersion(qNo){
   const m = (qNo||'').match(/^(.+)-R(\d+)$/);
-  return m ? m[1]+'-R'+(+m[2]+1) : (qNo||'QT')+'-R2';
+  if(m) return m[1]+'-R'+String(+m[2]+1).padStart(2,'0');
+  return (qNo||'QT')+'-R01';
+}
+function getVersionLabel(quoteNo){
+  const m = (quoteNo||'').match(/-R(\d+)$/);
+  if(!m) return 'R00';
+  return 'R'+String(m[1]).padStart(2,'0');
 }
 function startRevise(){
   isRevising = true;
@@ -1403,7 +1409,8 @@ function printQuote(reqOverride, skipPrint){
    +'<div class="info-row">'
      +'<div class="info-left">'
        +'<div><span class="info-lbl">견적일자:</span> '+dateStr+'</div>'
-       +'<div><span class="info-lbl">견적번호:</span> '+(r.quoteNo||'—')+'</div>'
+       +'<div><span class="info-lbl">견적번호:</span> '+(r.quoteNo||'—')
+       +'&nbsp;<span style="display:inline-block;background:#0f3768;color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;letter-spacing:1.5px;vertical-align:middle">'+getVersionLabel(r.quoteNo)+'</span></div>'
        +'<div><span class="info-lbl">담&nbsp;당&nbsp;자:</span> '+managerName+' / '+managerPhone+'</div>'
        +'<div class="recipient">'+(r.company||'XXXXXXX')+'&nbsp;&nbsp;귀하</div>'
      +'</div>'
@@ -1476,24 +1483,28 @@ function printQuote(reqOverride, skipPrint){
 function buildEquipHtml(r){
   const eq = getEquipObj(r.equipment);
   if(!eq) return null;
+  const verLabel = getVersionLabel(r.quoteNo);
   return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
   <title>장비사진_${r.equipment}_${r.company}</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" as="style" crossorigin>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px;color:#1c2f45}
-    .title{font-size:13px;color:#6c7f95;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
-    .equip-name{font-size:28px;font-weight:900;color:#0f3768;margin-bottom:6px}
-    .equip-cat{font-size:14px;color:#174f8f;margin-bottom:24px}
-    .photo-wrap{border:1px solid #d8e2ee;border-radius:16px;padding:24px;background:#f8fbff;max-width:640px;width:100%;display:flex;align-items:center;justify-content:center}
-    .photo-wrap img{max-width:100%;max-height:420px;object-fit:contain}
-    .quote-info{margin-top:20px;font-size:13px;color:#6c7f95;text-align:center;line-height:1.8}
-    .footer{margin-top:24px;font-size:12px;color:#aaa}
-    @media print{body{padding:20px}}
+    html{width:794px;height:1122px;overflow:hidden}
+    body{font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;width:794px;height:1122px;overflow:hidden;padding:36px 48px;color:#1c2f45;background:#fff}
+    .title{font-size:12px;color:#6c7f95;margin-bottom:6px;letter-spacing:1px}
+    .equip-name{font-size:28px;font-weight:900;color:#0f3768;margin-bottom:4px}
+    .equip-cat{font-size:14px;color:#174f8f;margin-bottom:6px}
+    .ver-badge{display:inline-block;background:#0f3768;color:#fff;font-size:12px;font-weight:800;padding:2px 12px;border-radius:99px;letter-spacing:2px;margin-bottom:20px}
+    .photo-wrap{border:1px solid #d8e2ee;border-radius:16px;padding:20px;background:#f8fbff;max-width:600px;width:100%;display:flex;align-items:center;justify-content:center}
+    .photo-wrap img{max-width:100%;max-height:380px;object-fit:contain}
+    .quote-info{margin-top:16px;font-size:12px;color:#6c7f95;text-align:center;line-height:1.8}
+    .footer{margin-top:16px;font-size:11px;color:#aaa}
+    @media print{@page{size:A4;margin:0}html,body{width:210mm;height:297mm}}
   </style></head><body>
   <div class="title">(주)재현테크 · 2026 소공인 스마트제조 지원사업</div>
   <div class="equip-name">${r.equipment}</div>
   <div class="equip-cat">${eq.cat==='cutter'?'평판커팅기':'프린터'}</div>
+  <div class="ver-badge">${verLabel}</div>
   <div class="photo-wrap"><img src="${eq.img}" alt="${r.equipment}" onerror="this.alt='사진을 불러올 수 없습니다'"></div>
   <div class="quote-info">
     견적번호: ${r.quoteNo||'—'} &nbsp;|&nbsp; 수신: ${r.company} &nbsp;|&nbsp; 발급일: ${new Date().toLocaleDateString('ko-KR')}
