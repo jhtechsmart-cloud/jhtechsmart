@@ -148,6 +148,7 @@
   <div class="hdr-right">
     <span id="loginUser"></span>
     <button id="settingsBtn" class="btn secondary" style="display:none;padding:7px 14px;font-size:13px" onclick="openSettings()">⚙ 관리자 설정</button>
+    <button id="logoutBtn" class="btn secondary" style="display:none;padding:7px 14px;font-size:13px" onclick="logout()">로그아웃</button>
   </div>
 </header>
 
@@ -243,6 +244,23 @@
 <script>
 /* ─── 기본 특기사항 ─── */
 const DEFAULT_SPECIAL_NOTES = '상기금액은 부가세(V.A.T) 별도 금액 입니다.\nPC 셋트는 고객 준비사항 입니다.\n본 견적서의 유효기간은 발행일로 부터 15일 입니다.\n유지보수 기간은 5년이며, 무상A/S기간은 2년입니다. 무상A/S기간 내라도 귀사의 귀책사유(사용상 과실 등)또는 천재지변에 의한 경우에는 유상처리 될 수 있습니다.';
+
+/* ─── 담당자 배정 ─── */
+function getAssignees(){ try{ return JSON.parse(localStorage.getItem('jhtech_assignees')) || {}; } catch{ return {}; } }
+function saveAssignees(map){ localStorage.setItem('jhtech_assignees', JSON.stringify(map)); }
+function getAssignee(reqId){ return getAssignees()[reqId] || ''; }
+function assignReq(userId){
+  if(!currentReq) return;
+  const map = getAssignees();
+  map[currentReq.id] = userId;
+  saveAssignees(map);
+  currentReq.assignee = userId;
+  renderList();
+  const users = getUsers();
+  const u = users.find(u=>u.id===userId);
+  const label = document.getElementById('assigneeLabel');
+  if(label) label.textContent = u ? u.name+' '+u.title : '미지정';
+}
 
 /* ─── 담당자 관리 ─── */
 const DEFAULT_USERS = [
@@ -372,11 +390,24 @@ function doLogin(){
     document.getElementById('app').style.display='block';
     document.getElementById('loginUser').textContent = user.name + ' ' + user.title;
     if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
+    document.getElementById('logoutBtn').style.display='';
     const defaultUrl = 'https://script.google.com/macros/s/AKfycbweqPFxHWyROe6YbvSJOr-EiOBIM9Z76kpNZxtOe6NhCPQZoAZgWARKvp9xRjiLj49r/exec';
     document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || defaultUrl;
   } else {
     alert('아이디 또는 비밀번호가 틀렸습니다.');
   }
+}
+
+function logout(){
+  if(!confirm('로그아웃 하시겠습니까?')) return;
+  currentUser = null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('loginUser').textContent='';
+  document.getElementById('settingsBtn').style.display='none';
+  document.getElementById('logoutBtn').style.display='none';
+  document.getElementById('userId').value='';
+  document.getElementById('userPw').value='';
 }
 
 function saveGasUrl(){ localStorage.setItem('gasUrl', document.getElementById('gasUrl').value.trim()); }
@@ -424,18 +455,31 @@ function loadDemoData(){
 /* ─── 목록 렌더링 ─── */
 function renderList(){
   const list = document.getElementById('reqList');
-  const filtered = filterStatus==='all' ? allRequests : allRequests.filter(r => r.status === filterStatus);
+  const assignees = getAssignees();
+  const users = getUsers();
+  // 비관리자: 자신에게 배정된 건만 표시
+  let base = allRequests.map(r=>({...r, assignee: assignees[r.id]||''}));
+  if(currentUser && !currentUser.isAdmin){
+    base = base.filter(r => r.assignee === currentUser.id);
+  }
+  const filtered = filterStatus==='all' ? base : base.filter(r => r.status === filterStatus);
   if(!filtered.length){list.innerHTML='<div class="empty-list">해당 건이 없습니다.</div>';return;}
-  list.innerHTML = filtered.map(r => `
+  list.innerHTML = filtered.map(r => {
+    const assignedUser = users.find(u=>u.id===r.assignee);
+    const assigneeName = assignedUser ? assignedUser.name+' '+assignedUser.title : '미지정';
+    return `
     <div class="req-item ${currentReq?.id===r.id?'active':''}" onclick="selectReq('${r.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <span class="req-company">${r.company}</span>
         <span class="badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중'}</span>
       </div>
       <div class="req-meta">${r.submittedAt} · ${r.id}</div>
-      <div class="req-equip">장비: ${r.equipment||'미선택'}</div>
-    </div>
-  `).join('');
+      <div class="req-equip" style="display:flex;justify-content:space-between">
+        <span>장비: ${r.equipment||'미선택'}</span>
+        <span style="font-size:11px;color:${r.assignee?'var(--blue2)':'var(--muted)'};font-weight:${r.assignee?'700':'400'}">담당: ${assigneeName}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function filterList(status, btn){
@@ -460,6 +504,7 @@ function generateQuoteNo(){
 function selectReq(id){
   currentReq = allRequests.find(r=>r.id===id);
   if(!currentReq) return;
+  currentReq.assignee = getAssignee(id);
   isRevising = false;
   renderDetail();
   renderList();
@@ -527,6 +572,25 @@ function renderDetail(){
     <!-- 신청기업 정보 -->
     <div class="card">
       <h3>신청기업 정보</h3>
+      ${(()=>{
+        const users = getUsers();
+        const assignedUser = users.find(u=>u.id===(r.assignee||''));
+        const assigneeName = assignedUser ? assignedUser.name+' '+assignedUser.title : '미지정';
+        if(currentUser && currentUser.isAdmin){
+          const opts = users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name} ${u.title}</option>`).join('');
+          return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9">
+            <label style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">담당자 지정</label>
+            <select id="assigneeSelect" onchange="assignReq(this.value)" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:pointer">
+              <option value="">미지정</option>${opts}
+            </select>
+            <span id="assigneeLabel" style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">${assigneeName}</span>
+          </div>`;
+        } else {
+          return `<div style="margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9;font-size:13px">
+            <b style="color:var(--blue2)">담당자:</b> <span style="font-weight:700">${assigneeName}</span>
+          </div>`;
+        }
+      })()}
       <div class="info-grid">
         <div class="info-item"><label>업체명</label><span>${r.company}</span></div>
         <div class="info-item"><label>사업자등록번호</label><span>${r.bizNo}</span></div>
