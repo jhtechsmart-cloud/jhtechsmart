@@ -305,6 +305,18 @@ async function saveAssignee(){
   }
 }
 
+function changeEquip(name){
+  if(!currentReq) return;
+  currentReq.equipment = name;
+  const eq = getEquipObj(name);
+  const photo = document.getElementById('equipPhotoArea');
+  if(photo){
+    photo.innerHTML = eq
+      ? `<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span style=font-size:13px;color:#aaa>사진없음</span>'">`
+      : '<span style="font-size:13px;color:#aaa">미선택</span>';
+  }
+}
+
 function editAssignee(){
   const sel = document.getElementById('assigneeSelect');
   const btn = document.getElementById('assigneeSaveBtn');
@@ -682,12 +694,17 @@ function renderDetail(){
     <div class="card">
       <h3>선택 장비</h3>
       <div class="equip-card">
-        <div class="equip-photo">
+        <div class="equip-photo" id="equipPhotoArea">
           ${eq?`<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span style=font-size:13px;color:#aaa>사진없음</span>'">`:'<span style="font-size:13px;color:#aaa">미선택</span>'}
         </div>
         <div class="equip-info">
-          <strong>${r.equipment||'미선택'}</strong>
-          <span>${eq?(eq.cat==='cutter'?'평판커팅기':'프린터'):''}</span>
+          ${editMode ? `
+            <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">장비 변경</label>
+            <select id="equipSelect" onchange="changeEquip(this.value)" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;cursor:pointer;margin-bottom:8px">
+              <option value="">-- 장비 선택 --</option>
+              ${(()=>{ let cats = {}; equipment.forEach(e=>{ if(!cats[e.cat]) cats[e.cat]=[]; cats[e.cat].push(e); }); return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat==='cutter'?'평판커팅기':'프린터'}">${items.map(e=>`<option value="${e.name}" ${r.equipment===e.name?'selected':''}>${e.name}</option>`).join('')}</optgroup>`).join(''); })()}
+            </select>` : `<strong>${r.equipment||'미선택'}</strong>
+          <span>${eq?(eq.cat==='cutter'?'평판커팅기':'프린터'):''}</span>`}
           <div style="margin-top:10px">
             <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">견적번호 (자동 생성)</label>
             <input id="quoteNo" class="price-input" style="width:200px" value="${r.quoteNo||''}" disabled>
