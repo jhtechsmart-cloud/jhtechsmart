@@ -756,7 +756,18 @@ function renderDetail(){
             ? `<input id="basePrice" class="price-input" value="${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR'):''}" placeholder="기본 가격 입력" oninput="formatPriceInput(this)" style="font-size:15px;font-weight:700;width:210px">`
             : `<span style="font-size:15px;font-weight:700">${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
         </div>
-        <div class="price-row" style="border-bottom:0">
+        <div id="extraPriceBreakdown">
+          ${(()=>{
+            const extras = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0);
+            if(!extras.length) return '';
+            return extras.map(o=>`
+              <div class="price-row" style="font-size:13px">
+                <label style="color:var(--muted)">└ ${o.name}</label>
+                <span style="color:#34475c;font-weight:600">${Number(o.price).toLocaleString('ko-KR')}원</span>
+              </div>`).join('');
+          })()}
+        </div>
+        <div class="price-row" style="border-bottom:0;border-top:2px solid #c7dff9;margin-top:4px;padding-top:10px">
           <label style="font-size:14px;font-weight:700">합계 (원)</label>
           ${editMode
             ? `<span id="totalDisplay" style="font-size:18px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`
@@ -848,6 +859,25 @@ function recalcPrice(){
   if(totalEl) totalEl.value = total ? String(total) : '';
   const spEl = document.getElementById('supplyPrice');
   if(spEl) spEl.value = String(base);
+
+  // 옵션 가격 breakdown 업데이트
+  const breakdown = document.getElementById('extraPriceBreakdown');
+  if(breakdown){
+    const rows = [];
+    document.querySelectorAll('#extraOptBody tr').forEach(tr=>{
+      const ins = tr.querySelectorAll('input');
+      if(ins.length>=2){
+        const name = ins[0].value.trim();
+        const price = Number(ins[1].value.replace(/,/g,''))||0;
+        if(name && price>0) rows.push({name,price});
+      }
+    });
+    breakdown.innerHTML = rows.map(o=>`
+      <div class="price-row" style="font-size:13px">
+        <label style="color:var(--muted)">└ ${o.name}</label>
+        <span style="color:#34475c;font-weight:600">${Number(o.price).toLocaleString('ko-KR')}원</span>
+      </div>`).join('');
+  }
 }
 
 /* ─── 저장 / 확정 ─── */
@@ -861,10 +891,12 @@ function collectFormData(){
     if(inputs.length>=2) currentReq.extraOpts.push({name:inputs[0].value, price:inputs[1].value.replace(/,/g,'')});
   });
   const bpEl = document.getElementById('basePrice');
-  currentReq.supplyPrice = (bpEl?.value||'').replace(/,/g,'');
+  if(bpEl) currentReq.supplyPrice = bpEl.value.replace(/,/g,'');
+  // basePrice 없는 읽기 전용 모드에서는 기존 값 유지
   currentReq.taxPrice = '';
   const tpEl = document.getElementById('totalPrice');
-  currentReq.totalPrice = tpEl?.value || currentReq.supplyPrice || '';
+  if(tpEl && tpEl.value) currentReq.totalPrice = tpEl.value;
+  else if(!currentReq.totalPrice) currentReq.totalPrice = currentReq.supplyPrice || '';
   currentReq.specialNotes = document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES;
 }
 
@@ -1195,10 +1227,6 @@ function printQuote(reqOverride){
      +'</tr>'
      +inclSection
      +extraSection
-     +'<tr class="ink-hdr"><td colspan="6">잉크가격</td></tr>'
-     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
-     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
-     +'<tr class="ink-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
      +'<tr class="total-row">'
        +'<td colspan="4" style="letter-spacing:4px">합&nbsp;&nbsp;계</td>'
        +'<td style="text-align:right">'+fmt(grandTotal)+'</td>'
