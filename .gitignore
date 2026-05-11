@@ -5,6 +5,10 @@ desktop.ini
 
 # Claude Code 세션 데이터
 .claude/
+.omc/
+
+# 개인 임시 메모장
+tmp.md
 
 # 법인도장 이미지 (보안 자산 — 로컬에만 보관)
 견적서/법인도장.png
