@@ -256,6 +256,7 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 /* ─── 기본 특기사항 ─── */
 const DEFAULT_SPECIAL_NOTES = '상기금액은 부가세(V.A.T) 별도 금액 입니다.\nPC 셋트는 고객 준비사항 입니다.\n본 견적서의 유효기간은 발행일로 부터 15일 입니다.\n유지보수 기간은 5년이며, 무상A/S기간은 2년입니다. 무상A/S기간 내라도 귀사의 귀책사유(사용상 과실 등)또는 천재지변에 의한 경우에는 유상처리 될 수 있습니다.';
@@ -340,7 +341,7 @@ function editAssignee(){
 }
 
 /* ─── GAS URL 상수 · 인메모리 캐시 ─── */
-const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8zimTk0j/exec';
+const GAS_URL_DEFAULT = window.JHTECH_GAS_URL || '';
 let _memEquipOpts = null; // GAS에서 로드된 장비 옵션 (인메모리)
 let _memUsers = null;     // GAS에서 로드된 담당자 목록 (인메모리)
 
