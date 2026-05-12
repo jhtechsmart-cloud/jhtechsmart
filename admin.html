@@ -1687,13 +1687,14 @@ function updateExtra(i, field, val){
 function fmtExtraPrice(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
 function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
 
-/* GAS가 보내는 "2026-05-12 11:51" 문자열을 "2026.05.12 · 11:51" 형식으로 — 날짜 bold, 점 구분자, 시간 옅게.
+/* GAS가 보내는 "2026-05-12 11:51" 문자열을 "2026.05.12 · 11:51" 형식으로 — 날짜 bold, 점·시간은 opacity로 강약.
+   색은 부모(컨테이너)의 color를 상속받음 → 사이드바·deal banner(다크 배경)·버전이력 표 모두 자연스럽게 표시.
    포매팅 실패 시(빈 값/예외 형식)는 원본 그대로 반환. HTML을 반환하므로 텍스트 표시 위치에만 사용. */
 function fmtDateTime(s){
   if(!s) return '';
   const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}:\d{2})/);
   if(!m) return s;
-  return `<b style="font-weight:700;color:#0f172a">${m[1]}.${m[2]}.${m[3]}</b> <span style="color:#94a3b8;margin:0 4px">·</span> <span style="color:#64748b">${m[4]}</span>`;
+  return `<b style="font-weight:700">${m[1]}.${m[2]}.${m[3]}</b><span style="opacity:.5;margin:0 5px">·</span><span style="opacity:.75">${m[4]}</span>`;
 }
 
 /* ─── 가격 계산 ─── */
