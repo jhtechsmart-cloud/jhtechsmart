@@ -1082,7 +1082,7 @@ function renderList(){
         <span class="req-company">${r.company}</span>
         <span class="v2-badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${statusLabel}</span>
       </div>
-      <div class="req-meta">${r.submittedAt}</div>
+      <div class="req-meta">${fmtDateTime(r.submittedAt)}</div>
       <div class="req-equip">
         <span>${r.equipment||'장비 미선택'}</span>
         <span style="font-weight:${r.assignee?'700':'500'};color:${r.assignee?'#0f3768':'#94a3b8'}">${assigneeName}</span>
@@ -1186,7 +1186,7 @@ function renderVersionHistory(){
         return `<tr onclick="viewVersion('${v.quoteNo}')" style="cursor:pointer;${rowBg}" title="이 버전 견적 상세 보기">
           <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${vl}${isCur?' 현재':''}</span>${eyeIcon}</td>
           <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px">${v.quoteNo}</td>
-          <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.issuedAt||'—'}</td>
+          <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.issuedAt?fmtDateTime(v.issuedAt):'—'}</td>
           <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:600">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
           <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="event.stopPropagation();printHistoryQuote('${v.quoteNo}')" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
           <td style="padding:7px 12px;border:1px solid var(--line);text-align:center">${diffBtn}</td>
@@ -1271,8 +1271,8 @@ function renderDiffHtml(prev, cur, diffs){
       버전 변경 정보 — ${prevLabel} → ${curLabel}
     </h3>
     <div style="font-size:13px;color:var(--muted);margin-bottom:18px;background:#f7fafe;border:1px solid #c7dff9;border-radius:7px;padding:10px 14px">
-      <div><b style="color:#334155">이전 버전:</b> ${prev.quoteNo} <span style="color:#94a3b8">·</span> ${prev.issuedAt||'—'}</div>
-      <div style="margin-top:3px"><b style="color:#334155">현재 버전:</b> ${cur.quoteNo} <span style="color:#94a3b8">·</span> ${cur.issuedAt||'—'}</div>
+      <div><b style="color:#334155">이전 버전:</b> ${prev.quoteNo} <span style="color:#94a3b8">·</span> ${prev.issuedAt?fmtDateTime(prev.issuedAt):'—'}</div>
+      <div style="margin-top:3px"><b style="color:#334155">현재 버전:</b> ${cur.quoteNo} <span style="color:#94a3b8">·</span> ${cur.issuedAt?fmtDateTime(cur.issuedAt):'—'}</div>
     </div>
   `;
   if(diffs.length === 0){
@@ -1405,7 +1405,7 @@ function renderDetail(){
           <div class="banner-status">
             <span class="v2-badge ${_statusClass}">${_statusLabel}</span>
             ${isRevising?`<span class="v2-badge" style="background:#fde68a;color:#78350f;border:1px solid #f59e0b">✏️ 수정 모드</span>`:''}
-            <span class="meta">${r.id} · ${r.submittedAt||''}</span>
+            <span class="meta">${r.id} · ${fmtDateTime(r.submittedAt)}</span>
           </div>
         </div>
       </div>
@@ -1686,6 +1686,15 @@ function updateExtra(i, field, val){
 }
 function fmtExtraPrice(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
 function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
+
+/* GAS가 보내는 "2026-05-12 11:51" 문자열을 "2026.05.12 · 11:51" 형식으로 — 날짜 bold, 점 구분자, 시간 옅게.
+   포매팅 실패 시(빈 값/예외 형식)는 원본 그대로 반환. HTML을 반환하므로 텍스트 표시 위치에만 사용. */
+function fmtDateTime(s){
+  if(!s) return '';
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}:\d{2})/);
+  if(!m) return s;
+  return `<b style="font-weight:700;color:#0f172a">${m[1]}.${m[2]}.${m[3]}</b> <span style="color:#94a3b8;margin:0 4px">·</span> <span style="color:#64748b">${m[4]}</span>`;
+}
 
 /* ─── 가격 계산 ─── */
 function recalcPrice(){
