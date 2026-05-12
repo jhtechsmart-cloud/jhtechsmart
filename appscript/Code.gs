@@ -16,6 +16,22 @@ function _getSpreadsheetId(){
   return v;
 }
 
+/* 시트 셀이 Date 객체(시트 자동 형식 인식 결과)면 JSON 직렬화 시 UTC ISO 문자열로
+   변환되어 화면에 잘못 표시됨. 클라이언트로 보내기 전 KST로 포매팅한 문자열로 통일. */
+function _fmtKstDateTime(v){
+  if(v === '' || v === null || v === undefined) return '';
+  // 이미 yyyy-MM-dd HH:mm 형식 문자열이면 그대로 (재포매팅 시 잘못 해석 방지)
+  if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) && !v.includes('T')) return v;
+  try { return Utilities.formatDate(new Date(v), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'); }
+  catch(e) { return String(v); }
+}
+function _fmtKstDate(v){
+  if(v === '' || v === null || v === undefined) return '';
+  if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  try { return Utilities.formatDate(new Date(v), 'Asia/Seoul', 'yyyy-MM-dd'); }
+  catch(e) { return String(v); }
+}
+
 // ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
 function initSheets() {
   const ss = SpreadsheetApp.openById(_getSpreadsheetId());
@@ -492,8 +508,8 @@ function _filteredRequestRows(user) {
 
     const q = quoteMap[r[0]] || {};
     result.push({
-      id:r[0], submittedAt:r[1], company:r[2], bizNo:r[3], ceo:r[4],
-      phone:r[5], email:r[6], address:r[7], foundDate:r[8], industry:r[9],
+      id:r[0], submittedAt:_fmtKstDateTime(r[1]), company:r[2], bizNo:r[3], ceo:r[4],
+      phone:r[5], email:r[6], address:r[7], foundDate:_fmtKstDate(r[8]), industry:r[9],
       rev2023:r[10], rev2024:r[11], rev2025:r[12],
       problemProcess:r[13], adoptionType:r[14], issues:r[15],
       equipment:r[16], equipRequest:r[17], status:r[18]||'new', assignee:assigneeId,
@@ -528,12 +544,12 @@ function getVersions(reqId, user) {
     const r = rows[i];
     if (String(r[1]) === String(reqId)) {
       result.push({
-        quoteNo:String(r[0]||''), reqId:String(r[1]||''), issuedAt:r[2]||'',
+        quoteNo:String(r[0]||''), reqId:String(r[1]||''), issuedAt:_fmtKstDateTime(r[2]),
         company:String(r[3]||''), equipment:String(r[4]||''),
         includeOpts: r[5] ? String(r[5]).split(' | ') : [],
         extraOpts: safeParseJSON(r[6]),
         supplyPrice:r[7]||'', taxPrice:r[8]||'', totalPrice:r[9]||'',
-        validUntil:r[10]||'', status:String(r[11]||''), assignee:String(r[12]||'')
+        validUntil:_fmtKstDate(r[10]), status:String(r[11]||''), assignee:String(r[12]||'')
       });
     }
   }
@@ -551,11 +567,11 @@ function listQuotes(user) {
     // v14: 비관리자는 본인 ID와 일치하는 견적만
     if (!user.isAdmin && String(r[12] || '') !== user.id) continue;
     result.push({
-      quoteNo:r[0], reqId:r[1], issuedAt:r[2], company:r[3], equipment:r[4],
+      quoteNo:r[0], reqId:r[1], issuedAt:_fmtKstDateTime(r[2]), company:r[3], equipment:r[4],
       includeOpts: r[5] ? r[5].split(' | ') : [],
       extraOpts: safeParseJSON(r[6]),
       supplyPrice:r[7], taxPrice:r[8], totalPrice:r[9],
-      validUntil:r[10], status:r[11], assignee:r[12]||''
+      validUntil:_fmtKstDate(r[10]), status:r[11], assignee:r[12]||''
     });
   }
   return {status:'ok', rows:result};
