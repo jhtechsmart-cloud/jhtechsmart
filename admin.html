@@ -487,45 +487,28 @@
 const DEFAULT_SPECIAL_NOTES = '상기금액은 부가세(V.A.T) 별도 금액 입니다.\nPC 셋트는 고객 준비사항 입니다.\n본 견적서의 유효기간은 발행일로 부터 15일 입니다.\n유지보수 기간은 5년이며, 무상A/S기간은 2년입니다. 무상A/S기간 내라도 귀사의 귀책사유(사용상 과실 등)또는 천재지변에 의한 경우에는 유상처리 될 수 있습니다.';
 
 /* ─── 담당자 배정 ─── */
-function getAssignees(){ try{ return JSON.parse(localStorage.getItem('jhtech_assignees')) || {}; } catch{ return {}; } }
-function saveAssignees(map){ localStorage.setItem('jhtech_assignees', JSON.stringify(map)); }
-function getAssignee(reqId){
-  // Sheets에서 로드된 값 우선, 없으면 localStorage
-  const fromSheet = allRequests.find(r=>r.id===reqId)?.assignee || '';
-  return fromSheet || getAssignees()[reqId] || '';
-}
+/* v14: 시트엔 u.id 저장. 클라이언트 비교/저장은 모두 ID. 표시는 _users.find로 이름 변환. */
 async function saveAssignee(){
   if(!currentReq) return;
   const sel = document.getElementById('assigneeSelect');
   if(!sel) return;
   const userId = sel.value;
-  const gasUrl = document.getElementById('gasUrl').value.trim();
   const users = getUsers();
   const selectedUser = users.find(u=>u.id===userId);
   const selectedName = selectedUser ? selectedUser.name : '';
 
-  // localStorage 저장
-  const map = getAssignees();
-  map[currentReq.id] = userId;
-  saveAssignees(map);
+  // 시트엔 ID 저장 → 클라이언트 메모리도 ID로 통일
   currentReq.assignee = userId;
-  // allRequests 업데이트
   const req = allRequests.find(r=>r.id===currentReq.id);
   if(req) req.assignee = userId;
 
-  // GAS 동기화 — 시트 컬럼 20에는 '이름' 기록
   const btn = document.getElementById('assigneeSaveBtn');
   if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
   try {
-    if(gasUrl){
-      const body = new URLSearchParams({action:'updateAssignee', data: JSON.stringify({id:currentReq.id, assignee:userId, assigneeName:selectedName})});
-      const resp = await fetch(gasUrl, {method:'POST', body});
-      const json = await resp.json();
-      if(json.status!=='ok') throw new Error(json.message||'오류');
-    }
+    const json = await gasCall('updateAssignee', {id:currentReq.id, assignee:userId});
+    if(json.status !== 'ok') throw new Error(json.message || '오류');
     const label = document.getElementById('assigneeLabel');
     if(label) label.textContent = selectedUser ? selectedUser.name : '미지정';
-    // 저장 완료 → 잠금(수정 버튼)으로 전환
     if(btn){
       btn.disabled=false;
       btn.textContent='수정';
@@ -537,7 +520,7 @@ async function saveAssignee(){
     renderList();
   } catch(e) {
     if(btn){ btn.disabled=false; btn.textContent='저장'; }
-    alert('담당자 저장 실패: '+e.message);
+    alert('담당자 저장 실패: ' + e.message);
   }
 }
 
@@ -576,9 +559,49 @@ function getGasUrl(){
   return (el && el.value.trim()) || localStorage.getItem('gasUrl') || GAS_URL_DEFAULT;
 }
 
+/* ─── 토큰 인증 헬퍼 (v13) ───
+   모든 GAS 호출은 gasCall(action, data, opts)을 거치며 sessionStorage의 토큰을 자동 첨부.
+   응답이 AUTH_REQUIRED이면 자동으로 로그인 화면으로 복귀. */
+const SESSION_TOKEN_KEY = 'jhtech_session_token';
+
+function _getToken(){ try{ return sessionStorage.getItem(SESSION_TOKEN_KEY) || ''; }catch{ return ''; } }
+function _setToken(t){ try{ sessionStorage.setItem(SESSION_TOKEN_KEY, t); }catch{} }
+function _clearToken(){ try{ sessionStorage.removeItem(SESSION_TOKEN_KEY); }catch{} }
+
+async function gasCall(action, data, opts){
+  const url = getGasUrl();
+  if(!url) throw new Error('GAS URL이 설정되지 않았습니다');
+  const method = (opts && opts.method) || 'POST';
+  const token = _getToken();
+
+  let res;
+  if(method === 'GET'){
+    const qs = new URLSearchParams({action, ...(data||{})});
+    if(token) qs.set('token', token);
+    res = await fetch(url + '?' + qs.toString());
+  } else {
+    const body = new URLSearchParams({action, data: JSON.stringify(data||{})});
+    if(token) body.set('token', token);
+    res = await fetch(url, {method:'POST', body});
+  }
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  if(json.code === 'AUTH_REQUIRED'){
+    handleAuthExpired();
+    throw new Error('AUTH_REQUIRED');
+  }
+  return json;
+}
+
+function handleAuthExpired(){
+  _clearScreen();
+  hideLoadingOverlay();
+  alert('세션이 만료되었습니다. 다시 로그인해 주세요.');
+}
+
 /* ─── 담당자 관리 ─── */
 /* 단일 진실 소스: GAS의 '담당자관리' 시트.
-   localStorage는 오프라인 폴백 캐시일 뿐, 하드코딩 시드 데이터는 사용하지 않는다. */
+   localStorage는 오프라인 폴백 캐시일 뿐. 비밀번호는 마스킹되어 들어오므로 클라이언트에서 비교 불가. */
 function getUsers(){
   if(_memUsers && _memUsers.length > 0) return _memUsers;
   try{ return JSON.parse(localStorage.getItem('jhtech_users')) || []; }
@@ -586,13 +609,12 @@ function getUsers(){
 }
 function saveUsers(users){
   _memUsers = [...users];
-  localStorage.setItem('jhtech_users', JSON.stringify(users));
+  // localStorage 캐시 (비밀번호는 GAS가 빈값 전달 시 기존값 유지하므로, 캐시에도 빈 pw로 둠)
+  try{ localStorage.setItem('jhtech_users', JSON.stringify(users)); }catch{}
   _pushUsersToGAS(users);
 }
 async function _pushUsersToGAS(users){
-  const url = getGasUrl();
-  if(!url) return;
-  try{ await fetch(url, {method:'POST', body:new URLSearchParams({action:'saveUserConfig', data:JSON.stringify({users})})}); }
+  try{ await gasCall('saveUserConfig', {users}); }
   catch(e){ console.warn('GAS user sync:', e); }
 }
 
@@ -691,13 +713,11 @@ function saveEquipOpts(opts){
   _pushEquipOptsToGAS(opts);
 }
 async function _pushEquipOptsToGAS(opts){
-  const url = getGasUrl();
-  if(!url) return;
   const items = equipment.map(eq=>{
     const o = opts[eq.id] || {basePrice:'', includeOpts:[], extraOpts:[]};
     return {id:eq.id, name:eq.name, cat:eq.cat, basePrice:o.basePrice||'', includeOpts:o.includeOpts||[], extraOpts:o.extraOpts||[]};
   });
-  try{ await fetch(url, {method:'POST', body:new URLSearchParams({action:'saveEquipConfig', data:JSON.stringify({items})})}); }
+  try{ await gasCall('saveEquipConfig', {items}); }
   catch(e){ console.warn('GAS equip sync:', e); }
 }
 function getEquipOptsById(equipId){
@@ -778,113 +798,182 @@ function updateLastRefreshDisplay(){
   el.textContent = '· ' + text;
 }
 
-/* ─── 로그인 ─── */
-/* 세션 키: 새로고침 사이에 로그인 유지. 탭을 닫으면 자동 로그아웃되어 공용 PC에서도 비교적 안전.
-   비밀번호는 저장하지 않음 — 사용자 ID만 저장 후 다음 로드 때 _memUsers 에서 객체 복원. */
+/* ─── 로그인 (v13: GAS 인증) ─── */
+/* 비밀번호는 더 이상 클라이언트가 보지 않음. GAS가 검증 후 토큰 + 부트스트랩 데이터 반환. */
 const SESSION_USER_KEY = 'jhtech_session_user';
 
-function _enterApp(user){
-  currentUser = user;
+/* 로그인 성공 후 처리 — 핵심 데이터(rows)만 받고 즉시 화면 진입.
+   equipConfig/userConfig는 백그라운드로 별도 fetch (사용자가 신청 클릭하기 전 도착하면 OK). */
+function _enterApp(bootstrap){
+  currentUser = bootstrap.user;
+  if(Array.isArray(bootstrap.rows)) allRequests = bootstrap.rows;
+  // 폴백: localStorage 캐시 즉시 사용. 백그라운드 fetch 완료 시 갱신됨.
+  try{ const s = localStorage.getItem('jhtech_equip_opts'); if(s && !_memEquipOpts) _memEquipOpts = JSON.parse(s); }catch{}
+  try{ const s = localStorage.getItem('jhtech_users');     if(s && !_memUsers)     _memUsers     = JSON.parse(s); }catch{}
+
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('app').style.display='block';
-  document.getElementById('loginUser').textContent = user.name;
-  if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
+  document.getElementById('loginUser').textContent = currentUser.name;
+  if(currentUser.isAdmin) document.getElementById('settingsBtn').style.display='';
   document.getElementById('logoutBtn').style.display='';
-  document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || GAS_URL_DEFAULT;
-  loadRequests();          // 로그인 즉시 목록 자동 로드
-  startAutoRefresh();      // 폴링 + visibilitychange 자동 갱신 시작
+  document.getElementById('gasUrl').value = GAS_URL_DEFAULT;
+
+  _lastRefreshAt = Date.now();
+  renderList();
+  updateLastRefreshDisplay();
+  hideLoadingOverlay();
+  startAutoRefresh();
+
+  // 백그라운드 부수 데이터 로드 (사용자 화면을 막지 않음)
+  _loadAuxConfigInBackground();
 }
 
-function doLogin(){
+/* 장비/사용자 설정을 병렬로 백그라운드 fetch. 도착 시 _memEquipOpts/_memUsers 갱신. */
+async function _loadAuxConfigInBackground(){
+  const tasks = [];
+  tasks.push(gasCall('getEquipConfig', {}, {method:'GET'}).then(res=>{
+    if(res && Array.isArray(res.items) && res.items.length){
+      const m = {};
+      res.items.forEach(item=>{
+        if(item.id) m[item.id] = {basePrice:item.basePrice||'', includeOpts:item.includeOpts||[], extraOpts:item.extraOpts||[]};
+      });
+      _memEquipOpts = m;
+      try{ localStorage.setItem('jhtech_equip_opts', JSON.stringify(_memEquipOpts)); }catch{}
+      // 사용자가 이미 신청을 보고 있으면 우측 패널 다시 그려서 최신 옵션 반영
+      if(currentReq) renderDetail();
+    }
+  }).catch(e=>{ if(e.message!=='AUTH_REQUIRED') console.warn('bg equip:', e); }));
+
+  tasks.push(gasCall('getUserConfig', {}, {method:'GET'}).then(res=>{
+    if(res && Array.isArray(res.users) && res.users.length){
+      _memUsers = res.users;
+      try{ localStorage.setItem('jhtech_users', JSON.stringify(_memUsers)); }catch{}
+      // 현재 사용자 정보를 최신 시트 데이터로 보정 — 토큰 페이로드의 옛 이름/연락처 덮어쓰기
+      if(currentUser){
+        const fresh = _memUsers.find(u => u.id === currentUser.id);
+        if(fresh){
+          currentUser.name = fresh.name;
+          currentUser.phone = fresh.phone;
+          const loginUserEl = document.getElementById('loginUser');
+          if(loginUserEl) loginUserEl.textContent = currentUser.name;
+        }
+      }
+      // admin이 담당자 select 보고 있을 수 있음 → 다시 렌더
+      if(currentReq) renderDetail();
+      // 사이드바도 새 _memUsers 기준으로 다시 (담당자 ID → 이름 매칭)
+      renderList();
+    }
+  }).catch(e=>{ if(e.message!=='AUTH_REQUIRED') console.warn('bg users:', e); }));
+
+  await Promise.allSettled(tasks);
+}
+
+async function doLogin(){
   const id = document.getElementById('idInput').value.trim();
   const pw = document.getElementById('pwInput').value;
   if(!id || !pw){ alert('아이디와 비밀번호를 입력하세요.'); return; }
-  const users = getUsers();
-  const user = users.find(u => u.id === id && u.pw === pw);
-  if(user){
-    try{ sessionStorage.setItem(SESSION_USER_KEY, user.id); }catch{}
-    _enterApp(user);
-  } else {
-    alert('아이디 또는 비밀번호가 틀렸습니다.');
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn) loginBtn.disabled = true;
+  showLoadingOverlay({sub:'인증 정보 확인 중…', prog:'GAS · 로그인'});
+  try{
+    const url = getGasUrl();
+    const body = new URLSearchParams({action:'login', data: JSON.stringify({id, pw})});
+    const res = await fetch(url, {method:'POST', body});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    showLoadingOverlay({sub:'신청 목록 불러오는 중…', prog:'GAS · 데이터'});
+    const json = await res.json();
+    if(json.status !== 'ok' || !json.token){
+      hideLoadingOverlay();
+      alert(json.message || '아이디 또는 비밀번호가 틀렸습니다.');
+      if(loginBtn) loginBtn.disabled = false;
+      return;
+    }
+    _setToken(json.token);
+    try{ sessionStorage.setItem(SESSION_USER_KEY, json.user.id); }catch{}
+    _enterApp(json);
+  } catch(e){
+    hideLoadingOverlay();
+    alert('로그인 실패: ' + (e.message || e));
+    if(loginBtn) loginBtn.disabled = false;
   }
 }
 
 function logout(){
   if(!confirm('로그아웃 하시겠습니까?')) return;
+  _clearScreen();
+}
+
+/* 로그아웃·세션만료 공통 — 모든 사용자 데이터를 메모리/DOM에서 깨끗이 제거 후 로그인 화면 */
+function _clearScreen(){
+  _clearToken();
   try{ sessionStorage.removeItem(SESSION_USER_KEY); }catch{}
-  stopAutoRefresh();       // 폴링 + visibilitychange 리스너 정리
+  stopAutoRefresh();
+  // 메모리 상태 초기화
   currentUser = null;
+  allRequests = [];
+  currentReq = null;
+  _reqVersions = [];
+  _viewingVersionQuoteNo = null;
+  isRevising = false;
+  _memUsers = null;
+  _memEquipOpts = null;
+  _lastRefreshAt = 0;
+  // DOM 초기화 — 이전 사용자의 화면 흔적이 남지 않도록
+  const mainEl = document.getElementById('mainArea');
+  if(mainEl) mainEl.innerHTML = '<div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>';
+  const listEl = document.getElementById('reqList');
+  if(listEl) listEl.innerHTML = '';
+  // 화면 전환
   document.getElementById('app').style.display='none';
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('loginUser').textContent='';
   document.getElementById('lastRefreshLabel').textContent='';
   document.getElementById('settingsBtn').style.display='none';
   document.getElementById('logoutBtn').style.display='none';
-  document.getElementById('userId').value='';
-  document.getElementById('userPw').value='';
+  document.getElementById('idInput').value='';
+  document.getElementById('pwInput').value='';
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn) loginBtn.disabled = false;
 }
 
-/* 페이지 로드 시 세션에 남아있는 사용자 ID로 자동 로그인 복원.
-   initApp이 _memUsers 채운 다음에 호출되어야 함 (담당자 시트 조회 결과 사용). */
-function tryRestoreSession(){
-  let savedId = null;
-  try{ savedId = sessionStorage.getItem(SESSION_USER_KEY); }catch{}
-  if(!savedId) return false;
-  const users = getUsers();
-  const user = users.find(u => u.id === savedId);
-  if(!user){
+/* 페이지 로드 시 세션 토큰으로 자동 로그인 복원 — GAS에 token 검증 + 부트스트랩 데이터 요청 */
+async function tryRestoreSession(){
+  const token = _getToken();
+  if(!token) return false;
+  showLoadingOverlay({sub:'세션 확인 중…', prog:'GAS · 인증'});
+  try{
+    // whoami + list만 병렬로 await. equipConfig/userConfig는 _enterApp 안에서 백그라운드 fetch.
+    showLoadingOverlay({sub:'신청 목록 불러오는 중…', prog:'GAS · 데이터'});
+    const [who, listRes] = await Promise.all([
+      gasCall('whoami', {}, {method:'GET'}),
+      gasCall('list', {}, {method:'GET'})
+    ]);
+    if(who.status !== 'ok' || !who.user) throw new Error('인증 실패');
+    _enterApp({
+      user: who.user,
+      rows: listRes.rows || []
+    });
+    return true;
+  }catch(e){
+    console.warn('tryRestoreSession:', e);
+    _clearToken();
     try{ sessionStorage.removeItem(SESSION_USER_KEY); }catch{}
+    hideLoadingOverlay();
     return false;
   }
-  _enterApp(user);
-  return true;
 }
 
-function saveGasUrl(){ localStorage.setItem('gasUrl', document.getElementById('gasUrl').value.trim()); }
+function saveGasUrl(){ /* hidden input — config.js에서 관리 */ }
 
-/* ─── 앱 초기화: 페이지 로드 즉시 GAS에서 담당자·장비 설정 로드 ─── */
+/* ─── 앱 초기화: 페이지 로드 시 토큰 있으면 자동 로그인, 없으면 로그인 화면 */
 async function initApp(){
-  const url = getGasUrl();
   const loginBtn = document.getElementById('loginBtn');
-  const loginStatus = document.getElementById('loginStatus');
-  if(loginStatus) loginStatus.innerHTML = '<span class="d-spinner" style="width:13px;height:13px;border-color:rgba(30,86,200,.25);border-top-color:var(--blue);display:inline-block"></span><span>서버 연결 중…</span>';
-
-  const withTimeout = (p, ms) => Promise.race([p, new Promise(r=>setTimeout(()=>r(null), ms))]);
-
-  try{
-    const [equipRes, userRes] = await Promise.all([
-      withTimeout(fetch(url+'?action=getEquipConfig').then(r=>r.json()).catch(()=>null), 8000),
-      withTimeout(fetch(url+'?action=getUserConfig').then(r=>r.json()).catch(()=>null), 8000)
-    ]);
-
-    if(equipRes?.items?.length > 0){
-      _memEquipOpts = {};
-      equipRes.items.forEach(item=>{
-        if(item.id) _memEquipOpts[item.id] = {basePrice:item.basePrice||'', includeOpts:item.includeOpts||[], extraOpts:item.extraOpts||[]};
-      });
-      localStorage.setItem('jhtech_equip_opts', JSON.stringify(_memEquipOpts));
-    } else {
-      try{ const s=localStorage.getItem('jhtech_equip_opts'); if(s) _memEquipOpts=JSON.parse(s); }catch{}
-    }
-
-    if(userRes?.users?.length > 0){
-      _memUsers = userRes.users;
-      localStorage.setItem('jhtech_users', JSON.stringify(_memUsers));
-    } else {
-      try{ const s=localStorage.getItem('jhtech_users'); if(s) _memUsers=JSON.parse(s); }catch{}
-    }
-
-    if(loginStatus) loginStatus.textContent = '';
-  }catch(e){
-    console.warn('initApp GAS fetch failed:', e);
-    try{ const s=localStorage.getItem('jhtech_equip_opts'); if(s) _memEquipOpts=JSON.parse(s); }catch{}
-    try{ const s=localStorage.getItem('jhtech_users'); if(s) _memUsers=JSON.parse(s); }catch{}
-    if(loginStatus) loginStatus.innerHTML = '<span style="color:#c7362f">⚠ 오프라인 모드 (캐시 사용)</span>';
-  }finally{
-    if(loginBtn) loginBtn.disabled = false;
-    // 담당자 데이터 로드 완료 후 세션에 남은 로그인 ID로 자동 복원 시도
-    tryRestoreSession();
-  }
+  if(loginBtn) loginBtn.disabled = false;
+  // 장비 옵션 폴백 캐시 (오프라인 모드용)
+  try{ const s = localStorage.getItem('jhtech_equip_opts'); if(s) _memEquipOpts = JSON.parse(s); }catch{}
+  try{ const s = localStorage.getItem('jhtech_users');     if(s) _memUsers     = JSON.parse(s); }catch{}
+  // 세션 토큰 자동 복원 시도
+  tryRestoreSession();
 }
 
 /* ─── 영업일지 ─── */
@@ -916,50 +1005,48 @@ function hideLoadingOverlay(){
   if(el) el.classList.remove('show');
 }
 
-function loadRequests(opts){
-  const silent = opts && opts.silent;   // 자동 폴링 호출 시에는 로딩 메시지 깜빡임 억제
-  const url = document.getElementById('gasUrl').value.trim();
-  if(!url){ if(!silent) alert('Google Apps Script URL을 입력하세요.'); return; }
+async function loadRequests(opts){
+  const silent = opts && opts.silent;
   const listEl = document.getElementById('reqList');
-  const firstLoad = !allRequests || !allRequests.length;
-  if(!silent && firstLoad){
-    listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">불러오는 중…</div>';
-    // 첫 로드일 때만 중앙 오버레이 표시 (수동 새로고침/폴링 시엔 표시 안 함)
-    showLoadingOverlay({sub:'견적 신청 목록을 가져오고 있습니다…', prog:'GAS · 연결'});
-  }
-  fetch(url + '?action=list')
-    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(data => {
-      if(data && Array.isArray(data.rows)){
-        allRequests = data.rows;
+  if(!_getToken()){ if(!silent) alert('로그인이 필요합니다.'); return; }
+  try{
+    const data = await gasCall('list', {}, {method:'GET'});
+    if(data && Array.isArray(data.rows)){
+      // 안전망: silent 폴링 응답이 빈 배열인데 직전엔 데이터가 있던 경우
+      // → GAS cold start / 일시적 응답 이슈 가능성. 화면 reset 안 함.
+      if(silent && data.rows.length === 0 && allRequests.length > 0){
+        console.warn('loadRequests: silent 폴링이 빈 응답을 받음 — 이전 상태 유지');
         _lastRefreshAt = Date.now();
-        // 현재 보고 있는 신청이 있으면, 새 데이터의 versions를 currentReq에 동기화 (사용자 편집은 보존)
-        if(currentReq){
-          const fresh = allRequests.find(r => r.id === currentReq.id);
-          if(fresh){
-            currentReq.versions = fresh.versions || [];
-          } else {
-            // 시트에서 삭제됨 → 우측 패널을 placeholder로 리셋
-            currentReq = null;
-            _reqVersions = [];
-            const mainEl = document.getElementById('mainArea');
-            if(mainEl) mainEl.innerHTML = '<div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>';
-          }
-        }
-        renderList();
         updateLastRefreshDisplay();
-      } else if(!silent){
-        listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">데이터 없음</div>';
+        return;
       }
-      if(firstLoad) hideLoadingOverlay();
-    })
-    .catch(err => {
-      console.warn('loadRequests:', err);
-      if(!silent){
-        listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">불러오기 실패<br><small>'+err.message+'</small><br><br><button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button></div>';
+      allRequests = data.rows;
+      _lastRefreshAt = Date.now();
+      if(currentReq){
+        const fresh = allRequests.find(r => r.id === currentReq.id);
+        if(fresh){
+          currentReq.versions = fresh.versions || [];
+        } else if(!silent){
+          // 명시적 새로고침 시에만 우측 패널 reset (silent 폴링에선 유지)
+          currentReq = null;
+          _reqVersions = [];
+          const mainEl = document.getElementById('mainArea');
+          if(mainEl) mainEl.innerHTML = '<div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>';
+        }
       }
-      if(firstLoad) hideLoadingOverlay();
-    });
+      renderList();
+      updateLastRefreshDisplay();
+    } else if(!silent){
+      listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">데이터 없음</div>';
+    }
+  }catch(err){
+    if(err.message === 'AUTH_REQUIRED') return; // 이미 로그인 화면으로 전환됨
+    console.warn('loadRequests:', err);
+    if(!silent){
+      listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">불러오기 실패<br><small>'+err.message+'</small></div>';
+    }
+    // silent 폴링 실패는 화면을 건드리지 않음 — allRequests 그대로
+  }
 }
 
 function loadDemoData(){
@@ -972,19 +1059,14 @@ function loadDemoData(){
 }
 
 /* ─── 목록 렌더링 ─── */
+/* v14: 서버에서 이미 권한 필터됨. r.assignee는 시트의 'u.id'. 표시는 _users.find로 이름 변환. */
 function renderList(){
   const list = document.getElementById('reqList');
-  const assignees = getAssignees();
   const users = getUsers();
-  // 비관리자: 자신에게 배정된 건만 표시
-  let base = allRequests.map(r=>({...r, assignee: assignees[r.id]||''}));
-  if(currentUser && !currentUser.isAdmin){
-    base = base.filter(r => r.assignee === currentUser.id);
-  }
-  const filtered = filterStatus==='all' ? base : base.filter(r => r.status === filterStatus);
+  const filtered = filterStatus==='all' ? allRequests : allRequests.filter(r => r.status === filterStatus);
   if(!filtered.length){list.innerHTML='<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">해당 건이 없습니다.</div>';return;}
   list.innerHTML = filtered.map(r => {
-    const assignedUser = users.find(u=>u.id===r.assignee);
+    const assignedUser = r.assignee ? users.find(u=>u.id===r.assignee) : null;
     const assigneeName = assignedUser ? assignedUser.name : '미지정';
     const statusLabel = r.status==='confirmed'?'완료':r.status==='draft'?'임시':'신청중';
     return `
@@ -1026,7 +1108,8 @@ function generateQuoteNo(){
 function selectReq(id){
   currentReq = allRequests.find(r=>r.id===id);
   if(!currentReq) return;
-  currentReq.assignee = currentReq.assignee || getAssignees()[id] || '';
+  // r.assignee는 서버에서 받은 시트값 (이름). 폴백 매핑 제거됨
+  currentReq.assignee = currentReq.assignee || '';
   isRevising = false;
   _viewingVersionQuoteNo = null; // 다른 신청 선택 시 버전 미리보기 상태 해제
   // listRequests 응답에 임베드된 버전 데이터를 즉시 사용 (별도 GAS 호출 없음)
@@ -1044,16 +1127,17 @@ function selectReq(id){
 }
 
 async function loadVersionsForReq(reqId){
-  const url = getGasUrl();
-  if(!url) return;
   try{
-    const res = await fetch(`${url}?action=getVersions&id=${encodeURIComponent(reqId)}`).then(r=>r.json());
+    const res = await gasCall('getVersions', {id:reqId}, {method:'GET'});
     if(currentReq?.id !== reqId) return; // 응답 늦게 도착 + 다른 신청으로 이동했으면 무시
     if(res && Array.isArray(res.rows) && res.rows.length > 0){
       _reqVersions = res.rows;
       renderVersionHistory();
     }
-  }catch(e){ console.warn('loadVersionsForReq:', e); }
+  }catch(e){
+    if(e.message === 'AUTH_REQUIRED') return;
+    console.warn('loadVersionsForReq:', e);
+  }
 }
 
 function renderVersionHistory(){
@@ -1283,12 +1367,14 @@ function renderDetail(){
   const extraOpts = r.extraOpts || [];
   const isConfirmed = r.status === 'confirmed';
   // 관리자이거나, 본인에게 배정된 건이면 편집 가능. 과거 버전 미리보기 중에는 항상 읽기 전용.
+  // v14: 시트엔 u.id가 저장됨 → ID로 매칭
   const isAssignedToMe = currentUser && (currentUser.isAdmin || (r.assignee && r.assignee === currentUser.id));
   const editMode = !viewingPastVersion && isAssignedToMe && (!isConfirmed || isRevising);
   if(editMode && !r.quoteNo) r.quoteNo = generateQuoteNo();
 
   // 공통 계산값
   const _users = getUsers();
+  // v14: r.assignee는 시트의 'u.id'. ID로 사용자 객체 매칭 → 표시는 .name 사용.
   const _assignedUser = _users.find(u=>u.id===(r.assignee||''));
   const _assigneeName = _assignedUser ? _assignedUser.name : '미지정';
   const _statusLabel = r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중';
@@ -1356,7 +1442,7 @@ function renderDetail(){
           </div>
           ${(()=>{
             if(currentUser && currentUser.isAdmin){
-              const opts = _users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name}</option>`).join('');
+              const opts = _users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===u.id?'selected':''}>${u.name}</option>`).join('');
               const isLocked = !!(r.assignee);
               return `<div class="assignee-block">
                 <label>담당자</label>
@@ -1672,39 +1758,57 @@ function collectFormData(){
   currentReq.specialNotes = document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES;
 }
 
-function saveDraft(){
+async function saveDraft(){
   collectFormData();
+  const prev = currentReq.status;
   currentReq.status = 'draft';
-  syncToSheet('draft');
+  const ok = await syncToSheet('draft');
+  if(!ok){
+    currentReq.status = prev; // 롤백
+    renderDetail();
+    renderList();
+    return;
+  }
   renderList();
   alert('임시 저장되었습니다.');
 }
 
-function confirmQuote(){
+async function confirmQuote(){
   collectFormData();
   if(!currentReq.quoteNo.trim()){alert('견적번호 오류: 새로고침 후 다시 시도해 주세요.');return;}
   if(!currentReq.supplyPrice){alert('공급가액을 입력해 주세요.');return;}
   if(!confirm(`[${currentReq.company}] 견적을 확정하시겠습니까?\n확정 후에는 수정이 불가합니다.`)) return;
+  const prev = currentReq.status;
   currentReq.status = 'confirmed';
-  syncToSheet('confirmed');
+  const ok = await syncToSheet('confirmed');
+  if(!ok){
+    // 시트 저장 실패 — 클라이언트 상태 롤백 + PDF 생성하지 않음
+    currentReq.status = prev;
+    renderDetail();
+    renderList();
+    return;
+  }
   renderDetail();
   renderList();
   printQuote(currentReq, true);
 }
 
-function syncToSheet(status){
-  const url = document.getElementById('gasUrl').value.trim();
-  if(!url) return;
-  const users = getUsers();
-  const assignedUser = currentReq.assignee ? users.find(u=>u.id===currentReq.assignee) : null;
-  const managerUser = assignedUser || currentUser;
-  const assigneeName = managerUser ? managerUser.name : '';
-  const dataToSend = Object.assign({}, currentReq, {assigneeName});
-  const form = document.createElement('form');
-  form.method='POST'; form.action=url; form.target='adminSubmitFrame'; form.style.display='none';
-  const i=document.createElement('input'); i.type='hidden'; i.name='action'; i.value='confirm'; form.appendChild(i);
-  const j=document.createElement('input'); j.type='hidden'; j.name='data'; j.value=JSON.stringify(dataToSend); form.appendChild(j);
-  document.body.appendChild(form); form.submit(); setTimeout(()=>form.remove(), 2000);
+/* v14: 시트엔 u.id 저장. data.assignee가 곧 ID. assigneeName 별도 전송 불필요. */
+async function syncToSheet(status){
+  if(!currentReq) return false;
+  // assignee 비어있으면 현재 사용자 ID 폴백 (담당자가 직접 견적 발급 시)
+  const assigneeId = currentReq.assignee || (currentUser ? currentUser.id : '');
+  const dataToSend = Object.assign({}, currentReq, {assignee: assigneeId});
+  try{
+    const json = await gasCall('confirm', dataToSend);
+    if(json.status !== 'ok') throw new Error(json.message || '저장 실패');
+    return true;
+  }catch(e){
+    if(e.message === 'AUTH_REQUIRED') return false;
+    console.warn('syncToSheet:', e);
+    alert('저장 실패: ' + e.message);
+    return false;
+  }
 }
 
 /* ─── Google Drive 견적서 저장 ─── */
@@ -1767,8 +1871,8 @@ async function inlineImages(html){
 }
 
 async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
-  const url = document.getElementById('gasUrl').value.trim();
-  if(!url){ alert('GAS URL이 설정되지 않았습니다.'); return; }
+  if(!getGasUrl()){ alert('GAS URL이 설정되지 않았습니다.'); return; }
+  if(!_getToken()){ alert('로그인이 필요합니다.'); return; }
 
   const safeName = (company||'견적서').replace(/[\s\/\\:*?"<>|]/g,'_');
   // 파일명에 버전(v1, v2, ...)을 포함해 이전 버전 PDF도 Drive에 그대로 보존
@@ -1862,10 +1966,8 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
     const qB64 = await generatePdf(inlinedQuoteHtml);
 
     showPdfOverlay(45, '견적서 PDF 업로드 중…');
-    const r1 = await fetch(url, {method:'POST', body:new URLSearchParams({
-      action:'saveQuote', data:JSON.stringify({pdf:qB64, filename:quoteFilename, company:company})
-    })});
-    const j1 = await r1.json();
+    const reqId = currentReq?.id;
+    const j1 = await gasCall('saveQuote', {pdf:qB64, filename:quoteFilename, company:company, reqId});
     if(j1.status!=='ok') throw new Error('견적서: '+(j1.message||'오류'));
 
     if(inlinedEquipHtml){
@@ -1873,10 +1975,7 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
       const eB64 = await generatePdf(inlinedEquipHtml);
 
       showPdfOverlay(85, '장비사진 PDF 업로드 중…');
-      const r2 = await fetch(url, {method:'POST', body:new URLSearchParams({
-        action:'saveQuote', data:JSON.stringify({pdf:eB64, filename:equipFilename, company:company})
-      })});
-      const j2 = await r2.json();
+      const j2 = await gasCall('saveQuote', {pdf:eB64, filename:equipFilename, company:company, reqId});
       if(j2.status!=='ok') console.warn('장비사진 업로드 응답 오류:', j2.message);
     }
 
@@ -1944,10 +2043,11 @@ function cancelRevise(){
   isRevising = false;
   renderDetail();
 }
-function confirmRevise(){
+async function confirmRevise(){
   if(!confirm('수정 내용을 확정하고 새 버전을 발급하시겠습니까?\n\n현재 버전이 이력에 저장되고 새 버전번호가 발급됩니다.')) return;
   collectFormData();
   const oldQuoteNo = currentReq.quoteNo;
+  const oldStatus = currentReq.status;
   pushVersionHistory(currentReq.id, {
     quoteNo: oldQuoteNo,
     revisedAt: new Date().toLocaleString('ko-KR'),
@@ -1961,7 +2061,16 @@ function confirmRevise(){
   currentReq.quoteNo = getNextVersion(oldQuoteNo);
   currentReq.status = 'confirmed';
   isRevising = false;
-  syncToSheet('confirmed');
+  const ok = await syncToSheet('confirmed');
+  if(!ok){
+    // 시트 저장 실패 — 롤백 + PDF 생성 안 함
+    currentReq.quoteNo = oldQuoteNo;
+    currentReq.status = oldStatus;
+    isRevising = true;
+    renderDetail();
+    renderList();
+    return;
+  }
   renderDetail();
   renderList();
   const _req = Object.assign({}, currentReq);
@@ -2046,11 +2155,12 @@ function printQuote(reqOverride, skipPrint){
   const dateStr = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
   const fmt = n => n ? Number(n).toLocaleString('ko-KR') : '';
 
-  // 배정된 담당자 우선, 없으면 로그인 사용자, 없으면 기본값
+  // 배정된 담당자 우선, 없으면 로그인 사용자, 없으면 기본값.
+  // v14: r.assignee는 시트의 'u.id'. ID로 매칭 후 .name 표시.
   const assignedUser = r.assignee ? getUsers().find(u=>u.id===r.assignee) : null;
   const managerUser  = assignedUser || currentUser;
-  const managerName  = managerUser ? managerUser.name : '박현석 부장';
-  const managerPhone = managerUser ? managerUser.phone : '010-6247-6261';
+  const managerName  = managerUser && managerUser.name ? managerUser.name : '박현석 부장';
+  const managerPhone = managerUser && managerUser.phone ? managerUser.phone : '010-6247-6261';
 
   const specialNotes = (document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES)
     .split('\n').map(s=>s.trim()).filter(s=>s);
