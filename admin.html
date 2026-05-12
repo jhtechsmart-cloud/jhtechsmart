@@ -198,6 +198,8 @@
     .v2-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;max-width:1320px;margin:0 auto}
     .v2-left{min-width:0;display:flex;flex-direction:column;gap:14px}
     .v2-right{position:sticky;top:0;display:flex;flex-direction:column;gap:14px}
+    /* 버전이력 빈 상태 — flex gap이 적용되어 좌측 첫 박스가 14px 밀려나는 정렬 어긋남을 차단 */
+    #versionHistorySection:empty{display:none}
     @media (max-width:1280px){.v2-grid{grid-template-columns:1fr}.v2-right{position:static}}
 
     /* deal banner */
@@ -269,12 +271,16 @@
     .ex-sugg .chip{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:99px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
     .ex-sugg .chip:hover:not(:disabled){background:#dbeafe}
     .ex-sugg .chip:disabled{opacity:.5;cursor:not-allowed}
-    .ex-tbl{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #f1f5f9;border-radius:8px;overflow:hidden}
-    .ex-tbl th{background:#f8fafc;color:#64748b;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;text-align:left;padding:10px 14px;border-bottom:1px solid #e2e8f0}
-    .ex-tbl td{padding:11px 14px;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums}
+    .ex-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border:1px solid #eef2f7;border-radius:10px;overflow:hidden;background:#fafbfd}
+    .ex-tbl th{background:#f4f6fa;color:#64748b;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;text-align:left;padding:9px 12px;border-bottom:1px solid #e5edf5}
+    .ex-tbl td{padding:7px 8px;border-bottom:1px solid #eef2f7;font-variant-numeric:tabular-nums;vertical-align:middle}
     .ex-tbl tr:last-child td{border-bottom:0}
-    .ex-tbl input{border:0;background:transparent;padding:0;font-size:13px;width:100%;font-family:inherit;color:#0f172a;outline:none}
-    .ex-tbl input:focus{box-shadow:none;border-bottom:1px solid #1e56c8}
+    .ex-tbl input{font-size:13px;width:100%;font-family:inherit;color:#0f172a;outline:none;box-sizing:border-box;border-radius:7px;transition:.15s}
+    .ex-tbl input:not(:disabled){border:1px solid #e2e8f0;background:#fff;padding:8px 12px}
+    .ex-tbl input:not(:disabled)::placeholder{color:#cbd5e1;font-weight:400}
+    .ex-tbl input:not(:disabled):hover{border-color:#cbd5e1;background:#fff}
+    .ex-tbl input:not(:disabled):focus{border-color:#1e56c8;background:#fff;box-shadow:0 0 0 3px rgba(30,86,200,.12)}
+    .ex-tbl input:disabled{border:0;background:transparent;padding:6px 4px;color:#0f172a}
     .ex-tbl .del-x{background:transparent;border:0;color:#94a3b8;cursor:pointer;font-size:14px;padding:0;font-weight:700}
     .ex-tbl .del-x:hover{color:#dc2626}
     .ex-add{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed #cbd5e1;color:#0f3768;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:10px;cursor:pointer;font-family:inherit}
@@ -1540,8 +1546,8 @@ function renderDetail(){
                   <tbody id="extraOptBody">
                     ${extraOpts.map((o,i)=>`
                       <tr id="extraRow_${i}">
-                        <td><input value="${o.name}" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
-                        <td style="text-align:right"><input value="${o.price?Number(o.price).toLocaleString('ko-KR'):''}" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
+                        <td><input value="${o.name}" placeholder="옵션명을 입력하세요" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
+                        <td style="text-align:right"><input value="${o.price?Number(o.price).toLocaleString('ko-KR'):''}" placeholder="0" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
                         <td style="text-align:center">${editMode?'<button class="del-x" onclick="removeExtra('+i+')" title="삭제">✕</button>':''}</td>
                       </tr>`).join('')}
                   </tbody>
