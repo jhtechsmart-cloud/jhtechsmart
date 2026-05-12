@@ -1642,7 +1642,10 @@ function renderDetail(){
     </div>
   `;
 
-  recalcPrice();
+  // 과거 버전 보기 중에는 인라인 HTML이 이미 r(과거 버전 데이터) 기반으로 정확히 렌더되어 있음.
+  // recalcPrice()가 호출되면 basePrice input이 없는 view 모드에서 currentReq.supplyPrice(=최신값)로
+  // #totalDisplay·#equipSubtotal·#extraSubtotal·#extraPriceBreakdown을 덮어써 Quote Summary가 최신 버전 값으로 망가짐.
+  if(!viewingPastVersion) recalcPrice();
   renderVersionHistory();
 }
 
@@ -1791,6 +1794,20 @@ async function confirmQuote(){
   renderDetail();
   renderList();
   printQuote(currentReq, true);
+  // 새 견적 발급 직후 — 시트의 버전이력을 즉시 다시 가져와 화면 반영 (왼쪽 업체 재클릭 없이)
+  refreshVersionsAfterPdf(currentReq.id);
+}
+
+/* PDF 저장(=시트의 견적서발급관리 행 추가) 직후 호출 — 폴링을 기다리지 않고 즉시 버전이력 갱신.
+   GAS 측 시트 쓰기가 끝난 뒤 짧은 지연을 두고 fetch (캐시/쓰기 지연 안전망). */
+function refreshVersionsAfterPdf(reqId){
+  setTimeout(async () => {
+    if(!currentReq || currentReq.id !== reqId) return;
+    await loadVersionsForReq(reqId);
+    // allRequests 안의 해당 신청에도 versions 반영 — 다른 신청 갔다 돌아와도 일관 유지
+    const target = allRequests.find(r => r.id === reqId);
+    if(target) target.versions = [..._reqVersions];
+  }, 800);
 }
 
 /* v14: 시트엔 u.id 저장. data.assignee가 곧 ID. assigneeName 별도 전송 불필요. */
@@ -2075,6 +2092,8 @@ async function confirmRevise(){
   renderList();
   const _req = Object.assign({}, currentReq);
   printQuote(_req, true);
+  // 수정확정 직후 — 시트에 추가된 새 버전을 즉시 fetch해서 버전이력 화면 반영
+  refreshVersionsAfterPdf(currentReq.id);
 }
 
 /* ─── 한글금액 변환 (일 생략 규칙 적용) ─── */
