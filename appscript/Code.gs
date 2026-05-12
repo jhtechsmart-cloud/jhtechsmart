@@ -5,20 +5,27 @@
 
 const SPREADSHEET_ID = '1HoFkaRY0xOGEriXAjrQ7tyH9LOZ5UkPamyRzxc_W3Ts';
 
-// ─── 시트 초기화 (최초 1회 수동 실행) ───
+// ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
 function initSheets() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-  // 신청관리
+  // 신청관리 — 21개 컬럼 헤더 보장 (기존 시트도 누락된 헤더 자동 추가)
   let s1 = ss.getSheetByName('신청관리');
   if (!s1) s1 = ss.insertSheet('신청관리');
+  const s1Headers = [
+    '접수번호','접수일시','업체명','사업자번호','대표자','연락처','이메일','주소',
+    '사업자등록일','주업종','매출2023','매출2024','매출2025',
+    '문제공정','도입목적','선택문제목표','선택장비','요청사항','상태','담당자','공정흐름도'
+  ];
   if (s1.getLastRow() === 0) {
-    s1.appendRow([
-      '접수번호','접수일시','업체명','사업자번호','대표자','연락처','이메일','주소',
-      '사업자등록일','주업종','매출2023','매출2024','매출2025',
-      '문제공정','도입목적','선택문제목표','선택장비','요청사항','상태','담당자','공정흐름도'
-    ]);
-    s1.getRange(1, 1, 1, 21).setFontWeight('bold').setBackground('#f3f7fb');
+    s1.appendRow(s1Headers);
+    s1.getRange(1, 1, 1, s1Headers.length).setFontWeight('bold').setBackground('#f3f7fb');
+  } else {
+    // 기존 시트의 1행 헤더 점검 — 비어있거나 누락된 헤더 채움 (특히 20,21번 컬럼)
+    const curHeaders = s1.getRange(1, 1, 1, s1Headers.length).getValues()[0];
+    s1Headers.forEach((h, idx) => {
+      if (!curHeaders[idx]) s1.getRange(1, idx+1).setValue(h).setFontWeight('bold').setBackground('#f3f7fb');
+    });
   }
 
   // 견적서발급관리 (담당자 컬럼 포함)
@@ -69,13 +76,13 @@ function initSheets() {
     s3.setColumnWidth(6, 220);
   }
 
-  // 담당자관리
+  // 담당자관리 — 6컬럼 (직책은 '이름' 컬럼에 통합, 예: '박현석 부장')
   let s4 = ss.getSheetByName('담당자관리');
   if (!s4) s4 = ss.insertSheet('담당자관리');
   if (s4.getLastRow() === 0) {
-    s4.appendRow(['담당자ID','이름','직책','전화번호','이메일','비밀번호','관리자여부']);
-    s4.getRange(1, 1, 1, 7).setFontWeight('bold').setBackground('#f3f7fb');
-    s4.appendRow(['admin','박현석','부장','010-6247-6261','smart@paxc.co.kr','jhtech2026','TRUE']);
+    s4.appendRow(['담당자ID','이름','전화번호','이메일','비밀번호','관리자여부']);
+    s4.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#f3f7fb');
+    s4.appendRow(['admin','박현석 부장','010-6247-6261','smart@paxc.co.kr','jhtech2026','TRUE']);
   }
 }
 
@@ -156,17 +163,22 @@ function handleConfirm(data) {
     data.validUntil||'', data.status||'confirmed', assignee
   ];
 
-  // 기존 행 업데이트 or 신규 추가
+  // (접수번호, 견적번호) 매칭 행 찾기.
+  // 정책: 매칭된 행이 이미 'confirmed' 상태면 갱신하지 않고 새 행 추가.
+  // (확정된 견적은 원본 보존 — 새 버전은 새 견적번호로 와야 정상이지만,
+  //  같은 견적번호가 다시 들어와도 옛 행은 절대 덮어쓰지 않음.)
   const rows2 = sheet2.getDataRange().getValues();
-  let found = false;
+  let updated = false;
   for (let i = 1; i < rows2.length; i++) {
     if (rows2[i][1] === data.id && rows2[i][0] === data.quoteNo) {
+      const existingStatus = String(rows2[i][11]||'').toLowerCase();
+      if (existingStatus === 'confirmed') break; // 확정된 행은 보존, 아래에서 신규 추가
       sheet2.getRange(i+1, 1, 1, 13).setValues([rowData]);
-      found = true;
+      updated = true;
       break;
     }
   }
-  if (!found) sheet2.appendRow(rowData);
+  if (!updated) sheet2.appendRow(rowData);
 
   return jsonResponse({status:'ok'});
 }
@@ -206,17 +218,36 @@ function listRequests() {
   const rows1 = sheet1.getDataRange().getValues();
   const rows2 = sheet2 ? sheet2.getDataRange().getValues() : [[]];
 
-  const quoteMap = {};
+  // 견적서발급관리 → reqId 별 모든 버전 배열 수집
+  const versionsMap = {};
   for (let i = 1; i < rows2.length; i++) {
     const r = rows2[i];
-    quoteMap[r[1]] = {
-      quoteNo:r[0], validUntil:r[10],
-      includeOpts: r[5] ? r[5].split(' | ') : [],
+    const reqId = r[1];
+    if (!reqId) continue;
+    if (!versionsMap[reqId]) versionsMap[reqId] = [];
+    versionsMap[reqId].push({
+      quoteNo: String(r[0]||''),
+      reqId: String(reqId),
+      issuedAt: r[2] ? Utilities.formatDate(new Date(r[2]), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') : '',
+      company: String(r[3]||''),
+      equipment: String(r[4]||''),
+      includeOpts: r[5] ? String(r[5]).split(' | ') : [],
       extraOpts: safeParseJSON(r[6]),
-      supplyPrice:r[7], taxPrice:r[8], totalPrice:r[9],
-      quoteAssignee: r[12]||''
-    };
+      supplyPrice: r[7]!==''?String(r[7]):'',
+      taxPrice: r[8]!==''?String(r[8]):'',
+      totalPrice: r[9]!==''?String(r[9]):'',
+      validUntil: r[10] ? Utilities.formatDate(new Date(r[10]), 'Asia/Seoul', 'yyyy-MM-dd') : '',
+      status: String(r[11]||''),
+      assignee: String(r[12]||'')
+    });
   }
+
+  // reqId 별 최신 버전 (quoteNo 문자열 정렬상 가장 마지막)
+  const quoteMap = {};
+  Object.keys(versionsMap).forEach(reqId => {
+    const sorted = [...versionsMap[reqId]].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1);
+    quoteMap[reqId] = sorted[sorted.length - 1];
+  });
 
   const result = [];
   for (let i = 1; i < rows1.length; i++) {
@@ -231,7 +262,8 @@ function listRequests() {
       processFlow:r[20]||'',
       quoteNo:q.quoteNo||'', validUntil:q.validUntil||'',
       includeOpts:q.includeOpts||[], extraOpts:q.extraOpts||[],
-      supplyPrice:q.supplyPrice||'', taxPrice:q.taxPrice||'', totalPrice:q.totalPrice||''
+      supplyPrice:q.supplyPrice||'', taxPrice:q.taxPrice||'', totalPrice:q.totalPrice||'',
+      versions: versionsMap[r[0]] || []
     });
   }
   return {rows:result};
@@ -325,6 +357,7 @@ function handleSaveEquipConfig(data) {
 }
 
 // ─── 담당자관리 ───
+// 시트 스키마(6컬럼): 담당자ID | 이름(직책 포함) | 전화번호 | 이메일 | 비밀번호 | 관리자여부
 function getUserConfig() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName('담당자관리');
@@ -335,9 +368,9 @@ function getUserConfig() {
     const r = rows[i];
     if (!r[0]) continue;
     result.push({
-      id:String(r[0]), name:String(r[1]), title:String(r[2]),
-      phone:String(r[3]), email:String(r[4]), pw:String(r[5]),
-      isAdmin: r[6]===true || String(r[6]).toUpperCase()==='TRUE'
+      id:String(r[0]), name:String(r[1]),
+      phone:String(r[2]), email:String(r[3]), pw:String(r[4]),
+      isAdmin: r[5]===true || String(r[5]).toUpperCase()==='TRUE'
     });
   }
   return {users:result};
@@ -348,35 +381,39 @@ function handleSaveUserConfig(data) {
   let sheet = ss.getSheetByName('담당자관리');
   if (!sheet) {
     sheet = ss.insertSheet('담당자관리');
-    sheet.appendRow(['담당자ID','이름','직책','전화번호','이메일','비밀번호','관리자여부']);
-    sheet.getRange(1,1,1,7).setFontWeight('bold').setBackground('#f3f7fb');
+    sheet.appendRow(['담당자ID','이름','전화번호','이메일','비밀번호','관리자여부']);
+    sheet.getRange(1,1,1,6).setFontWeight('bold').setBackground('#f3f7fb');
   }
   const users = data.users || [];
   if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow()-1, 7).clearContent();
+    sheet.getRange(2, 1, sheet.getLastRow()-1, 6).clearContent();
   }
   users.forEach(u => {
-    sheet.appendRow([u.id||'',u.name||'',u.title||'',u.phone||'',u.email||'',u.pw||'',u.isAdmin?'TRUE':'FALSE']);
+    sheet.appendRow([u.id||'',u.name||'',u.phone||'',u.email||'',u.pw||'',u.isAdmin?'TRUE':'FALSE']);
   });
   return jsonResponse({status:'ok'});
 }
 
 // ─── 담당자 배정 업데이트 ───
+// 신청관리 시트 컬럼 20(담당자)에 '이름' 저장. assigneeName 우선, 폴백으로 assignee(ID).
 function handleUpdateAssignee(data) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet1 = ss.getSheetByName('신청관리');
   if (!sheet1) return jsonResponse({status:'error', message:'시트 없음'});
   const rows = sheet1.getDataRange().getValues();
+  const value = data.assigneeName || data.assignee || '';
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][0] === data.id) {
-      sheet1.getRange(i+1, 20).setValue(data.assignee||'');
+      sheet1.getRange(i+1, 20).setValue(value);
       return jsonResponse({status:'ok'});
     }
   }
   return jsonResponse({status:'error', message:'접수번호를 찾을 수 없음'});
 }
 
-// ─── Google Drive 견적서 저장 (PDF, 덮어쓰기) ───
+// ─── Google Drive 견적서 저장 (PDF) ───
+// 파일명에 버전(예: _v1, _v2)이 포함되어 있어 자연스럽게 버전별로 분리 보존됨.
+// 같은 파일명이 이미 있으면 동일 버전 재저장이므로 옛 파일만 휴지통 처리.
 function handleSaveQuote(data) {
   const filename = (data.filename||'견적서').replace(/[\/\\:*?"<>|]/g,'_');
 
@@ -384,7 +421,7 @@ function handleSaveQuote(data) {
   const folderIter = DriveApp.getFoldersByName(folderName);
   const folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder(folderName);
 
-  // 같은 이름 파일이 있으면 휴지통으로 이동 (덮어쓰기 효과)
+  // 동일 파일명만 휴지통 처리 (다른 버전 파일은 영향 없음 — 이전 버전 PDF 보존)
   const pdfIter = folder.getFilesByName(filename + '.pdf');
   while (pdfIter.hasNext()) pdfIter.next().setTrashed(true);
   const htmlIter = folder.getFilesByName(filename + '.html');

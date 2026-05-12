@@ -1,7 +1,7 @@
 # jhtechsmart 코드 분석 보고서
 
 > 분석일: 2026-05-11
-> 분석 대상: `quote.html` (592줄), `admin.html` (1742줄), `Code.gs` (415줄)
+> 분석 대상: `quote.html` (592줄), `admin.html` (1742줄), `appscript/Code.gs` (415줄)
 > 분석자: Claude (Opus 4.7)
 
 ---
@@ -34,7 +34,7 @@ flowchart LR
   end
 
   subgraph "Google Cloud (Apps Script)"
-    GAS[Code.gs<br/>doGet · doPost]
+    GAS[appscript/Code.gs<br/>doGet · doPost]
   end
 
   subgraph "Google Workspace"
@@ -51,7 +51,7 @@ flowchart LR
 
 ### 1.3 핵심 데이터 모델
 
-GAS의 `Code.gs::initSheets()`가 시트 스키마를 생성한다.
+GAS의 `appscript/Code.gs::initSheets()`가 시트 스키마를 생성한다.
 
 | 시트 | 컬럼수 | 의미 | 핵심 컬럼 |
 |---|---:|---|---|
@@ -60,7 +60,7 @@ GAS의 `Code.gs::initSheets()`가 시트 스키마를 생성한다.
 | 공급업체관리 | 6 | 장비 카탈로그 (가격·옵션) | `[0]장비ID`, `[3]기본공급가액`, `[4]포함옵션(\| 구분)`, `[5]추가옵션(JSON)` |
 | 담당자관리 | 7 | 사용자 계정 (이름/직책/전화/이메일/**비밀번호 평문**/관리자여부) | `[5]비밀번호`, `[6]관리자여부` |
 
-ID 형식 (`Code.gs::generateId()`): `REQ-YYYYMMDD-NNNNN`(신청), `QT-YYYYMMDD-NNNNN`(견적). 견적 재발행은 `-R02`, `-R03` 접미사 부여 (`admin.html::getNextVersion()`).
+ID 형식 (`appscript/Code.gs::generateId()`): `REQ-YYYYMMDD-NNNNN`(신청), `QT-YYYYMMDD-NNNNN`(견적). 견적 재발행은 `-R02`, `-R03` 접미사 부여 (`admin.html::getNextVersion()`).
 
 ---
 
@@ -74,7 +74,7 @@ ID 형식 (`Code.gs::generateId()`): `REQ-YYYYMMDD-NNNNN`(신청), `QT-YYYYMMDD-
 sequenceDiagram
   participant U as 신청자
   participant Q as quote.html
-  participant GAS as Code.gs
+  participant GAS as appscript/Code.gs
   participant S as Sheets
 
   U->>Q: 페이지 진입 → 시작 클릭
@@ -97,7 +97,7 @@ sequenceDiagram
 **핵심 코드 위치:**
 - 5단계 검증: `quote.html::validateStep(n)` (line 373)
 - 최종 제출: `quote.html::requestQuote()` (line 560)
-- 백엔드 처리: `Code.gs::handleSubmit(p)` (line 107)
+- 백엔드 처리: `appscript/Code.gs::handleSubmit(p)` (line 107)
 
 **주의 포인트:**
 - 응답은 숨김 iframe(`<iframe name="submitFrame">`)에 들어가므로 클라이언트에서 접수번호를 받을 수 없다. 완료 화면은 **GAS 응답을 기다리지 않고** 즉시 띄움 → 실패 시에도 사용자는 성공으로 인지 가능 ⚠️
@@ -112,7 +112,7 @@ sequenceDiagram
   participant U as 담당자
   participant A as admin.html
   participant LS as localStorage
-  participant GAS as Code.gs
+  participant GAS as appscript/Code.gs
   participant S as Sheets
 
   U->>A: 페이지 로드
@@ -138,7 +138,7 @@ sequenceDiagram
 - 로그인 시드: `admin.html::initApp()` (line 529)
 - 목록 조회: `admin.html::loadRequests()` (line 585)
 - 비관리자 필터: `admin.html::renderList()` line 618 — `if(currentUser && !currentUser.isAdmin) base = base.filter(r => r.assignee === currentUser.id)`
-- 백엔드 JOIN: `Code.gs::listRequests()` (line 201) — `quoteMap`으로 견적 데이터를 접수번호 키로 매핑 후 신청 행에 머지
+- 백엔드 JOIN: `appscript/Code.gs::listRequests()` (line 201) — `quoteMap`으로 견적 데이터를 접수번호 키로 매핑 후 신청 행에 머지
 
 ### 2.3 시나리오 C — 담당자가 견적서를 작성·확정한다 (가장 복잡한 흐름)
 
@@ -146,7 +146,7 @@ sequenceDiagram
 sequenceDiagram
   participant U as 담당자
   participant A as admin.html
-  participant GAS as Code.gs
+  participant GAS as appscript/Code.gs
   participant S as Sheets
   participant DR as Drive
   participant CDN as cdnjs
@@ -179,7 +179,7 @@ sequenceDiagram
 - 확정 트리거: `admin.html::confirmQuote()` (line 1020)
 - 시트 동기화: `admin.html::syncToSheet()` (line 1032) — assigneeName 결정 로직: `assignedUser || currentUser`
 - PDF 생성: `admin.html::saveQuoteToDrive()` (line 1073)
-- Drive 저장: `Code.gs::handleSaveQuote()` (line 380) — 같은 이름 파일은 휴지통으로 이동 후 재생성 (=덮어쓰기)
+- Drive 저장: `appscript/Code.gs::handleSaveQuote()` (line 380) — 같은 이름 파일은 휴지통으로 이동 후 재생성 (=덮어쓰기)
 
 **파일명 규칙:**
 - 견적서: `견적서_<업체명>.pdf` (`/[\s\/\\:*?"<>|]/g` → `_` 치환)
@@ -205,7 +205,7 @@ flowchart TD
 
 **버전 이력 저장처가 두 곳:**
 1. **localStorage** `jhtech_quote_versions` — `pushVersionHistory()` (line 1209) 로 클라이언트 스냅샷 저장. 다른 기기에서는 안 보임.
-2. **Google Sheets `견적서발급관리`** — `Code.gs::getVersions(reqId)` (line 244)로 접수번호 기준 모든 견적번호 조회 가능.
+2. **Google Sheets `견적서발급관리`** — `appscript/Code.gs::getVersions(reqId)` (line 244)로 접수번호 기준 모든 견적번호 조회 가능.
 
 `<추측>` 둘 다 쓰는 이유는 GAS 도입 전에 만들어진 localStorage 버전 이력을 그대로 남겨둔 것으로 보임. 향후 단일화 검토 필요.
 
@@ -217,7 +217,7 @@ flowchart LR
   SEL --> DD[담당자 드롭다운에서 선택]
   DD --> SAVE[저장 클릭]
   SAVE --> CALL["POST action=updateAssignee<br/>{id, assignee}"]
-  CALL --> GS["Code.gs::handleUpdateAssignee()"]
+  CALL --> GS["appscript/Code.gs::handleUpdateAssignee()"]
   GS --> UPD[신청관리[20] 컬럼 갱신]
   UPD --> AC[admin.html: 저장 → 수정 버튼 토글]
   AC --> P[해당 담당자 로그인 시<br/>renderList 필터에 노출]
@@ -301,7 +301,7 @@ admin.html → AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8
 ### Q2. PDF 저장 경로/파일명이 작업내역.md 기록과 다릅니다 — 어느 쪽이 정상인가요?
 
 - 작업내역.md 11차 작업: `재현테크_견적서/YYYY-MM/업체명_YYYYMMDD.pdf`
-- 현재 `Code.gs::handleSaveQuote()`: `재현테크_견적서/견적서_업체명.pdf` (날짜·서브폴더 없음)
+- 현재 `appscript/Code.gs::handleSaveQuote()`: `재현테크_견적서/견적서_업체명.pdf` (날짜·서브폴더 없음)
 
 월별 폴더링과 날짜 접미사가 의도적으로 제거된 것이라면 (커밋 `eaad860 "Drive 덮어쓰기"`가 그 변경으로 보임) 작업내역.md를 갱신해야 하고, 의도치 않은 회귀라면 복구해야 합니다. 현재는 동일 업체가 같은 견적의 R02 버전을 발행해도 같은 파일명으로 덮어쓰기됩니다 (드라이브에는 항상 1개 파일만 남음).
 
@@ -315,7 +315,7 @@ admin.html → AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8
 
 ### Q5. 견적 버전 이력이 localStorage와 Sheets에 이중으로 저장됩니다 — 어느 쪽이 진실 소스(SoT)인가요?
 
-`admin.html::pushVersionHistory()` (localStorage `jhtech_quote_versions`)와 `Code.gs::getVersions()` (Sheets `견적서발급관리`)가 모두 버전 이력을 보존합니다. 다른 PC에서 admin에 로그인하면 localStorage 이력은 보이지 않고 시트 이력만 보이므로, 표시 결과가 환경마다 달라집니다. 이력 표시 화면(`renderVersionHistory()` line 683)은 어느 쪽을 우선 사용하나요? localStorage 이력을 완전히 제거해도 운영에 문제가 없을지 검토가 필요합니다.
+`admin.html::pushVersionHistory()` (localStorage `jhtech_quote_versions`)와 `appscript/Code.gs::getVersions()` (Sheets `견적서발급관리`)가 모두 버전 이력을 보존합니다. 다른 PC에서 admin에 로그인하면 localStorage 이력은 보이지 않고 시트 이력만 보이므로, 표시 결과가 환경마다 달라집니다. 이력 표시 화면(`renderVersionHistory()` line 683)은 어느 쪽을 우선 사용하나요? localStorage 이력을 완전히 제거해도 운영에 문제가 없을지 검토가 필요합니다.
 
 ---
 
@@ -347,7 +347,7 @@ admin.html → AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8
 | `printQuote()` | 1321 | 새 창 출력 + Drive 저장 호출 |
 | `getNextVersion()` | 1217 | `QT-x → QT-x-R02 → -R03` 증가 |
 
-### `Code.gs`
+### `appscript/Code.gs`
 | 함수 | 라인 | 역할 |
 |---|---:|---|
 | `initSheets()` | 9 | 4개 시트 초기화 (수동 1회 실행) |

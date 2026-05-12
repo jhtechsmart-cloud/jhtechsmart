@@ -92,7 +92,8 @@
     .extra-table .del-btn:hover{background:#fee2e2;border-color:var(--danger)}
     .price-summary{background:linear-gradient(135deg,#f0f7ff,#eff6ff);border:1.5px solid #c7dff9;border-radius:var(--radius);padding:18px 22px}
     .price-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;border-bottom:1px dashed #d0e4f5}
-    .price-row:last-child{border-bottom:0;font-size:16px;font-weight:800;color:var(--blue2);margin-top:6px}
+    /* 합계행 한정 — extraPriceBreakdown 내부 마지막 옵션 행에는 영향 없도록 .price-summary 직접 자손에만 적용 */
+    .price-summary > .price-row:last-child{border-bottom:0;font-size:16px;font-weight:800;color:var(--blue2);margin-top:6px}
     .price-row label{color:var(--muted);font-size:13px;font-weight:500}
     .price-input{border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:8px 13px;font-family:inherit;font-size:14px;text-align:right;width:190px;outline:none;transition:border-color .15s}
     .price-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,86,200,.08)}
@@ -153,14 +154,221 @@
     #pdfProgressTrack{height:10px;background:#e8f0fa;border-radius:99px;overflow:hidden;width:280px;margin:0 auto 12px}
     #pdfProgressBar{height:100%;background:linear-gradient(90deg,#1a56a0,#22c55e);border-radius:99px;width:0%;transition:width .4s ease}
     #pdfOverlaySub{font-size:12px;color:#8a9bb0}
+
+    /* ====================================================================
+       v2 디자인 — Enterprise CPQ 변형 적용 (2026-05-12)
+       기존 클래스와 공존. 새 마크업은 .v2-* / .card-hd / .deal-banner / .q-summary 등 사용
+       ==================================================================== */
+
+    /* 헤더 (기존 header 규칙을 v2-header로 분리) */
+    .v2-header{height:56px;background:#fff;border-bottom:1px solid #e5edf5;display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:none;color:#0f172a}
+    .v2-header .brand{display:flex;align-items:center;gap:12px}
+    .v2-header .brand-logo{height:28px;width:auto;display:block}
+    .v2-header .brand-name{font-size:14px;font-weight:800;color:#0f3768;letter-spacing:-.3px;line-height:1.2}
+    .v2-header .brand-sep{width:1px;height:24px;background:#e5edf5;margin:0 4px}
+    .v2-header .role{font-size:13px;font-weight:600;color:#475569}
+    .v2-header .hdr-r{display:flex;align-items:center;gap:10px;font-size:13px;color:#475569}
+    .v2-header #loginUser{color:#0f3768;font-weight:700}
+    .v2-header #lastRefreshLabel{font-size:11.5px;color:#94a3b8;font-weight:500}
+
+    /* 사이드바 통일 */
+    .v2-sidebar{background:#fff;border-right:1px solid #e5edf5;padding:20px 16px;display:flex;flex-direction:column;gap:14px;height:calc(100vh - 56px);overflow-y:auto;position:sticky;top:56px;box-shadow:none}
+    .v2-sidebar .sidebar-head{display:flex;justify-content:space-between;align-items:center;padding:0 0 12px;border-bottom:1px solid #f1f5f9}
+    .v2-sidebar .sidebar-head h2{font-size:14px;color:#0f3768;font-weight:800;letter-spacing:-.2px;padding-left:11px;border-left:3.5px solid #1e56c8;line-height:1.3}
+    .v2-sidebar .sidebar-head .refresh{background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:5px 11px;font-size:11.5px;color:#0f3768;cursor:pointer;font-weight:600;transition:.12s}
+    .v2-sidebar .sidebar-head .refresh:hover{background:#f8fafc;border-color:#0f3768}
+    .v2-sidebar .tab-btns{display:flex;gap:4px;background:#fafbfd;padding:4px;border-radius:8px;border:1px solid #f1f5f9}
+    .v2-sidebar .tab-btn{flex:1;padding:7px 8px;font-size:12px;font-weight:700;background:transparent;color:#64748b;border:0;border-radius:6px;cursor:pointer;transition:.12s;letter-spacing:-.1px}
+    .v2-sidebar .tab-btn:hover:not(.active){color:#0f3768;background:rgba(255,255,255,.6)}
+    .v2-sidebar .tab-btn.active{background:#fff;color:#0f3768;box-shadow:0 1px 2px rgba(15,55,104,.08),0 0 0 1px #e2e8f0}
+    .v2-sidebar .req-list{display:flex;flex-direction:column;gap:8px;padding:0;flex:1;overflow-y:auto}
+    .v2-req-item{padding:12px 14px;background:#fff;border:1px solid #e5edf5;border-radius:10px;cursor:pointer;transition:.15s;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+    .v2-req-item:hover{border-color:#94a3b8;background:#fafbfd;transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,55,104,.08)}
+    .v2-req-item.active{background:linear-gradient(135deg,#eff6ff,#f0f7ff);border-color:#1e56c8;box-shadow:0 0 0 3px rgba(30,86,200,.1),0 2px 6px rgba(30,86,200,.12)}
+    .v2-req-item .req-company{font-weight:700;color:#0f3768;font-size:13.5px;letter-spacing:-.1px;margin-bottom:0}
+    .v2-req-item .req-meta{font-size:11px;color:#64748b;margin-top:2px;font-variant-numeric:tabular-nums;font-weight:500}
+    .v2-req-item .req-equip{margin-top:6px;font-size:12px;color:#475569;display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px dashed #f1f5f9;font-weight:500}
+    .v2-badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.3px;line-height:1.5}
+    .v2-badge.new{background:#dbeafe;color:#1e40af;border:0}
+    .v2-badge.draft{background:#fef3c7;color:#92400e;border:0}
+    .v2-badge.confirmed{background:#dcfce7;color:#166534;border:0}
+
+    /* 메인 영역 (좌우 2단 + sticky 우측) */
+    .v2-main{padding:24px 30px;height:calc(100vh - 56px);overflow-y:auto;background:#eef2f7}
+    .v2-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;max-width:1320px;margin:0 auto}
+    .v2-left{min-width:0;display:flex;flex-direction:column;gap:14px}
+    .v2-right{position:sticky;top:0;display:flex;flex-direction:column;gap:14px}
+    @media (max-width:1280px){.v2-grid{grid-template-columns:1fr}.v2-right{position:static}}
+
+    /* deal banner */
+    .deal-banner{background:linear-gradient(135deg,#0f3768,#1a4a85);color:#fff;border-radius:14px;padding:22px 28px;box-shadow:0 10px 32px rgba(15,55,104,.18);position:relative;overflow:hidden}
+    .deal-banner::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);border-radius:50%}
+    .deal-banner-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;position:relative}
+    .deal-banner h1{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.2;color:#fff;margin:0}
+    .deal-banner .crumb{font-size:11.5px;color:rgba(255,255,255,.75);font-weight:600;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px}
+    .banner-status{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .banner-status .v2-badge{background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.3)}
+    .banner-status .meta{font-size:12px;color:rgba(255,255,255,.75)}
+    .banner-stats{display:grid;grid-template-columns:repeat(4,auto);gap:36px;margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.18);position:relative}
+    .banner-stat .l{font-size:10.5px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px}
+    .banner-stat .v{font-size:15px;font-weight:700;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+    .banner-stat .v.big{font-size:22px;font-weight:800;color:#fcd34d}
+
+    /* v2 카드 */
+    .v2-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 3px rgba(15,23,42,.04);overflow:hidden}
+    .v2-card .card-hd{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;background:#fafbfd;gap:12px;flex-wrap:wrap}
+    .v2-card .card-hd h2{font-size:14px;font-weight:800;color:#0f3768;letter-spacing:-.2px;padding-left:11px;border-left:3.5px solid #1e56c8;line-height:1.3;margin:0}
+    .v2-card .card-hd .sub{font-size:11.5px;color:#64748b;font-weight:500}
+    .v2-card .card-bd{padding:20px 22px}
+
+    /* 담당자 지정 (카드 내부 상단) */
+    .assignee-block{padding:14px 22px;border-bottom:1px solid #f1f5f9;background:#fafbfd;display:flex;align-items:center;gap:12px;font-size:13px}
+    .assignee-block label{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.6px;min-width:80px;margin:0}
+    .assignee-block select{max-width:240px;flex:1;border:1px solid #e5edf5;border-radius:7px;padding:8px 12px;font-size:13px;background:#fff;outline:none}
+    .assignee-block select:disabled{background:#f8fafc;color:#475569;cursor:default}
+    .assignee-block .name-display{font-weight:700;color:#0f172a;margin-left:auto;display:flex;align-items:center;gap:8px}
+    .assignee-block .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1e56c8,#0f3768);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+    .assignee-block .btn-mini{background:transparent;color:#475569;border:0;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px}
+    .assignee-block .btn-mini:hover{background:#f1f5f9;color:#0f3768}
+
+    /* info grid */
+    .v2-info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 24px;padding:20px 22px}
+    .v2-info-grid .field label{font-size:10.5px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;display:block}
+    .v2-info-grid .field span{font-size:13.5px;color:#0f172a;font-weight:600;display:block}
+    .info-context{padding:16px 22px 18px;border-top:1px solid #f1f5f9;background:#fafbfd;font-size:12.5px;color:#475569}
+    .info-context .ctx-row{display:flex;gap:18px;flex-wrap:wrap;padding-bottom:4px}
+    .info-context b{color:#0f172a;font-weight:600;margin-right:4px}
+    .info-context .quote-issue{display:block;margin-top:14px;line-height:1.7;color:#52525b;font-size:12.5px;background:#fff;border-left:3px solid #fbbf24;padding:11px 14px;border-radius:0 7px 7px 0;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+
+    /* 장비 hero */
+    .equip-grid{display:grid;grid-template-columns:300px 1fr;gap:24px;padding:24px;align-items:center}
+    .equip-hero-img{aspect-ratio:4/3;background:linear-gradient(160deg,#f1f5f9,#cbd5e1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px;font-weight:600;border:1px solid #e2e8f0;position:relative;overflow:hidden}
+    .equip-hero-img img{max-width:100%;max-height:100%;object-fit:contain;position:relative;z-index:1}
+    .equip-hero-img::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.4),transparent 60%);pointer-events:none}
+    .equip-info{display:flex;flex-direction:column}
+    .equip-info .badge-cat{align-self:flex-start;font-size:10.5px;color:#1e40af;background:#dbeafe;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.6px}
+    .equip-info h3{font-size:26px;font-weight:800;color:#0f172a;letter-spacing:-.6px;margin-top:10px;line-height:1.2}
+    .equip-info .desc{font-size:12.5px;color:#64748b;margin-top:4px;line-height:1.5}
+    .spec-tbl{margin-top:16px;width:100%;border-collapse:collapse;font-size:12.5px}
+    .spec-tbl td{padding:8px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-weight:600;font-variant-numeric:tabular-nums}
+    .spec-tbl td:first-child{color:#64748b;font-weight:500;width:120px}
+    .spec-tbl tr:last-child td{border-bottom:0}
+    .equip-actions{padding:14px 24px;border-top:1px solid #f1f5f9;background:#fafbfd;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#64748b;gap:12px;flex-wrap:wrap}
+    .equip-actions select{max-width:240px;background:#fff;border:1px solid #e5edf5;border-radius:7px;padding:7px 11px;font-size:13px;outline:none}
+    .equip-actions .quote-no-pill{font-family:'SF Mono',Menlo,monospace;font-size:12px;background:#fff;border:1px solid #e2e8f0;padding:5px 10px;border-radius:6px;color:#0f3768;font-weight:600;letter-spacing:.3px}
+
+    /* 포함옵션 */
+    .opt-list{padding:16px 22px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .opt-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:7px;font-size:13px;cursor:pointer;transition:.12s;color:#0f172a}
+    .opt-row:hover{background:#eff6ff;border-color:#bfdbfe}
+    .opt-row input{width:14px;height:14px;accent-color:#0f3768;margin:0}
+
+    /* 추가옵션 */
+    .ex-pad{padding:18px 22px}
+    .ex-sugg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+    .ex-sugg .chip{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:99px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+    .ex-sugg .chip:hover:not(:disabled){background:#dbeafe}
+    .ex-sugg .chip:disabled{opacity:.5;cursor:not-allowed}
+    .ex-tbl{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #f1f5f9;border-radius:8px;overflow:hidden}
+    .ex-tbl th{background:#f8fafc;color:#64748b;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;text-align:left;padding:10px 14px;border-bottom:1px solid #e2e8f0}
+    .ex-tbl td{padding:11px 14px;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums}
+    .ex-tbl tr:last-child td{border-bottom:0}
+    .ex-tbl input{border:0;background:transparent;padding:0;font-size:13px;width:100%;font-family:inherit;color:#0f172a;outline:none}
+    .ex-tbl input:focus{box-shadow:none;border-bottom:1px solid #1e56c8}
+    .ex-tbl .del-x{background:transparent;border:0;color:#94a3b8;cursor:pointer;font-size:14px;padding:0;font-weight:700}
+    .ex-tbl .del-x:hover{color:#dc2626}
+    .ex-add{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed #cbd5e1;color:#0f3768;padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:10px;cursor:pointer;font-family:inherit}
+    .ex-add:hover{background:#f8fafc;border-color:#0f3768}
+
+    /* 특기사항 */
+    .v2-notes-ta{min-height:110px;font-size:13px;line-height:1.7;width:100%;border:1px solid #e5edf5;border-radius:7px;padding:12px 14px;font-family:inherit;color:#0f172a;outline:none;resize:vertical}
+    .v2-notes-ta:focus{border-color:#1e56c8;box-shadow:0 0 0 3px rgba(30,86,200,.12)}
+
+    /* Quote Summary */
+    .q-summary{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,55,104,.08)}
+    .q-summary-hd{padding:18px 22px;background:linear-gradient(135deg,#0f3768,#1a4a85);color:#fff;display:flex;justify-content:space-between;align-items:center}
+    .q-summary-hd .lbl{font-size:10.5px;color:rgba(255,255,255,.75);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+    .q-summary-hd .qno{font-family:'SF Mono',Menlo,monospace;font-size:13px;font-weight:700;letter-spacing:.3px}
+    .q-summary-hd .v-pill{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;align-self:flex-start;color:#fff}
+    .q-body{padding:18px 22px 14px}
+    .q-section{margin-bottom:16px}
+    .q-section:last-child{margin-bottom:0}
+    .q-section .q-head{font-size:10.5px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+    .q-line{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;font-size:13px;font-variant-numeric:tabular-nums}
+    .q-line .n{color:#475569;max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .q-line .a{color:#0f172a;font-weight:600}
+    .q-subtotal{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;margin-top:6px;background:#f1f5f9;border-radius:7px;border-top:2px solid #cbd5e1;font-variant-numeric:tabular-nums}
+    .q-subtotal .lbl{font-size:11.5px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .q-subtotal .amt{font-size:14px;color:#0f3768;font-weight:800}
+    .q-grand{padding:18px 22px;background:#fffbeb;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a}
+    .q-grand .lbl{font-size:10.5px;color:#854d0e;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+    .q-grand .num{font-size:30px;font-weight:800;letter-spacing:-.7px;color:#7c2d12;font-variant-numeric:tabular-nums;line-height:1.1}
+    .q-grand .vat{font-size:11.5px;color:#92400e;margin-top:4px}
+    .q-grand .basePrice-input{width:100%;background:#fff;border:1px solid #fde68a;border-radius:7px;padding:9px 12px;text-align:right;font-size:18px;font-weight:800;color:#7c2d12;outline:none;font-variant-numeric:tabular-nums;margin-top:8px}
+    .q-grand .basePrice-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+    .q-actions{padding:16px 22px;display:flex;gap:8px}
+    .q-actions .v2-btn{flex:1;padding:11px;font-size:13.5px;font-weight:700;border-radius:8px;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:.15s}
+    .q-actions .v2-btn.primary{background:linear-gradient(135deg,#0f3768,#1a4a85);color:#fff;box-shadow:0 4px 14px rgba(15,55,104,.25)}
+    .q-actions .v2-btn.primary:hover{background:linear-gradient(135deg,#0a2950,#163d70)}
+    .q-actions .v2-btn.secondary{background:#fff;color:#0f3768;border-color:#cbd5e1}
+    .q-actions .v2-btn.secondary:hover{background:#f8fafc;border-color:#0f3768}
+    .q-actions .v2-btn.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+    .q-actions .v2-btn.warn:hover{background:#fef3c7}
+    .q-meta{padding:0 22px 18px;font-size:11px;color:#64748b;line-height:1.55;border-top:1px solid #f1f5f9;padding-top:14px;margin-top:0}
+    .q-meta-row{display:flex;justify-content:space-between;padding:4px 0;font-variant-numeric:tabular-nums}
+    .q-meta-row .k{color:#94a3b8}
+    .q-meta-row .v{color:#475569;font-weight:600}
+
+    /* 영업일지 (우측 패널) */
+    .note-card .card-hd{background:#fafbfd;border-bottom-color:#f1f5f9}
+    .note-card .card-bd{padding:14px 18px}
+    .note-card textarea{min-height:120px;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:7px;padding:11px 13px;font-family:inherit;font-size:13px;line-height:1.65;color:#0f172a;outline:none;resize:vertical}
+    .note-card textarea:focus{border-color:#1e56c8;box-shadow:0 0 0 3px rgba(30,86,200,.12)}
+
+    /* 신청중 첫 진입 안내 등 */
+    .v2-info-bar{background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;font-size:13px;color:#78350f;display:flex;align-items:center;gap:10px}
+    .v2-info-bar .ic{font-size:18px}
+
+    /* placeholder when no req selected */
+    #mainArea .placeholder{display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:14px;text-align:center;padding:60px 20px}
+
+    /* Quote Summary 내부 인라인 기본가 입력 */
+    .q-edit-price{border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:6px 10px;font-size:13.5px;width:140px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:#0f172a;outline:none;font-family:inherit}
+    .q-edit-price:focus{border-color:#1e56c8;box-shadow:0 0 0 3px rgba(30,86,200,.12)}
+
+    /* 우측 패널 안 작은 안내 라벨 */
+    .q-empty{padding:8px 0;font-size:12px;color:#94a3b8;text-align:center;font-style:italic}
+
+    /* 추가옵션 빈 상태 */
+    .ex-empty{padding:18px;text-align:center;color:#94a3b8;font-size:12.5px;border:1px dashed #e2e8f0;border-radius:8px;background:#fafbfd}
+
+    /* 데이터 로딩 오버레이 (로그인 직후) */
+    .loading-overlay{position:fixed;inset:0;background:rgba(239,243,249,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center;animation:lov-fadein .18s ease-out}
+    .loading-overlay.show{display:flex}
+    .loading-card{background:#fff;border-radius:16px;padding:34px 40px 28px;box-shadow:0 24px 60px rgba(15,55,104,.2),0 4px 12px rgba(15,55,104,.08);display:flex;flex-direction:column;align-items:center;gap:16px;min-width:300px;max-width:380px;border:1px solid #e5edf5;animation:lov-pop .25s cubic-bezier(.18,.89,.32,1.28)}
+    .loading-spinner{width:46px;height:46px;border:3.5px solid #e5edf5;border-top-color:#1e56c8;border-right-color:#1e56c8;border-radius:50%;animation:lov-spin .85s linear infinite}
+    .loading-card .ttl{font-size:15px;font-weight:800;color:#0f3768;letter-spacing:-.3px;margin-top:2px}
+    .loading-card .sub{font-size:12.5px;color:#64748b;text-align:center;line-height:1.55}
+    .loading-card .prog{font-size:10.5px;color:#94a3b8;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;display:flex;align-items:center;gap:6px}
+    .loading-card .prog::before{content:'';width:5px;height:5px;border-radius:50%;background:#1e56c8;animation:lov-pulse 1.2s ease-in-out infinite}
+    @keyframes lov-spin{to{transform:rotate(360deg)}}
+    @keyframes lov-fadein{from{opacity:0}to{opacity:1}}
+    @keyframes lov-pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes lov-pulse{0%,100%{opacity:.3}50%{opacity:1}}
   </style>
 </head>
 <body>
 
-<header>
-  <h1>(주)재현테크 · 견적 관리 시스템</h1>
-  <div class="hdr-right">
+<header class="v2-header">
+  <div class="brand">
+    <img src="logo-header.png" alt="재현테크" class="brand-logo">
+    <span class="brand-name">디지털 프린팅의 중심</span>
+    <div class="brand-sep"></div>
+    <span class="role">견적 관리</span>
+  </div>
+  <div class="hdr-r">
     <span id="loginUser"></span>
+    <span id="lastRefreshLabel"></span>
     <button id="settingsBtn" class="btn secondary" style="display:none;padding:7px 14px;font-size:13px" onclick="openSettings()">⚙ 관리자 설정</button>
     <button id="logoutBtn" class="btn secondary" style="display:none;padding:7px 14px;font-size:13px" onclick="logout()">로그아웃</button>
   </div>
@@ -180,33 +388,25 @@
 
 <!-- 앱 본체 -->
 <div id="app">
-  <div class="config-bar">
-    <span style="font-weight:700;color:#9b5200">Google Apps Script URL:</span>
-    <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveGasUrl()">
-    <button class="btn secondary" style="padding:6px 14px" onclick="loadRequests()">데이터 불러오기</button>
-    <label style="cursor:pointer;font-size:12px;font-weight:700;color:#1e56c8;padding:6px 12px;background:#eff6ff;border:1.5px solid #c7dff9;border-radius:8px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap" title="견적서 도장(PNG) 이미지 선택 → 브라우저에 저장">
-      🔏 직인 설정<span id="stampOk" style="color:#0d9f6e;display:${localStorage.getItem('jhtech_stamp_b64')?'inline':'none'}">&nbsp;✓</span>
-      <input type="file" accept="image/*" style="display:none" onchange="setStampFromFile(this);document.getElementById('stampOk').style.display='inline'">
-    </label>
-  </div>
+  <!-- GAS URL / 직인 설정 UI는 제거 (관리자 설정 모달의 직인 탭으로 이동, GAS URL은 config.js로 관리).
+       아래 hidden input은 기존 JS 참조 호환용 (document.getElementById('gasUrl').value). -->
+  <input type="hidden" id="gasUrl" value="">
   <div class="layout">
-    <aside class="sidebar">
+    <aside class="sidebar v2-sidebar">
       <div class="sidebar-head">
-        <h2>견적 신청 목록</h2>
-        <button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="loadRequests()">새로고침</button>
+        <h2>신청 목록</h2>
+        <button class="refresh" onclick="loadRequests()">새로고침</button>
       </div>
       <div class="tab-btns">
         <button class="tab-btn active" onclick="filterList('all',this)">전체</button>
         <button class="tab-btn" onclick="filterList('new',this)">신청중</button>
-        <button class="tab-btn" onclick="filterList('confirmed',this)">견적완료</button>
+        <button class="tab-btn" onclick="filterList('confirmed',this)">완료</button>
       </div>
       <div class="req-list" id="reqList">
-        <div class="empty-list">데이터를 불러오려면<br>상단 URL 입력 후 새로고침을 누르세요.<br><br>
-          <button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button>
-        </div>
+        <div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">데이터를 불러오는 중…</div>
       </div>
     </aside>
-    <main class="main-area" id="mainArea">
+    <main class="main-area v2-main" id="mainArea">
       <div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>
     </main>
   </div>
@@ -222,10 +422,11 @@
     <div class="modal-tabs">
       <button class="modal-tab active" id="stab-user" onclick="switchSettingsTab('user')">👤 담당자 관리</button>
       <button class="modal-tab" id="stab-equip" onclick="switchSettingsTab('equip')">🔧 장비 관리</button>
+      <button class="modal-tab" id="stab-stamp" onclick="switchSettingsTab('stamp')">🔏 직인 설정</button>
     </div>
     <!-- 담당자 관리 탭 -->
     <div class="modal-body" id="stabBody-user">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">담당자별로 아이디/비밀번호를 등록하면 각자 로그인하여 견적서에 본인 이름이 자동 표시됩니다.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">담당자별로 아이디/비밀번호를 등록하면 각자 로그인하여 견적서에 본인 이름이 자동 표시됩니다. <b>이름란에는 직책까지 포함</b>해서 입력하세요 (예: 홍길동 부장).</p>
       <h3 style="font-size:14px;font-weight:800;color:#123d70;margin-bottom:12px;border-left:3px solid var(--blue);padding-left:8px">신규 담당자 등록</h3>
       <div class="user-add-form">
         <input id="newUserId" placeholder="아이디 (영문/숫자)">
@@ -253,6 +454,30 @@
         </div>
       </div>
     </div>
+    <!-- 직인 설정 탭 -->
+    <div class="modal-body" id="stabBody-stamp" style="display:none">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">견적서 출력 시 우측 하단에 자동 합성될 직인 이미지를 등록합니다. PNG 권장 (배경 투명).</p>
+      <div style="display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">현재 설정된 직인</div>
+          <div id="stampPreviewBox" style="width:220px;height:220px;border:1.5px dashed var(--line);border-radius:14px;background:#fafcff;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <span style="font-size:13px;color:var(--muted)">등록된 직인 없음</span>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:14px;font-weight:800;color:#123d70;margin-bottom:10px;border-left:3px solid var(--blue);padding-left:8px">새 직인 업로드</h3>
+          <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#1e56c8;color:#fff;border-radius:8px;font-size:13px;font-weight:700">
+            파일 선택…
+            <input type="file" accept="image/*" style="display:none" onchange="setStampFromFile(this)">
+          </label>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">선택 즉시 브라우저(localStorage)에 저장됩니다.</p>
+
+          <h3 style="font-size:14px;font-weight:800;color:#123d70;margin:22px 0 10px;border-left:3px solid var(--blue);padding-left:8px">직인 초기화</h3>
+          <button class="btn danger" style="padding:8px 14px;font-size:13px" onclick="clearStamp()">현재 직인 삭제</button>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">삭제 후 견적서 출력 시 도장이 표시되지 않습니다. 새 파일을 다시 업로드해야 합니다.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -275,6 +500,9 @@ async function saveAssignee(){
   if(!sel) return;
   const userId = sel.value;
   const gasUrl = document.getElementById('gasUrl').value.trim();
+  const users = getUsers();
+  const selectedUser = users.find(u=>u.id===userId);
+  const selectedName = selectedUser ? selectedUser.name : '';
 
   // localStorage 저장
   const map = getAssignees();
@@ -285,20 +513,18 @@ async function saveAssignee(){
   const req = allRequests.find(r=>r.id===currentReq.id);
   if(req) req.assignee = userId;
 
-  // GAS 동기화
+  // GAS 동기화 — 시트 컬럼 20에는 '이름' 기록
   const btn = document.getElementById('assigneeSaveBtn');
   if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
   try {
     if(gasUrl){
-      const body = new URLSearchParams({action:'updateAssignee', data: JSON.stringify({id:currentReq.id, assignee:userId})});
+      const body = new URLSearchParams({action:'updateAssignee', data: JSON.stringify({id:currentReq.id, assignee:userId, assigneeName:selectedName})});
       const resp = await fetch(gasUrl, {method:'POST', body});
       const json = await resp.json();
       if(json.status!=='ok') throw new Error(json.message||'오류');
     }
-    const users = getUsers();
-    const u = users.find(u=>u.id===userId);
     const label = document.getElementById('assigneeLabel');
-    if(label) label.textContent = u ? u.name+' '+u.title : '미지정';
+    if(label) label.textContent = selectedUser ? selectedUser.name : '미지정';
     // 저장 완료 → 잠금(수정 버튼)으로 전환
     if(btn){
       btn.disabled=false;
@@ -351,13 +577,12 @@ function getGasUrl(){
 }
 
 /* ─── 담당자 관리 ─── */
-const DEFAULT_USERS = [
-  {id:'admin', name:'박현석', title:'부장', phone:'010-6247-6261', pw:'jhtech2026', isAdmin:true}
-];
+/* 단일 진실 소스: GAS의 '담당자관리' 시트.
+   localStorage는 오프라인 폴백 캐시일 뿐, 하드코딩 시드 데이터는 사용하지 않는다. */
 function getUsers(){
   if(_memUsers && _memUsers.length > 0) return _memUsers;
-  try{ return JSON.parse(localStorage.getItem('jhtech_users')) || DEFAULT_USERS; }
-  catch{ return DEFAULT_USERS; }
+  try{ return JSON.parse(localStorage.getItem('jhtech_users')) || []; }
+  catch{ return []; }
 }
 function saveUsers(users){
   _memUsers = [...users];
@@ -406,6 +631,8 @@ function setStampFromFile(input){
     stampBase64 = e.target.result;
     try{ localStorage.setItem('jhtech_stamp_b64', stampBase64); } catch{}
     input.value = '';
+    // 설정 모달이 열려 있으면 미리보기 즉시 갱신 (FileReader가 비동기라 여기서 호출)
+    if(typeof renderStampPreview === 'function') renderStampPreview();
     alert('직인 이미지가 저장되었습니다.\n이제 견적서 출력 시 직인이 자동 적용됩니다.');
   };
   reader.readAsDataURL(file);
@@ -491,8 +718,83 @@ let allRequests = [];
 let currentReq = null;
 let filterStatus = 'all';
 let _reqVersions = []; // GAS에서 로드된 현재 신청건의 견적 버전 목록
+let _viewingVersionQuoteNo = null; // 버전 이력 행 클릭 시 임시로 보여줄 버전 (null=현재 최신)
+
+/* 특정 버전 우측 패널 표시 (읽기 전용) */
+function viewVersion(quoteNo){
+  _viewingVersionQuoteNo = quoteNo;
+  renderDetail();
+  const m = document.getElementById('mainArea'); if(m) m.scrollTop = 0;
+}
+function returnToCurrentVersion(){
+  _viewingVersionQuoteNo = null;
+  renderDetail();
+}
+
+/* ─── 자동 갱신 (폴링 + visibilitychange) ─── */
+let _lastRefreshAt = 0;
+let _pollTimer = null;
+let _displayTimer = null;
+let _visibilityHandler = null;
+const POLL_INTERVAL_MS = 60000;        // 60초마다 자동 폴링
+const VISIBILITY_THROTTLE_MS = 5000;   // 탭 복귀 시 5초 throttle (불필요 갱신 차단)
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  _pollTimer = setInterval(() => {
+    if(currentUser && document.visibilityState === 'visible'){
+      loadRequests({silent:true});
+    }
+  }, POLL_INTERVAL_MS);
+  _visibilityHandler = () => {
+    if(document.visibilityState === 'visible' && currentUser){
+      if(Date.now() - _lastRefreshAt > VISIBILITY_THROTTLE_MS){
+        loadRequests({silent:true});
+      }
+    }
+  };
+  document.addEventListener('visibilitychange', _visibilityHandler);
+  // 갱신 시각 표시는 10초마다 다시 그림
+  _displayTimer = setInterval(updateLastRefreshDisplay, 10000);
+}
+
+function stopAutoRefresh(){
+  if(_pollTimer){ clearInterval(_pollTimer); _pollTimer = null; }
+  if(_displayTimer){ clearInterval(_displayTimer); _displayTimer = null; }
+  if(_visibilityHandler){ document.removeEventListener('visibilitychange', _visibilityHandler); _visibilityHandler = null; }
+  _lastRefreshAt = 0;
+}
+
+function updateLastRefreshDisplay(){
+  const el = document.getElementById('lastRefreshLabel');
+  if(!el) return;
+  if(!_lastRefreshAt){ el.textContent = ''; return; }
+  const diff = Math.floor((Date.now() - _lastRefreshAt) / 1000);
+  let text;
+  if(diff < 5) text = '방금 갱신';
+  else if(diff < 60) text = `${diff}초 전 갱신`;
+  else if(diff < 3600) text = `${Math.floor(diff/60)}분 전 갱신`;
+  else text = `${Math.floor(diff/3600)}시간 전 갱신`;
+  el.textContent = '· ' + text;
+}
 
 /* ─── 로그인 ─── */
+/* 세션 키: 새로고침 사이에 로그인 유지. 탭을 닫으면 자동 로그아웃되어 공용 PC에서도 비교적 안전.
+   비밀번호는 저장하지 않음 — 사용자 ID만 저장 후 다음 로드 때 _memUsers 에서 객체 복원. */
+const SESSION_USER_KEY = 'jhtech_session_user';
+
+function _enterApp(user){
+  currentUser = user;
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('loginUser').textContent = user.name;
+  if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
+  document.getElementById('logoutBtn').style.display='';
+  document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || GAS_URL_DEFAULT;
+  loadRequests();          // 로그인 즉시 목록 자동 로드
+  startAutoRefresh();      // 폴링 + visibilitychange 자동 갱신 시작
+}
+
 function doLogin(){
   const id = document.getElementById('idInput').value.trim();
   const pw = document.getElementById('pwInput').value;
@@ -500,13 +802,8 @@ function doLogin(){
   const users = getUsers();
   const user = users.find(u => u.id === id && u.pw === pw);
   if(user){
-    currentUser = user;
-    document.getElementById('loginWrap').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('loginUser').textContent = user.name + ' ' + user.title;
-    if(user.isAdmin) document.getElementById('settingsBtn').style.display='';
-    document.getElementById('logoutBtn').style.display='';
-    document.getElementById('gasUrl').value = localStorage.getItem('gasUrl') || GAS_URL_DEFAULT;
+    try{ sessionStorage.setItem(SESSION_USER_KEY, user.id); }catch{}
+    _enterApp(user);
   } else {
     alert('아이디 또는 비밀번호가 틀렸습니다.');
   }
@@ -514,14 +811,33 @@ function doLogin(){
 
 function logout(){
   if(!confirm('로그아웃 하시겠습니까?')) return;
+  try{ sessionStorage.removeItem(SESSION_USER_KEY); }catch{}
+  stopAutoRefresh();       // 폴링 + visibilitychange 리스너 정리
   currentUser = null;
   document.getElementById('app').style.display='none';
   document.getElementById('loginWrap').style.display='flex';
   document.getElementById('loginUser').textContent='';
+  document.getElementById('lastRefreshLabel').textContent='';
   document.getElementById('settingsBtn').style.display='none';
   document.getElementById('logoutBtn').style.display='none';
   document.getElementById('userId').value='';
   document.getElementById('userPw').value='';
+}
+
+/* 페이지 로드 시 세션에 남아있는 사용자 ID로 자동 로그인 복원.
+   initApp이 _memUsers 채운 다음에 호출되어야 함 (담당자 시트 조회 결과 사용). */
+function tryRestoreSession(){
+  let savedId = null;
+  try{ savedId = sessionStorage.getItem(SESSION_USER_KEY); }catch{}
+  if(!savedId) return false;
+  const users = getUsers();
+  const user = users.find(u => u.id === savedId);
+  if(!user){
+    try{ sessionStorage.removeItem(SESSION_USER_KEY); }catch{}
+    return false;
+  }
+  _enterApp(user);
+  return true;
 }
 
 function saveGasUrl(){ localStorage.setItem('gasUrl', document.getElementById('gasUrl').value.trim()); }
@@ -566,6 +882,8 @@ async function initApp(){
     if(loginStatus) loginStatus.innerHTML = '<span style="color:#c7362f">⚠ 오프라인 모드 (캐시 사용)</span>';
   }finally{
     if(loginBtn) loginBtn.disabled = false;
+    // 담당자 데이터 로드 완료 후 세션에 남은 로그인 ID로 자동 복원 시도
+    tryRestoreSession();
   }
 }
 
@@ -583,20 +901,64 @@ function saveSalesNote(reqId, note){
 }
 
 /* ─── 데이터 로드 ─── */
-function loadRequests(){
+/* 데이터 로딩 오버레이 헬퍼 */
+function showLoadingOverlay(opts){
+  const el = document.getElementById('loadingOverlay');
+  if(!el) return;
+  const sub = document.getElementById('loadingSubMsg');
+  const prog = document.getElementById('loadingProgLbl');
+  if(sub && opts && opts.sub) sub.textContent = opts.sub;
+  if(prog && opts && opts.prog) prog.textContent = opts.prog;
+  el.classList.add('show');
+}
+function hideLoadingOverlay(){
+  const el = document.getElementById('loadingOverlay');
+  if(el) el.classList.remove('show');
+}
+
+function loadRequests(opts){
+  const silent = opts && opts.silent;   // 자동 폴링 호출 시에는 로딩 메시지 깜빡임 억제
   const url = document.getElementById('gasUrl').value.trim();
-  if(!url){alert('Google Apps Script URL을 입력하세요.');return;}
+  if(!url){ if(!silent) alert('Google Apps Script URL을 입력하세요.'); return; }
   const listEl = document.getElementById('reqList');
-  listEl.innerHTML = '<div class="empty-list">불러오는 중...</div>';
+  const firstLoad = !allRequests || !allRequests.length;
+  if(!silent && firstLoad){
+    listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">불러오는 중…</div>';
+    // 첫 로드일 때만 중앙 오버레이 표시 (수동 새로고침/폴링 시엔 표시 안 함)
+    showLoadingOverlay({sub:'견적 신청 목록을 가져오고 있습니다…', prog:'GAS · 연결'});
+  }
   fetch(url + '?action=list')
     .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
-      if(data && Array.isArray(data.rows)){ allRequests = data.rows; renderList(); }
-      else { listEl.innerHTML = '<div class="empty-list">데이터 없음</div>'; }
+      if(data && Array.isArray(data.rows)){
+        allRequests = data.rows;
+        _lastRefreshAt = Date.now();
+        // 현재 보고 있는 신청이 있으면, 새 데이터의 versions를 currentReq에 동기화 (사용자 편집은 보존)
+        if(currentReq){
+          const fresh = allRequests.find(r => r.id === currentReq.id);
+          if(fresh){
+            currentReq.versions = fresh.versions || [];
+          } else {
+            // 시트에서 삭제됨 → 우측 패널을 placeholder로 리셋
+            currentReq = null;
+            _reqVersions = [];
+            const mainEl = document.getElementById('mainArea');
+            if(mainEl) mainEl.innerHTML = '<div class="placeholder"><div><p style="font-size:32px;margin-bottom:12px">📋</p><p>왼쪽 목록에서 신청 건을 선택하세요</p></div></div>';
+          }
+        }
+        renderList();
+        updateLastRefreshDisplay();
+      } else if(!silent){
+        listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">데이터 없음</div>';
+      }
+      if(firstLoad) hideLoadingOverlay();
     })
     .catch(err => {
-      console.error(err);
-      listEl.innerHTML = '<div class="empty-list">불러오기 실패<br><small>'+err.message+'</small><br><br><button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button></div>';
+      console.warn('loadRequests:', err);
+      if(!silent){
+        listEl.innerHTML = '<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">불러오기 실패<br><small>'+err.message+'</small><br><br><button class="btn secondary" style="font-size:12px;padding:6px 12px" onclick="loadDemoData()">샘플 데이터 보기</button></div>';
+      }
+      if(firstLoad) hideLoadingOverlay();
     });
 }
 
@@ -620,20 +982,21 @@ function renderList(){
     base = base.filter(r => r.assignee === currentUser.id);
   }
   const filtered = filterStatus==='all' ? base : base.filter(r => r.status === filterStatus);
-  if(!filtered.length){list.innerHTML='<div class="empty-list">해당 건이 없습니다.</div>';return;}
+  if(!filtered.length){list.innerHTML='<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">해당 건이 없습니다.</div>';return;}
   list.innerHTML = filtered.map(r => {
     const assignedUser = users.find(u=>u.id===r.assignee);
-    const assigneeName = assignedUser ? assignedUser.name+' '+assignedUser.title : '미지정';
+    const assigneeName = assignedUser ? assignedUser.name : '미지정';
+    const statusLabel = r.status==='confirmed'?'완료':r.status==='draft'?'임시':'신청중';
     return `
-    <div class="req-item ${currentReq?.id===r.id?'active':''}" onclick="selectReq('${r.id}')">
+    <div class="v2-req-item ${currentReq?.id===r.id?'active':''}" onclick="selectReq('${r.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <span class="req-company">${r.company}</span>
-        <span class="badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중'}</span>
+        <span class="v2-badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${statusLabel}</span>
       </div>
-      <div class="req-meta">${r.submittedAt} · ${r.id}</div>
-      <div class="req-equip" style="display:flex;justify-content:space-between">
-        <span>장비: ${r.equipment||'미선택'}</span>
-        <span style="font-size:11px;color:${r.assignee?'var(--blue2)':'var(--muted)'};font-weight:${r.assignee?'700':'400'}">담당: ${assigneeName}</span>
+      <div class="req-meta">${r.submittedAt}</div>
+      <div class="req-equip">
+        <span>${r.equipment||'장비 미선택'}</span>
+        <span style="font-weight:${r.assignee?'700':'500'};color:${r.assignee?'#0f3768':'#94a3b8'}">${assigneeName}</span>
       </div>
     </div>`;
   }).join('');
@@ -646,15 +1009,17 @@ function filterList(status, btn){
   renderList();
 }
 
-/* ─── 견적번호 자동 생성 ─── */
+/* ─── 견적번호 자동 생성 — 형식: YYMMDD-NNNN-v1 ─── */
 function generateQuoteNo(){
   const now = new Date();
   const yy = String(now.getFullYear()).slice(2);
   const mm = String(now.getMonth()+1).padStart(2,'0');
   const dd = String(now.getDate()).padStart(2,'0');
   const prefix = yy + mm + dd;
-  const todayCount = allRequests.filter(r => r.quoteNo && r.quoteNo.startsWith(prefix)).length;
-  return prefix + '-' + String(todayCount + 1).padStart(4,'0');
+  // 오늘 프리픽스로 시작하는 신청 수 = 다음 시퀀스 번호
+  // r.quoteNo는 listRequests의 최신 버전이므로 같은 신청은 1회만 카운트됨
+  const todayCount = allRequests.filter(r => r.quoteNo && r.quoteNo.startsWith(prefix+'-')).length;
+  return prefix + '-' + String(todayCount + 1).padStart(4,'0') + '-v1';
 }
 
 /* ─── 신청 상세 ─── */
@@ -663,10 +1028,19 @@ function selectReq(id){
   if(!currentReq) return;
   currentReq.assignee = currentReq.assignee || getAssignees()[id] || '';
   isRevising = false;
-  _reqVersions = [];
+  _viewingVersionQuoteNo = null; // 다른 신청 선택 시 버전 미리보기 상태 해제
+  // listRequests 응답에 임베드된 버전 데이터를 즉시 사용 (별도 GAS 호출 없음)
+  _reqVersions = currentReq.versions || [];
+  // 신청중 상태 + 포함옵션이 비어있으면 장비 기본값으로 자동 체크 (첫 진입 UX)
+  if(currentReq.status === 'new' && (!currentReq.includeOpts || currentReq.includeOpts.length === 0)){
+    const eq = getEquipObj(currentReq.equipment);
+    const eqOpts = getEquipOptsById(eq ? eq.id : null);
+    if(eqOpts && eqOpts.includeOpts && eqOpts.includeOpts.length > 0){
+      currentReq.includeOpts = [...eqOpts.includeOpts];
+    }
+  }
   renderDetail();
   renderList();
-  loadVersionsForReq(id);
 }
 
 async function loadVersionsForReq(reqId){
@@ -674,6 +1048,7 @@ async function loadVersionsForReq(reqId){
   if(!url) return;
   try{
     const res = await fetch(`${url}?action=getVersions&id=${encodeURIComponent(reqId)}`).then(r=>r.json());
+    if(currentReq?.id !== reqId) return; // 응답 늦게 도착 + 다른 신청으로 이동했으면 무시
     if(res && Array.isArray(res.rows) && res.rows.length > 0){
       _reqVersions = res.rows;
       renderVersionHistory();
@@ -684,13 +1059,13 @@ async function loadVersionsForReq(reqId){
 function renderVersionHistory(){
   const el = document.getElementById('versionHistorySection');
   if(!el) return;
-  if(_reqVersions.length <= 1){ el.innerHTML=''; return; }
+  if(_reqVersions.length < 1){ el.innerHTML=''; return; }
 
   const sorted = [..._reqVersions].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1);
   const curQNo = _reqVersions.reduce((latest,v)=>String(v.quoteNo)>String(latest.quoteNo)?v:latest, _reqVersions[0]).quoteNo;
 
   el.innerHTML = `<div class="card" style="border-color:#c7dff9;background:#f7fafe;margin-bottom:16px">
-    <h3 style="border-color:#1e56c8">버전 이력 (${sorted.length}개 버전)</h3>
+    <h3 style="border-color:#1e56c8">버전 이력 (${sorted.length}개 버전) <span style="font-size:11px;color:var(--muted);font-weight:500;margin-left:8px">행을 클릭하면 해당 버전 견적 상세를 우측에 표시합니다</span></h3>
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f0f5fb">
         <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">버전</th>
@@ -698,26 +1073,205 @@ function renderVersionHistory(){
         <th style="padding:8px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">발급일시</th>
         <th style="padding:8px 12px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--blue2)">합계금액</th>
         <th style="padding:8px 12px;border:1px solid var(--line);text-align:center;font-weight:700;color:var(--blue2)">출력</th>
+        <th style="padding:8px 12px;border:1px solid var(--line);text-align:center;font-weight:700;color:var(--blue2)">변경 정보</th>
       </tr></thead>
-      <tbody>${sorted.map(v=>{
+      <tbody>${sorted.map((v, idx)=>{
         const isCur = v.quoteNo === curQNo;
+        // 최신 버전이 아닌 행을 보고 있을 때만 강조 (눈 아이콘 + 옅은 노란 배경)
+        const isViewing = !isCur && _viewingVersionQuoteNo === v.quoteNo;
         const vl = getVersionLabel(v.quoteNo);
-        return `<tr${isCur?' style="background:#eff6ff"':''}>
-          <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:${isCur?'#1e56c8':'#e0e7ff'};color:${isCur?'#fff':'#3730a3'};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${vl}${isCur?' 현재':''}</span></td>
+        const isFirst = idx === 0;
+        const diffBtnStyle = isFirst
+          ? 'background:#f1f5f9;color:#94a3b8;border:1.5px solid #e2e8f0;cursor:not-allowed'
+          : 'background:#fff;color:var(--blue2);border:1.5px solid #c7dff9;cursor:pointer';
+        const diffBtn = isFirst
+          ? `<button disabled title="최초 버전이라 비교 대상 없음" style="border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;${diffBtnStyle}">최초</button>`
+          : `<button onclick="event.stopPropagation();showVersionDiff('${v.quoteNo}')" title="이전 버전과 변경 내용 비교" style="border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;${diffBtnStyle}">변경 정보</button>`;
+        const rowBg = isViewing ? 'background:#fef9c3' : '';
+        // 단색 SVG 눈 아이콘 (브라우저별 색상 emoji 렌더링 차이 회피)
+        const eyeIcon = isViewing
+          ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="#92400e" style="vertical-align:middle;margin-left:6px" aria-label="이 버전 보는 중"><path d="M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>'
+          : '';
+        return `<tr onclick="viewVersion('${v.quoteNo}')" style="cursor:pointer;${rowBg}" title="이 버전 견적 상세 보기">
+          <td style="padding:7px 12px;border:1px solid var(--line)"><span style="background:#e0e7ff;color:#3730a3;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${vl}${isCur?' 현재':''}</span>${eyeIcon}</td>
           <td style="padding:7px 12px;border:1px solid var(--line);font-family:monospace;font-size:12px">${v.quoteNo}</td>
           <td style="padding:7px 12px;border:1px solid var(--line);color:var(--muted)">${v.issuedAt||'—'}</td>
-          <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:${isCur?'700':'600'};${isCur?'color:var(--blue2)':''}">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
-          <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="printHistoryQuote('${v.quoteNo}')" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
+          <td style="padding:7px 12px;border:1px solid var(--line);text-align:right;font-weight:600">${Number(v.totalPrice||0).toLocaleString('ko-KR')}원</td>
+          <td style="padding:7px 12px;border:1px solid var(--line);text-align:center"><button onclick="event.stopPropagation();printHistoryQuote('${v.quoteNo}')" style="background:#eef2f8;border:1.5px solid var(--line);border-radius:7px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer">출력</button></td>
+          <td style="padding:7px 12px;border:1px solid var(--line);text-align:center">${diffBtn}</td>
         </tr>`;
       }).join('')}</tbody>
     </table>
   </div>`;
 }
 
+/* ─── 버전 변경 정보 모달 ─── */
+function showVersionDiff(quoteNo){
+  const sorted = [..._reqVersions].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1);
+  const idx = sorted.findIndex(v => v.quoteNo === quoteNo);
+  if(idx === -1) return;
+  if(idx === 0){
+    alert('최초 발급된 버전이라 비교할 이전 버전이 없습니다.');
+    return;
+  }
+  const cur = sorted[idx];
+  const prev = sorted[idx-1];
+  const diffs = computeVersionDiff(prev, cur);
+  document.getElementById('versionDiffContent').innerHTML = renderDiffHtml(prev, cur, diffs);
+  document.getElementById('versionDiffModal').style.display = 'flex';
+}
+
+function closeVersionDiff(){
+  document.getElementById('versionDiffModal').style.display = 'none';
+}
+
+function computeVersionDiff(prev, cur){
+  const diffs = [];
+  // 단일 값 필드 비교
+  const fields = [
+    {key:'equipment',   label:'장비'},
+    {key:'supplyPrice', label:'공급가액', isPrice:true},
+    {key:'taxPrice',    label:'부가세',   isPrice:true},
+    {key:'totalPrice',  label:'합계금액', isPrice:true},
+    {key:'validUntil',  label:'유효기간'},
+    {key:'assignee',    label:'담당자'},
+    {key:'status',      label:'상태'}
+  ];
+  fields.forEach(f => {
+    const p = String(prev[f.key]||'');
+    const c = String(cur[f.key]||'');
+    if(p !== c){
+      diffs.push({type:'scalar', label:f.label, prev:p, cur:c, isPrice:!!f.isPrice});
+    }
+  });
+  // 포함옵션 (문자열 배열) — 추가/삭제만 있고 변경은 없음
+  const prevInc = new Set(prev.includeOpts || []);
+  const curInc  = new Set(cur.includeOpts  || []);
+  const addedInc   = [...curInc].filter(x => !prevInc.has(x));
+  const removedInc = [...prevInc].filter(x => !curInc.has(x));
+  if(addedInc.length || removedInc.length){
+    diffs.push({type:'incOpts', added:addedInc, removed:removedInc});
+  }
+  // 추가옵션 (객체 배열) — 항목 추가/삭제/금액 변경
+  const prevExt = {};
+  (prev.extraOpts || []).forEach(o => { prevExt[o.name] = String(o.price||''); });
+  const curExt = {};
+  (cur.extraOpts || []).forEach(o => { curExt[o.name] = String(o.price||''); });
+  const allNames = new Set([...Object.keys(prevExt), ...Object.keys(curExt)]);
+  const extDiffs = [];
+  allNames.forEach(n => {
+    const p = prevExt[n]; const c = curExt[n];
+    if(p === undefined)      extDiffs.push({name:n, change:'added',   price:c});
+    else if(c === undefined) extDiffs.push({name:n, change:'removed', price:p});
+    else if(p !== c)         extDiffs.push({name:n, change:'changed', from:p, to:c});
+  });
+  if(extDiffs.length){
+    diffs.push({type:'extOpts', items:extDiffs});
+  }
+  return diffs;
+}
+
+function renderDiffHtml(prev, cur, diffs){
+  const fmt = n => Number(n||0).toLocaleString('ko-KR') + '원';
+  const prevLabel = getVersionLabel(prev.quoteNo);
+  const curLabel  = getVersionLabel(cur.quoteNo);
+  let html = `
+    <h3 style="margin:0 0 8px;font-size:18px;color:var(--blue2);border-left:4px solid #1e56c8;padding-left:10px">
+      버전 변경 정보 — ${prevLabel} → ${curLabel}
+    </h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;background:#f7fafe;border:1px solid #c7dff9;border-radius:7px;padding:10px 14px">
+      <div><b style="color:#334155">이전 버전:</b> ${prev.quoteNo} <span style="color:#94a3b8">·</span> ${prev.issuedAt||'—'}</div>
+      <div style="margin-top:3px"><b style="color:#334155">현재 버전:</b> ${cur.quoteNo} <span style="color:#94a3b8">·</span> ${cur.issuedAt||'—'}</div>
+    </div>
+  `;
+  if(diffs.length === 0){
+    html += `<div style="text-align:center;padding:30px;color:var(--muted);background:#f8fafc;border-radius:8px">두 버전 사이에 변경된 항목이 없습니다.</div>`;
+    return html;
+  }
+  html += `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:#f0f5fb">
+      <th style="padding:9px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2);width:120px">항목</th>
+      <th style="padding:9px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">이전</th>
+      <th style="padding:9px 12px;border:1px solid var(--line);text-align:left;font-weight:700;color:var(--blue2)">변경 후</th>
+    </tr></thead>
+    <tbody>`;
+  diffs.forEach(d => {
+    if(d.type === 'scalar'){
+      const p = d.isPrice ? fmt(d.prev) : (d.prev || '—');
+      const c = d.isPrice ? fmt(d.cur)  : (d.cur  || '—');
+      let delta = '';
+      if(d.isPrice){
+        const v = Number(d.cur||0) - Number(d.prev||0);
+        if(v !== 0){
+          const sign = v > 0 ? '+' : '';
+          const color = v > 0 ? '#dc2626' : '#059669';
+          delta = ` <span style="color:${color};font-weight:700;font-size:12px">(${sign}${fmt(v)})</span>`;
+        }
+      }
+      html += `<tr>
+        <td style="padding:8px 12px;border:1px solid var(--line);font-weight:600;background:#fafcff">${d.label}</td>
+        <td style="padding:8px 12px;border:1px solid var(--line);color:#94a3b8">${p}</td>
+        <td style="padding:8px 12px;border:1px solid var(--line)">${c}${delta}</td>
+      </tr>`;
+    } else if(d.type === 'incOpts'){
+      const rms  = d.removed.length ? d.removed.map(x => `<div style="color:#dc2626;text-decoration:line-through">− ${x}</div>`).join('') : '<span style="color:#cbd5e1">없음</span>';
+      const adds = d.added.length   ? d.added.map(x   => `<div style="color:#059669">+ ${x}</div>`).join('')                              : '<span style="color:#cbd5e1">없음</span>';
+      html += `<tr>
+        <td style="padding:8px 12px;border:1px solid var(--line);font-weight:600;background:#fafcff;vertical-align:top">포함옵션</td>
+        <td style="padding:8px 12px;border:1px solid var(--line);vertical-align:top">${rms}</td>
+        <td style="padding:8px 12px;border:1px solid var(--line);vertical-align:top">${adds}</td>
+      </tr>`;
+    } else if(d.type === 'extOpts'){
+      // 이전/변경 후 두 열에 각 버전의 추가옵션 목록을 그대로 나열 (강조·삭선 없음)
+      const renderList = arr => {
+        const items = (arr||[]).filter(o => o && o.name);
+        if(items.length === 0) return '<span style="color:#cbd5e1">없음</span>';
+        return items.map(o => `<div style="margin:2px 0">${o.name} <span style="color:#64748b">(${fmt(o.price)})</span></div>`).join('');
+      };
+      html += `<tr>
+        <td style="padding:8px 12px;border:1px solid var(--line);font-weight:600;background:#fafcff;vertical-align:top">추가옵션</td>
+        <td style="padding:8px 12px;border:1px solid var(--line);vertical-align:top">${renderList(prev.extraOpts)}</td>
+        <td style="padding:8px 12px;border:1px solid var(--line);vertical-align:top">${renderList(cur.extraOpts)}</td>
+      </tr>`;
+    }
+  });
+  html += `</tbody></table>`;
+  return html;
+}
+
 function getEquipObj(name){ return equipment.find(e=>e.name===name) || null; }
 
 function renderDetail(){
-  const r = currentReq;
+  // 버전 이력 행 클릭으로 과거 버전 미리보기 중이고, 버전이 2개 이상이며 최신 버전이 아닐 때만 읽기 전용 오버레이.
+  // (버전이 1개이거나 최신 버전 클릭 시에는 일반 모드 — 노란 배너/돌아가기 버튼 안 뜸)
+  let r = currentReq;
+  let viewingPastVersion = false;
+  if(_viewingVersionQuoteNo && _reqVersions.length >= 2){
+    const v = _reqVersions.find(x => x.quoteNo === _viewingVersionQuoteNo);
+    const latestQuoteNo = _reqVersions.reduce(
+      (latest, ver) => String(ver.quoteNo) > String(latest.quoteNo) ? ver : latest,
+      _reqVersions[0]
+    ).quoteNo;
+    if(v && v.quoteNo !== latestQuoteNo){
+      r = Object.assign({}, currentReq, {
+        quoteNo: v.quoteNo,
+        equipment: v.equipment || currentReq.equipment,
+        includeOpts: v.includeOpts || [],
+        extraOpts: v.extraOpts || [],
+        supplyPrice: v.supplyPrice || '',
+        taxPrice: v.taxPrice || '',
+        totalPrice: v.totalPrice || '',
+        validUntil: v.validUntil || currentReq.validUntil,
+        assignee: v.assignee || currentReq.assignee,
+        status: v.status || currentReq.status
+      });
+      viewingPastVersion = true;
+    } else {
+      _viewingVersionQuoteNo = null; // 최신 버전이거나 사라진 버전이면 초기화
+    }
+  } else if(_viewingVersionQuoteNo){
+    _viewingVersionQuoteNo = null; // 버전이 1개뿐이면 과거 버전 보기 의미 없음
+  }
   const eq = getEquipObj(r.equipment);
   const isCutter = eq && eq.cat==='cutter';
   const eqOpts = getEquipOptsById(eq ? eq.id : null);
@@ -728,195 +1282,282 @@ function renderDetail(){
   const checkedIncludes = r.includeOpts || [];
   const extraOpts = r.extraOpts || [];
   const isConfirmed = r.status === 'confirmed';
-  // 관리자이거나, 본인에게 배정된 건이면 편집 가능
+  // 관리자이거나, 본인에게 배정된 건이면 편집 가능. 과거 버전 미리보기 중에는 항상 읽기 전용.
   const isAssignedToMe = currentUser && (currentUser.isAdmin || (r.assignee && r.assignee === currentUser.id));
-  const editMode = isAssignedToMe && (!isConfirmed || isRevising);
+  const editMode = !viewingPastVersion && isAssignedToMe && (!isConfirmed || isRevising);
   if(editMode && !r.quoteNo) r.quoteNo = generateQuoteNo();
 
+  // 공통 계산값
+  const _users = getUsers();
+  const _assignedUser = _users.find(u=>u.id===(r.assignee||''));
+  const _assigneeName = _assignedUser ? _assignedUser.name : '미지정';
+  const _statusLabel = r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중';
+  const _statusClass = r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new';
+  const _catFull = eq ? (eq.cat==='cutter'?'평판커팅기':'UV 프린터') : '—';
+  const _supplyNum = Number(r.supplyPrice||0);
+  const _extraNum = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0).reduce((s,o)=>s+Number(o.price||0),0);
+  const _grandNum = _supplyNum + _extraNum;
+  const _fmt = n => n ? Number(n).toLocaleString('ko-KR') : '0';
+  const _today = new Date();
+  const _expiry = new Date(_today.getTime() + 15*86400000);
+  const _ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
   document.getElementById('mainArea').innerHTML = `
-    <div class="section-title">
-      <span>${r.company}</span>
-      <span class="badge ${r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new'}">${r.status==='confirmed'?'견적완료':r.status==='draft'?'임시저장':'신청중'}</span>
-      ${isRevising?`<span style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">✏️ 수정 모드</span>`:''}
-    </div>
-
-    ${isRevising?`
-    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#78350f;display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">⚠️</span>
-      <span>기존 버전 <b>${r.quoteNo}</b> 수정 중입니다. 수정 확정 시 새 버전(<b>${getNextVersion(r.quoteNo)}</b>)이 발급되고 이전 버전은 이력에 보존됩니다.</span>
-    </div>`:''}
-
-    <div id="versionHistorySection"></div>
-
-    <!-- 신청기업 정보 -->
-    <div class="card">
-      <h3>신청기업 정보</h3>
-      ${(()=>{
-        const users = getUsers();
-        const assignedUser = users.find(u=>u.id===(r.assignee||''));
-        const assigneeName = assignedUser ? assignedUser.name+' '+assignedUser.title : '미지정';
-        if(currentUser && currentUser.isAdmin){
-          const opts = users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name} ${u.title}</option>`).join('');
-          // 이미 담당자가 지정되어 있으면 잠금 상태로 시작
-          const isLocked = !!(r.assignee);
-          return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9">
-            <label style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">담당자 지정</label>
-            <select id="assigneeSelect" ${isLocked?'disabled':''} style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;flex:1;outline:none;cursor:${isLocked?'default':'pointer'};background:${isLocked?'#f8fafc':'#fff'}">
-              <option value="">미지정</option>${opts}
-            </select>
-            <button id="assigneeSaveBtn" class="btn ${isLocked?'secondary':'primary'}" onclick="${isLocked?'editAssignee()':'saveAssignee()'}" style="padding:7px 18px;font-size:13px;white-space:nowrap">${isLocked?'수정':'저장'}</button>
-            <span id="assigneeLabel" style="font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap">${assigneeName}</span>
-          </div>`;
-        } else {
-          return `<div style="margin-bottom:14px;padding:10px 14px;background:#f0f7ff;border-radius:9px;border:1px solid #c7dff9;font-size:13px">
-            <b style="color:var(--blue2)">담당자:</b> <span style="font-weight:700">${assigneeName}</span>
-          </div>`;
-        }
-      })()}
-      <div class="info-grid">
-        <div class="info-item"><label>업체명</label><span>${r.company}</span></div>
-        <div class="info-item"><label>사업자등록번호</label><span>${r.bizNo}</span></div>
-        <div class="info-item"><label>대표자명</label><span>${r.ceo||'—'}</span></div>
-        <div class="info-item"><label>담당자 연락처</label><span>${r.phone}</span></div>
-        <div class="info-item"><label>이메일</label><span>${r.email}</span></div>
-        <div class="info-item"><label>사업장 주소</label><span>${r.address||'—'}</span></div>
-        <div class="info-item"><label>사업자등록일</label><span>${r.foundDate||'—'}</span></div>
-        <div class="info-item"><label>주업종</label><span>${r.industry||'—'}</span></div>
-        <div class="info-item"><label>접수번호</label><span>${r.id}</span></div>
-      </div>
-      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)">
-        <b style="color:#34475c">문제공정:</b> ${r.problemProcess||'—'} &nbsp;|&nbsp;
-        <b style="color:#34475c">도입목적:</b> ${r.adoptionType||'—'}
-      </div>
-      ${r.issues?`<div style="margin-top:8px;font-size:12px;color:#34475c;background:#f8fbff;border-radius:8px;padding:8px 12px;line-height:1.7">${r.issues.split('|').map(i=>'· '+i).join('<br>')}</div>`:''}
-      ${r.equipRequest?`<div style="margin-top:8px;font-size:13px"><b style="color:#34475c">요청사항:</b> ${r.equipRequest}</div>`:''}
-    </div>
-
-    <!-- 영업일지 (내부용) -->
-    <div class="card" style="background:#fffcf0;border-color:#ffd39c">
-      <h3 style="border-color:var(--orange);color:#9b5200">영업일지 <span style="font-size:11px;color:#b07030;font-weight:400">(내부용 — 견적서에 미출력)</span></h3>
-      <textarea class="note-ta" id="salesNote"
-        placeholder="상담 내용, 고객 요청사항, 방문 일정, 특이사항 등 내부 메모를 입력하세요."
-        oninput="saveSalesNote('${r.id}',this.value)">${getSalesNote(r.id)}</textarea>
-    </div>
-
-    <!-- 선택 장비 -->
-    <div class="card">
-      <h3>선택 장비</h3>
-      <div class="equip-card">
-        <div class="equip-photo" id="equipPhotoArea">
-          ${eq?`<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span style=font-size:13px;color:#aaa>사진없음</span>'">`:'<span style="font-size:13px;color:#aaa">미선택</span>'}
-        </div>
-        <div class="equip-info">
-          ${editMode ? `
-            <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">장비 변경</label>
-            <select id="equipSelect" onchange="changeEquip(this.value)" style="border:1.5px solid var(--line);border-radius:7px;padding:7px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;cursor:pointer;margin-bottom:8px">
-              <option value="">-- 장비 선택 --</option>
-              ${(()=>{ let cats = {}; equipment.forEach(e=>{ if(!cats[e.cat]) cats[e.cat]=[]; cats[e.cat].push(e); }); return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat==='cutter'?'평판커팅기':'프린터'}">${items.map(e=>`<option value="${e.name}" ${r.equipment===e.name?'selected':''}>${e.name}</option>`).join('')}</optgroup>`).join(''); })()}
-            </select>` : `<strong>${r.equipment||'미선택'}</strong>
-          <span>${eq?(eq.cat==='cutter'?'평판커팅기':'프린터'):''}</span>`}
-          <div style="margin-top:10px">
-            <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px">견적번호 (자동 생성)</label>
-            <input id="quoteNo" class="price-input" style="width:200px" value="${r.quoteNo||''}" disabled>
+    <!-- 상단 deal banner -->
+    <div class="deal-banner">
+      <div class="deal-banner-top">
+        <div>
+          <div class="crumb">Quote · ${getVersionLabel(r.quoteNo)}</div>
+          <h1>${r.company}</h1>
+          <div class="banner-status">
+            <span class="v2-badge ${_statusClass}">${_statusLabel}</span>
+            ${isRevising?`<span class="v2-badge" style="background:#fde68a;color:#78350f;border:1px solid #f59e0b">✏️ 수정 모드</span>`:''}
+            <span class="meta">${r.id} · ${r.submittedAt||''}</span>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 포함옵션 -->
-    <div class="card">
-      <h3>포함 옵션</h3>
-      <div class="options-grid" id="includeOptList">
-        ${includeOpts.map(opt=>`
-          <label class="opt-check">
-            <input type="checkbox" class="inc-opt" value="${opt}" ${checkedIncludes.includes(opt)?'checked':''} ${editMode?'':'disabled'}>
-            ${opt}
-          </label>`).join('')}
-      </div>
-    </div>
-
-    <!-- 추가옵션 -->
-    <div class="card">
-      <h3>추가 옵션</h3>
-      <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap" id="extraSugg">
-        ${extraOptsSugg.map(s=>`<button class="btn secondary" style="padding:5px 10px;font-size:12px" onclick="addExtraOpt('${s}')" ${editMode?'':'disabled'}>+ ${s}</button>`).join('')}
-      </div>
-      <table class="extra-table">
-        <thead><tr><th>옵션명</th><th style="width:160px">단가 (원)</th><th style="width:50px"></th></tr></thead>
-        <tbody id="extraOptBody">
-          ${extraOpts.map((o,i)=>`
-            <tr id="extraRow_${i}">
-              <td><input value="${o.name}" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
-              <td><input value="${o.price}" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
-              <td style="width:36px;text-align:center">${editMode?'<button class="del-btn" onclick="removeExtra('+i+')" title="삭제">✕</button>':''}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      ${editMode?
-        `<button class="btn secondary" style="margin-top:10px;font-size:13px;padding:8px 14px" onclick="addExtraOpt('')">+ 직접 입력</button>`:''}
-    </div>
-
-    <!-- 견적 금액 -->
-    <div class="card">
-      <h3>견적 금액</h3>
-      <div class="price-summary">
-        <div class="price-row">
-          <label style="font-size:13px;color:var(--muted)">기본 가격 (원)</label>
-          ${editMode
-            ? `<input id="basePrice" class="price-input" value="${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR'):''}" placeholder="기본 가격 입력" oninput="formatPriceInput(this)" style="font-size:15px;font-weight:700;width:210px">`
-            : `<span style="font-size:15px;font-weight:700">${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
+      <div class="banner-stats">
+        <div class="banner-stat">
+          <div class="l">견적번호</div>
+          <div class="v">${r.quoteNo||'미발급'}</div>
         </div>
-        <div id="extraPriceBreakdown">
+        <div class="banner-stat">
+          <div class="l">담당자</div>
+          <div class="v">${_assigneeName}</div>
+        </div>
+        <div class="banner-stat">
+          <div class="l">유효기간</div>
+          <div class="v">15일 (~${_ymd(_expiry).slice(5)})</div>
+        </div>
+        <div class="banner-stat">
+          <div class="l">합계금액</div>
+          <div class="v big" id="bannerTotal">${_grandNum ? '₩'+_fmt(_grandNum) : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    ${isRevising?`
+    <div class="v2-info-bar" style="margin-top:6px">
+      <span class="ic">⚠️</span>
+      <span>기존 버전 <b>${r.quoteNo}</b> 수정 중입니다. 수정 확정 시 새 버전(<b>${getNextVersion(r.quoteNo)}</b>)이 발급되고 이전 버전은 이력에 보존됩니다.</span>
+    </div>`:''}
+
+    <!-- 좌우 2단 그리드 -->
+    <div class="v2-grid" style="margin-top:14px">
+      <div class="v2-left">
+
+        <div id="versionHistorySection"></div>
+
+        <!-- 신청기업 정보 -->
+        <div class="v2-card">
+          <div class="card-hd">
+            <h2>신청기업 정보</h2>
+            <span class="sub">접수 시 자동 수집</span>
+          </div>
           ${(()=>{
-            const extras = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0);
-            if(!extras.length) return '';
-            return extras.map(o=>`
-              <div class="price-row" style="font-size:13px">
-                <label style="color:var(--muted)">└ ${o.name}</label>
-                <span style="color:#34475c;font-weight:600">${Number(o.price).toLocaleString('ko-KR')}원</span>
-              </div>`).join('');
+            if(currentUser && currentUser.isAdmin){
+              const opts = _users.map(u=>`<option value="${u.id}" ${(r.assignee||'')===(u.id)?'selected':''}>${u.name}</option>`).join('');
+              const isLocked = !!(r.assignee);
+              return `<div class="assignee-block">
+                <label>담당자</label>
+                <select id="assigneeSelect" ${isLocked?'disabled':''}>
+                  <option value="">미지정</option>${opts}
+                </select>
+                <button id="assigneeSaveBtn" class="btn-mini" onclick="${isLocked?'editAssignee()':'saveAssignee()'}" style="${isLocked?'':'background:#0f3768;color:#fff;padding:6px 14px'}">${isLocked?'변경':'저장'}</button>
+                <span id="assigneeLabel" class="name-display">${_assignedUser?`<span class="avatar">${_assignedUser.name.charAt(0)}</span>${_assigneeName}`:'미지정'}</span>
+              </div>`;
+            } else {
+              return `<div class="assignee-block">
+                <label>담당자</label>
+                <span id="assigneeLabel" class="name-display" style="margin-left:0">${_assignedUser?`<span class="avatar">${_assignedUser.name.charAt(0)}</span>${_assigneeName}`:'미지정'}</span>
+              </div>`;
+            }
           })()}
+          <div class="v2-info-grid">
+            <div class="field"><label>업체명</label><span>${r.company||'—'}</span></div>
+            <div class="field"><label>사업자등록번호</label><span>${r.bizNo||'—'}</span></div>
+            <div class="field"><label>대표자명</label><span>${r.ceo||'—'}</span></div>
+            <div class="field"><label>담당자 연락처</label><span>${r.phone||'—'}</span></div>
+            <div class="field"><label>이메일</label><span>${r.email||'—'}</span></div>
+            <div class="field"><label>사업장 주소</label><span>${r.address||'—'}</span></div>
+            <div class="field"><label>사업자등록일</label><span>${r.foundDate||'—'}</span></div>
+            <div class="field"><label>주업종</label><span>${r.industry||'—'}</span></div>
+            <div class="field"><label>접수번호</label><span>${r.id}</span></div>
+          </div>
+          <div class="info-context">
+            <div class="ctx-row">
+              <span><b>문제공정</b>${r.problemProcess||'—'}</span>
+              <span><b>도입목적</b>${r.adoptionType||'—'}</span>
+            </div>
+            ${r.issues?`<span class="quote-issue">${r.issues.split('|').map(i=>'· '+i).join('<br>')}</span>`:''}
+            ${r.equipRequest?`<div style="margin-top:10px;font-size:12.5px;color:#475569"><b style="color:#0f172a">요청사항</b> · ${r.equipRequest}</div>`:''}
+          </div>
         </div>
-        <div class="price-row" style="border-bottom:0;border-top:2px solid #c7dff9;margin-top:4px;padding-top:10px">
-          <label style="font-size:14px;font-weight:700">합계 (원)</label>
-          ${editMode
-            ? `<span id="totalDisplay" style="font-size:18px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`
-            : `<span style="font-size:20px;font-weight:900;color:var(--blue2)">${r.totalPrice?Number(r.totalPrice).toLocaleString('ko-KR')+'원':'—'}</span>`}
+
+        <!-- 선택 장비 hero -->
+        <div class="v2-card">
+          <div class="card-hd">
+            <h2>선택 장비</h2>
+            <span class="sub">${r.equipment ? `기본 공급가 ₩${_fmt(eqOpts.basePrice||0)} · 포함옵션 ${includeOpts.length}개` : '장비 미선택'}</span>
+          </div>
+          <div class="equip-grid">
+            <div class="equip-hero-img" id="equipPhotoArea">
+              ${eq?`<img src="${eq.img}" alt="${eq.name}" onerror="this.parentElement.innerHTML='<span>사진없음</span>'">`:'<span>장비 미선택</span>'}
+            </div>
+            <div class="equip-info">
+              ${eq?`<span class="badge-cat">${_catFull}</span>`:''}
+              <h3>${r.equipment||'장비 미선택'}</h3>
+              <table class="spec-tbl">
+                <tr><td>모델</td><td>${r.equipment||'—'}</td></tr>
+                <tr><td>카테고리</td><td>${_catFull}</td></tr>
+                <tr><td>기본 공급가</td><td>${eqOpts.basePrice?`₩ ${_fmt(eqOpts.basePrice)} <span style="color:#64748b;font-weight:400;font-size:11.5px">(VAT 별도)</span>`:'—'}</td></tr>
+                <tr><td>포함 / 추가 옵션</td><td>${includeOpts.length}개 / ${extraOptsSugg.length}개</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="equip-actions">
+            ${editMode ? `
+              <span>다른 장비로 변경하려면 우측 드롭다운에서 선택하세요.</span>
+              <select id="equipSelect" onchange="changeEquip(this.value)">
+                <option value="">-- 장비 선택 --</option>
+                ${(()=>{ let cats = {}; equipment.forEach(e=>{ if(!cats[e.cat]) cats[e.cat]=[]; cats[e.cat].push(e); }); return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat==='cutter'?'평판커팅기':'프린터'}">${items.map(e=>`<option value="${e.name}" ${r.equipment===e.name?'selected':''}>${e.name}</option>`).join('')}</optgroup>`).join(''); })()}
+              </select>
+            ` : `<span>견적번호</span><span class="quote-no-pill">${r.quoteNo||'미발급'}</span>`}
+          </div>
         </div>
-        <input type="hidden" id="taxPrice" value="">
-        <input type="hidden" id="totalPrice" value="${r.totalPrice||''}">
-        <input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">
+
+        <!-- 포함 옵션 -->
+        <div class="v2-card">
+          <div class="card-hd">
+            <h2>포함 옵션</h2>
+            <span class="sub">${includeOpts.length}개 · 기본 공급가에 포함</span>
+          </div>
+          <div class="opt-list" id="includeOptList">
+            ${includeOpts.length === 0
+              ? `<div style="grid-column:1/-1;padding:14px;color:#94a3b8;font-size:12.5px;text-align:center">장비를 선택하면 포함옵션이 표시됩니다</div>`
+              : includeOpts.map(opt=>`<label class="opt-row"><input type="checkbox" class="inc-opt" value="${opt}" ${checkedIncludes.includes(opt)?'checked':''} ${editMode?'':'disabled'}>${opt}</label>`).join('')}
+          </div>
+        </div>
+
+        <!-- 추가 옵션 -->
+        <div class="v2-card">
+          <div class="card-hd">
+            <h2>추가 옵션</h2>
+            <span class="sub">개별 견적 항목</span>
+          </div>
+          <div class="ex-pad">
+            ${editMode && extraOptsSugg.length ? `<div class="ex-sugg" id="extraSugg">${extraOptsSugg.map(s=>`<button class="chip" onclick="addExtraOpt('${s}')">+ ${s}</button>`).join('')}</div>` : ''}
+            ${extraOpts.length === 0 && !editMode
+              ? `<div class="ex-empty">선택된 추가 옵션이 없습니다.</div>`
+              : `<table class="ex-tbl">
+                  <thead><tr><th>옵션명</th><th style="width:160px;text-align:right">단가 (원)</th><th style="width:40px"></th></tr></thead>
+                  <tbody id="extraOptBody">
+                    ${extraOpts.map((o,i)=>`
+                      <tr id="extraRow_${i}">
+                        <td><input value="${o.name}" onchange="updateExtra(${i},'name',this.value)" ${editMode?'':'disabled'}></td>
+                        <td style="text-align:right"><input value="${o.price?Number(o.price).toLocaleString('ko-KR'):''}" style="text-align:right" oninput="fmtExtraPrice(this);updateExtra(${i},'price',this.value);recalcPrice()" ${editMode?'':'disabled'}></td>
+                        <td style="text-align:center">${editMode?'<button class="del-x" onclick="removeExtra('+i+')" title="삭제">✕</button>':''}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>`}
+            ${editMode ? `<button class="ex-add" onclick="addExtraOpt('')">＋ 항목 직접 추가</button>` : ''}
+          </div>
+        </div>
+
+        <!-- 특기사항 -->
+        <div class="v2-card">
+          <div class="card-hd">
+            <h2>특기사항</h2>
+            <span class="sub">견적서 출력용 · 각 줄 자동 번호</span>
+          </div>
+          <div class="card-bd">
+            <textarea class="v2-notes-ta" id="specialNotes" rows="6" placeholder="특기사항을 입력하세요.">${r.specialNotes || DEFAULT_SPECIAL_NOTES}</textarea>
+          </div>
+        </div>
+
       </div>
-      ${editMode?`<div style="text-align:right;margin-top:12px">
-        <button class="btn primary" id="savePriceBtn" onclick="savePrice(this)" style="padding:10px 24px;font-size:14px">💾 저장</button>
-      </div>`:''}
-    </div>
 
-    <!-- 특기사항 -->
-    <div class="card">
-      <h3>특기사항 (견적서 출력용)</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">각 항목을 한 줄씩 입력하세요. 출력 시 번호가 자동으로 붙습니다.</p>
-      <textarea class="note-ta" id="specialNotes" rows="6"
-        placeholder="특기사항을 입력하세요.">${r.specialNotes || DEFAULT_SPECIAL_NOTES}</textarea>
-    </div>
+      <!-- 우측 sticky -->
+      <aside class="v2-right">
+        <div class="q-summary">
+          <div class="q-summary-hd">
+            <div>
+              <div class="lbl">Quote Summary</div>
+              <div class="qno">${r.quoteNo||'미발급'}</div>
+            </div>
+            <span class="v-pill">${_statusLabel}</span>
+          </div>
+          <div class="q-body">
+            <div class="q-section">
+              <div class="q-head">장비</div>
+              <div class="q-line">
+                <span class="n">${r.equipment||'장비 미선택'}</span>
+                ${editMode
+                  ? `<input id="basePrice" class="q-edit-price" value="${r.supplyPrice?Number(r.supplyPrice).toLocaleString('ko-KR'):''}" placeholder="0" oninput="formatPriceInput(this);recalcPrice()">`
+                  : `<span class="a">${_fmt(_supplyNum)}</span>`}
+              </div>
+              <div class="q-subtotal"><span class="lbl">장비 소계</span><span class="amt" id="equipSubtotal">${_fmt(_supplyNum)}</span></div>
+            </div>
+            <div class="q-section">
+              <div class="q-head">추가 옵션 (<span id="extraCount">${(r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0).length}</span>)</div>
+              <div id="extraPriceBreakdown">
+                ${(()=>{
+                  const extras = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0);
+                  if(!extras.length) return '<div class="q-empty">선택된 옵션 없음</div>';
+                  return extras.map(o=>`<div class="q-line"><span class="n">${o.name}</span><span class="a">${_fmt(o.price)}</span></div>`).join('');
+                })()}
+              </div>
+              <div class="q-subtotal"><span class="lbl">옵션 소계</span><span class="amt" id="extraSubtotal">${_fmt(_extraNum)}</span></div>
+            </div>
+          </div>
+          <div class="q-grand">
+            <div class="lbl">합계 금액</div>
+            <div class="num" id="totalDisplay">${_grandNum?'₩ '+_fmt(_grandNum):'—'}</div>
+            <div class="vat">VAT 별도 · 유효 15일</div>
+          </div>
+          <div class="q-actions">
+            ${viewingPastVersion
+              ? `<button class="v2-btn secondary" onclick="returnToCurrentVersion()">최신 버전</button>
+                 <button class="v2-btn primary" onclick="printHistoryQuote('${r.quoteNo}')">이 버전 출력</button>`
+              : isConfirmed && !isRevising
+                ? `${isAssignedToMe?`<button class="v2-btn warn" onclick="startRevise()">✏️ 수정</button>`:''}
+                   <button class="v2-btn secondary" onclick="printEquipPhoto()">장비사진</button>
+                   <button class="v2-btn primary" onclick="printQuote()">견적서 출력</button>`
+                : isRevising
+                  ? `<button class="v2-btn secondary" onclick="cancelRevise()">취소</button>
+                     <button class="v2-btn primary" onclick="confirmRevise()">수정 확정 (버전업)</button>`
+                  : isAssignedToMe
+                    ? `<button class="v2-btn secondary" onclick="saveDraft()">임시 저장</button>
+                       <button class="v2-btn primary" onclick="confirmQuote()">견적 확정</button>`
+                    : `<div style="font-size:12.5px;color:#64748b;padding:8px 4px;text-align:center;width:100%">담당자로 지정된 후 편집할 수 있습니다.</div>`}
+          </div>
+          <div class="q-meta">
+            <div class="q-meta-row"><span class="k">발급일</span><span class="v">${_ymd(_today)}</span></div>
+            <div class="q-meta-row"><span class="k">유효기간</span><span class="v">${_ymd(_expiry)} (15일)</span></div>
+            <div class="q-meta-row"><span class="k">담당자</span><span class="v">${_assigneeName}</span></div>
+          </div>
+          <input type="hidden" id="quoteNo" value="${r.quoteNo||''}">
+          <input type="hidden" id="taxPrice" value="">
+          <input type="hidden" id="totalPrice" value="${r.totalPrice||''}">
+          <input type="hidden" id="supplyPrice" value="${r.supplyPrice||''}">
+        </div>
 
-    <!-- 액션 버튼 -->
-    <div class="action-bar">
-      ${isConfirmed && !isRevising
-        ? `${isAssignedToMe?`<button class="btn secondary" onclick="startRevise()" style="border-color:#fde68a;color:#92400e;background:#fffbeb">✏️ 견적 수정</button>`:''}
-           <button class="btn blue" onclick="printQuote()">견적서 출력</button>
-           <button class="btn secondary" onclick="printEquipPhoto()">장비사진 출력</button>`
-        : isRevising
-          ? `<button class="btn secondary" onclick="cancelRevise()">취소</button>
-             <button class="btn primary" onclick="confirmRevise()">수정 확정 (버전업)</button>`
-          : isAssignedToMe
-            ? `<button class="btn secondary" onclick="saveDraft()">임시 저장</button>
-               <button class="btn primary" onclick="confirmQuote()">견적 확정</button>`
-            : `<div style="font-size:13px;color:var(--muted);padding:8px 4px">담당자로 지정된 후 편집할 수 있습니다.</div>`}
+        <!-- 영업일지 -->
+        <div class="v2-card note-card">
+          <div class="card-hd">
+            <h2>영업일지</h2>
+            <span class="sub">내부용 · 미출력</span>
+          </div>
+          <div class="card-bd">
+            <textarea id="salesNote" placeholder="상담 내용, 고객 요청사항, 방문 일정, 특이사항 등 내부 메모" oninput="saveSalesNote('${r.id}',this.value)">${getSalesNote(r.id)}</textarea>
+          </div>
+        </div>
+      </aside>
     </div>
   `;
 
   recalcPrice();
+  renderVersionHistory();
 }
 
 /* ─── 추가옵션 관리 ─── */
@@ -953,16 +1594,48 @@ function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?
 /* ─── 가격 계산 ─── */
 function recalcPrice(){
   const bp = document.getElementById('basePrice');
-  if(!bp) return;
-  const base = Number(bp.value.replace(/,/g,'')) || 0;
+  // basePrice가 없어도 view 모드에서는 currentReq 값으로 합계 표시
+  let base;
+  if(bp) base = Number(bp.value.replace(/,/g,'')) || 0;
+  else base = Number(currentReq?.supplyPrice||0) || 0;
+
   let extraTotal = 0;
+  const rowsArr = [];
   document.querySelectorAll('#extraOptBody tr').forEach(tr => {
     const ins = tr.querySelectorAll('input');
-    if(ins.length >= 2) extraTotal += Number(ins[1].value.replace(/,/g,'')) || 0;
+    if(ins.length >= 2){
+      const name = ins[0].value.trim();
+      const price = Number(ins[1].value.replace(/,/g,'')) || 0;
+      extraTotal += price;
+      if(name && price>0) rowsArr.push({name,price});
+    }
   });
+  // 편집 가능한 행이 없으면 currentReq.extraOpts에서 직접 (view mode)
+  if(!document.querySelectorAll('#extraOptBody tr').length){
+    (currentReq?.extraOpts||[]).forEach(o => {
+      const p = Number(o.price||0)||0;
+      extraTotal += p;
+      if(o.name && p>0) rowsArr.push({name:o.name, price:p});
+    });
+  }
   const total = base + extraTotal;
+  const fmt = n => n ? Number(n).toLocaleString('ko-KR') : '0';
+
+  // 합계 (Quote Summary + 상단 deal banner)
   const td = document.getElementById('totalDisplay');
-  if(td) td.textContent = total ? Number(total).toLocaleString('ko-KR')+'원' : '—';
+  if(td) td.textContent = total ? '₩ '+fmt(total) : '—';
+  const bt = document.getElementById('bannerTotal');
+  if(bt) bt.textContent = total ? '₩'+fmt(total) : '—';
+
+  // 장비 소계 / 옵션 소계
+  const eqSub = document.getElementById('equipSubtotal');
+  if(eqSub) eqSub.textContent = fmt(base);
+  const exSub = document.getElementById('extraSubtotal');
+  if(exSub) exSub.textContent = fmt(extraTotal);
+  const exCnt = document.getElementById('extraCount');
+  if(exCnt) exCnt.textContent = String(rowsArr.length);
+
+  // hidden 가격 폼 동기화
   const taxEl = document.getElementById('taxPrice');
   if(taxEl) taxEl.value = '';
   const totalEl = document.getElementById('totalPrice');
@@ -970,23 +1643,12 @@ function recalcPrice(){
   const spEl = document.getElementById('supplyPrice');
   if(spEl) spEl.value = String(base);
 
-  // 옵션 가격 breakdown 업데이트
+  // 옵션 breakdown (Quote Summary 안)
   const breakdown = document.getElementById('extraPriceBreakdown');
   if(breakdown){
-    const rows = [];
-    document.querySelectorAll('#extraOptBody tr').forEach(tr=>{
-      const ins = tr.querySelectorAll('input');
-      if(ins.length>=2){
-        const name = ins[0].value.trim();
-        const price = Number(ins[1].value.replace(/,/g,''))||0;
-        if(name && price>0) rows.push({name,price});
-      }
-    });
-    breakdown.innerHTML = rows.map(o=>`
-      <div class="price-row" style="font-size:13px">
-        <label style="color:var(--muted)">└ ${o.name}</label>
-        <span style="color:#34475c;font-weight:600">${Number(o.price).toLocaleString('ko-KR')}원</span>
-      </div>`).join('');
+    breakdown.innerHTML = rowsArr.length === 0
+      ? '<div class="q-empty">선택된 옵션 없음</div>'
+      : rowsArr.map(o=>`<div class="q-line"><span class="n">${o.name}</span><span class="a">${fmt(o.price)}</span></div>`).join('');
   }
 }
 
@@ -1036,7 +1698,7 @@ function syncToSheet(status){
   const users = getUsers();
   const assignedUser = currentReq.assignee ? users.find(u=>u.id===currentReq.assignee) : null;
   const managerUser = assignedUser || currentUser;
-  const assigneeName = managerUser ? managerUser.name + ' ' + managerUser.title : '';
+  const assigneeName = managerUser ? managerUser.name : '';
   const dataToSend = Object.assign({}, currentReq, {assigneeName});
   const form = document.createElement('form');
   form.method='POST'; form.action=url; form.target='adminSubmitFrame'; form.style.display='none';
@@ -1046,19 +1708,8 @@ function syncToSheet(status){
 }
 
 /* ─── Google Drive 견적서 저장 ─── */
-function showDriveToast(type, msg){
-  const box = document.getElementById('driveToast');
-  const el = document.createElement('div');
-  el.className = 'd-toast' + (type==='loading'?'': ' '+type);
-  el.innerHTML = type==='loading'
-    ? '<div class="d-spinner"></div><span>Google Drive 저장 중…</span>'
-    : type==='ok'
-      ? '✅ <span>'+msg+'</span>'
-      : '❌ <span>Drive 저장 실패: '+msg+'</span>';
-  box.style.display='flex';
-  box.innerHTML=''; box.appendChild(el);
-  if(type!=='loading') setTimeout(()=>{box.style.display='none';}, 7000);
-}
+/* 토스트 알림은 제거 (저장 결과 링크가 최근 업로드 1개만 가리켜 혼란 유발).
+   PDF 생성/업로드는 그대로 진행, 사용자에겐 진행 오버레이만 표시. 실패 시 alert. */
 
 
 function showPdfOverlay(pct, label){
@@ -1071,13 +1722,59 @@ function hidePdfOverlay(){
   document.getElementById('pdfProgressBar').style.width = '0%';
 }
 
+/* 외부 이미지(특히 한글/공백/`+` 포함 경로 png)를 base64 dataURL로 인라이닝.
+   iframe srcdoc 컨텍스트는 about:srcdoc 출처라 base href를 거쳐도 file:// 이미지 로드가
+   불안정 → 본문에 base64로 박아넣으면 출처 무관하게 항상 렌더됨.
+
+   XHR + responseType:'blob' 사용 — Chrome의 file:// 환경에서 fetch()는 거부하지만 XHR은
+   loadStamp() 사례처럼 status===0으로 성공. Image+canvas는 file:// 이미지를 캔버스에
+   그리면 캔버스가 tainted되어 toDataURL이 SecurityError로 실패하므로 사용 불가. */
+function _xhrToDataURL(url){
+  return new Promise((resolve, reject)=>{
+    try{
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'blob';
+      xhr.onload = () => {
+        if(xhr.status === 200 || xhr.status === 0){
+          const fr = new FileReader();
+          fr.onload = e => resolve(e.target.result);
+          fr.onerror = () => reject(new Error('FileReader 실패: '+url));
+          fr.readAsDataURL(xhr.response);
+        } else {
+          reject(new Error('HTTP '+xhr.status+': '+url));
+        }
+      };
+      xhr.onerror = () => reject(new Error('XHR 실패: '+url));
+      xhr.send();
+    }catch(e){ reject(e); }
+  });
+}
+
+async function inlineImages(html){
+  const matches = [...html.matchAll(/src="([^"]+\.(?:png|jpg|jpeg|gif|webp))"/gi)];
+  for(const m of matches){
+    const url = m[1];
+    if(url.startsWith('data:') || /^https?:\/\//i.test(url)) continue;
+    try{
+      const dataUrl = await _xhrToDataURL(url);
+      html = html.split(m[0]).join('src="'+dataUrl+'"');
+    }catch(e){
+      console.warn('inlineImages 실패:', url, e);
+    }
+  }
+  return html;
+}
+
 async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   const url = document.getElementById('gasUrl').value.trim();
-  if(!url){ showDriveToast('err','GAS URL이 설정되지 않았습니다.'); return; }
+  if(!url){ alert('GAS URL이 설정되지 않았습니다.'); return; }
 
   const safeName = (company||'견적서').replace(/[\s\/\\:*?"<>|]/g,'_');
-  const quoteFilename = '견적서_' + safeName;
-  const equipFilename = '장비사진_' + safeName;
+  // 파일명에 버전(v1, v2, ...)을 포함해 이전 버전 PDF도 Drive에 그대로 보존
+  const verLabel = getVersionLabel(quoteNo);
+  const quoteFilename = '견적서_' + safeName + '_' + verLabel;
+  const equipFilename = '장비사진_' + safeName + '_' + verLabel;
 
   showPdfOverlay(5, 'PDF 생성 준비 중…');
 
@@ -1156,8 +1853,13 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
   }
 
   try{
-    showPdfOverlay(15, '견적서 렌더링 중…');
-    const qB64 = await generatePdf(quoteHtml);
+    showPdfOverlay(10, '이미지 변환 중…');
+    // 한글 경로 이미지가 iframe srcdoc에서 로드 안 되는 문제 방지 — base64로 인라인.
+    const inlinedQuoteHtml = await inlineImages(quoteHtml);
+    const inlinedEquipHtml = equipHtml ? await inlineImages(equipHtml) : null;
+
+    showPdfOverlay(20, '견적서 렌더링 중…');
+    const qB64 = await generatePdf(inlinedQuoteHtml);
 
     showPdfOverlay(45, '견적서 PDF 업로드 중…');
     const r1 = await fetch(url, {method:'POST', body:new URLSearchParams({
@@ -1165,26 +1867,23 @@ async function saveQuoteToDrive(quoteHtml, quoteNo, company, equipHtml){
     })});
     const j1 = await r1.json();
     if(j1.status!=='ok') throw new Error('견적서: '+(j1.message||'오류'));
-    let driveUrl = j1.url;
 
-    if(equipHtml){
+    if(inlinedEquipHtml){
       showPdfOverlay(65, '장비사진 렌더링 중…');
-      const eB64 = await generatePdf(equipHtml);
+      const eB64 = await generatePdf(inlinedEquipHtml);
 
       showPdfOverlay(85, '장비사진 PDF 업로드 중…');
       const r2 = await fetch(url, {method:'POST', body:new URLSearchParams({
         action:'saveQuote', data:JSON.stringify({pdf:eB64, filename:equipFilename, company:company})
       })});
       const j2 = await r2.json();
-      if(j2.status==='ok') driveUrl = j2.url;
+      if(j2.status!=='ok') console.warn('장비사진 업로드 응답 오류:', j2.message);
     }
 
     cleanup();
-    const label = equipHtml ? '견적서 + 장비사진' : '견적서';
-    showDriveToast('ok', label+' PDF 저장 완료 → <a href="'+driveUrl+'" target="_blank">드라이브 열기</a>');
   }catch(err){
     cleanup();
-    showDriveToast('err','Drive 저장 실패: '+err.message);
+    alert('Drive 저장 실패: ' + err.message);
   }
 }
 
@@ -1215,15 +1914,26 @@ function pushVersionHistory(reqId, snapshot){
     localStorage.setItem(VER_KEY, JSON.stringify(all));
   } catch{}
 }
+/* 견적번호: YYMMDD-NNNN-v1 → -v2 → -v3 ...
+   레거시 형식(-R01 등 / 버전 접미 없음)도 표시 호환 */
 function getNextVersion(qNo){
-  const m = (qNo||'').match(/^(.+)-R(\d+)$/);
-  if(m) return m[1]+'-R'+String(+m[2]+1).padStart(2,'0');
-  return (qNo||'QT')+'-R01';
+  if(!qNo) return '';
+  let m = String(qNo).match(/^(.+)-v(\d+)$/);
+  if(m) return m[1] + '-v' + (Number(m[2])+1);
+  // 레거시 -R\d+ 형식이면 다음 버전부터는 새 -v 형식으로 전환
+  m = String(qNo).match(/^(.+)-R(\d+)$/);
+  if(m) return m[1] + '-v' + (Number(m[2])+1);
+  // 아예 버전 접미 없는 옛 데이터 → -v2 첫 부착 (v1으로 간주됨)
+  return qNo + '-v2';
 }
 function getVersionLabel(quoteNo){
-  const m = (quoteNo||'').match(/-R(\d+)$/);
-  if(!m) return 'R00';
-  return 'R'+String(m[1]).padStart(2,'0');
+  if(!quoteNo) return 'v1';
+  let m = String(quoteNo).match(/-v(\d+)$/);
+  if(m) return 'v' + m[1];
+  // 레거시 -R01 → v2, -R00 / 접미 없음 → v1 으로 표시
+  m = String(quoteNo).match(/-R(\d+)$/);
+  if(m) return 'v' + String(Number(m[1])+1);
+  return 'v1';
 }
 function startRevise(){
   isRevising = true;
@@ -1339,7 +2049,7 @@ function printQuote(reqOverride, skipPrint){
   // 배정된 담당자 우선, 없으면 로그인 사용자, 없으면 기본값
   const assignedUser = r.assignee ? getUsers().find(u=>u.id===r.assignee) : null;
   const managerUser  = assignedUser || currentUser;
-  const managerName  = managerUser ? managerUser.name+' '+managerUser.title : '박현석 부장';
+  const managerName  = managerUser ? managerUser.name : '박현석 부장';
   const managerPhone = managerUser ? managerUser.phone : '010-6247-6261';
 
   const specialNotes = (document.getElementById('specialNotes')?.value || DEFAULT_SPECIAL_NOTES)
@@ -1428,8 +2138,7 @@ function printQuote(reqOverride, skipPrint){
    +'<div class="info-row">'
      +'<div class="info-left">'
        +'<div><span class="info-lbl">견적일자:</span> '+dateStr+'</div>'
-       +'<div><span class="info-lbl">견적번호:</span> '+(r.quoteNo||'—')
-       +'&nbsp;<span style="display:inline-block;background:#0f3768;color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;letter-spacing:1.5px;vertical-align:middle">'+getVersionLabel(r.quoteNo)+'</span></div>'
+       +'<div><span class="info-lbl">견적번호:</span> '+(r.quoteNo||'—')+'</div>'
        +'<div><span class="info-lbl">담&nbsp;당&nbsp;자:</span> '+managerName+' / '+managerPhone+'</div>'
        +'<div class="recipient">'+(r.company||'XXXXXXX')+'&nbsp;&nbsp;귀하</div>'
      +'</div>'
@@ -1552,12 +2261,31 @@ function closeSettings(){
   document.getElementById('settingsModal').classList.remove('open');
 }
 function switchSettingsTab(tab){
-  ['user','equip'].forEach(t=>{
+  ['user','equip','stamp'].forEach(t=>{
     document.getElementById('stab-'+t).classList.toggle('active', t===tab);
     document.getElementById('stabBody-'+t).style.display = t===tab ? '' : 'none';
   });
   if(tab==='user') renderUserTable();
   if(tab==='equip') renderEquipMgmtList();
+  if(tab==='stamp') renderStampPreview();
+}
+
+/* 직인 설정 탭 */
+function renderStampPreview(){
+  const box = document.getElementById('stampPreviewBox');
+  if(!box) return;
+  if(stampBase64){
+    box.innerHTML = `<img src="${stampBase64}" alt="현재 직인" style="max-width:200px;max-height:200px;object-fit:contain">`;
+  } else {
+    box.innerHTML = '<span style="font-size:13px;color:var(--muted)">등록된 직인 없음</span>';
+  }
+}
+function clearStamp(){
+  if(!stampBase64){ alert('등록된 직인이 없습니다.'); return; }
+  if(!confirm('현재 직인을 삭제하시겠습니까?\n이후 견적서 출력에 도장이 표시되지 않습니다.')) return;
+  stampBase64 = '';
+  try{ localStorage.removeItem('jhtech_stamp_b64'); }catch{}
+  renderStampPreview();
 }
 
 /* 담당자 관리 */
@@ -1567,7 +2295,7 @@ function renderUserTable(){
   tbody.innerHTML = users.map(u=>`
     <tr>
       <td><code>${u.id}</code></td>
-      <td>${u.name} ${u.title}</td>
+      <td>${u.name}</td>
       <td>${u.phone}</td>
       <td>${u.isAdmin?'<span style="color:var(--orange);font-weight:700">전체관리자</span>':'담당자'}</td>
       <td>${u.isAdmin?'':'<button class="btn danger" style="padding:4px 10px;font-size:12px" onclick="deleteUser(\''+u.id+'\')">삭제</button>'}</td>
@@ -1582,7 +2310,7 @@ function addUser(){
   if(!id||!pw||!name){alert('아이디, 비밀번호, 이름을 모두 입력하세요.');return;}
   const users = getUsers();
   if(users.find(u=>u.id===id)){alert('이미 사용 중인 아이디입니다.');return;}
-  users.push({id, pw, name, title:'', phone, isAdmin:false});
+  users.push({id, pw, name, phone, isAdmin:false});
   saveUsers(users);
   document.getElementById('newUserId').value='';
   document.getElementById('newUserPw').value='';
@@ -1732,6 +2460,17 @@ document.addEventListener('DOMContentLoaded', initApp);
 </script>
 <iframe name="adminSubmitFrame" style="display:none"></iframe>
 <div id="driveToast"></div>
+
+<!-- 데이터 로딩 오버레이 (로그인 직후, 신청 목록 fetch 동안 표시) -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <div class="ttl">데이터 불러오는 중</div>
+    <div class="sub" id="loadingSubMsg">견적 신청 목록을 가져오고 있습니다…</div>
+    <div class="prog" id="loadingProgLbl">GAS · 연결</div>
+  </div>
+</div>
+
 <div id="pdfOverlay">
   <div id="pdfOverlayBox">
     <div id="pdfOverlayLabel">PDF 생성 중…</div>
@@ -1739,5 +2478,16 @@ document.addEventListener('DOMContentLoaded', initApp);
     <div id="pdfOverlaySub">잠시만 기다려 주세요</div>
   </div>
 </div>
+
+<!-- 버전 변경 정보 모달 -->
+<div id="versionDiffModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:10000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeVersionDiff()">
+  <div style="background:#fff;border-radius:14px;max-width:780px;width:100%;max-height:88vh;overflow:auto;padding:26px 28px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div id="versionDiffContent"></div>
+    <div style="text-align:right;margin-top:22px">
+      <button onclick="closeVersionDiff()" style="background:#1e56c8;color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">닫기</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>샘플 A — Invoice 스타일 (Stripe / Quickbooks inspired)</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link rel="stylesheet" href="_base.css">
+<style>
+  /* Variant A — Invoice receipt style
+     참고: Stripe Invoicing, Quickbooks, Pandadoc */
+  .card{background:#fff;border:1px solid #e5edf5;border-radius:12px;padding:22px 24px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card h2{font-size:13px;font-weight:700;color:#0f3768;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;padding-bottom:11px;border-bottom:1px solid #f1f5f9}
+  .card.flush{padding:0;overflow:hidden}
+  .card.flush h2{padding:18px 24px 14px;margin-bottom:0}
+
+  /* deal header */
+  .deal-header h1 .company{color:#0f172a}
+  .quote-id{font-family:'SF Mono','Menlo','Consolas',monospace;font-size:13px;color:#475569;background:#f1f5f9;padding:4px 10px;border-radius:6px;letter-spacing:.5px;font-weight:600}
+
+  /* 담당자 지정 (인라인 hairline) */
+  .assignee-row{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#fafbfd;border-bottom:1px solid #f1f5f9;font-size:13px}
+  .assignee-row label{color:#64748b;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;min-width:100px}
+  .assignee-row select{max-width:260px;flex:1}
+  .assignee-row .name{font-weight:700;color:#0f3768;margin-left:auto}
+
+  /* info dl */
+  .info-dl{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 24px;padding:18px 24px}
+  .info-dl dt{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+  .info-dl dd{font-size:14px;color:#0f172a;font-weight:600}
+  .info-meta{padding:14px 24px;border-top:1px solid #f1f5f9;background:#fafbfd;font-size:13px;color:#475569;display:flex;gap:18px;flex-wrap:wrap}
+  .info-meta b{color:#0f172a;font-weight:600}
+  .info-meta .req-issues{display:block;flex-basis:100%;padding-top:6px;color:#64748b;font-size:12.5px;line-height:1.7}
+
+  /* 영업일지 */
+  .note-card{background:#fffbed;border-color:#fde68a}
+  .note-card h2{color:#92400e;border-bottom-color:#fde8b3}
+  .note-ta{min-height:80px;background:#fff;border-color:#fde8b3}
+
+  /* 장비 hero */
+  .equip-hero{display:grid;grid-template-columns:280px 1fr;gap:24px;padding:24px;align-items:center}
+  .equip-photo{aspect-ratio:4/3;background:linear-gradient(135deg,#f1f5f9,#e2e8f0);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;font-weight:600;border:1px solid #e5edf5}
+  .equip-body{display:flex;flex-direction:column;gap:14px}
+  .equip-cat{font-size:11px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .equip-name{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px;line-height:1.2}
+  .equip-specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .spec-pill{background:#f1f5f9;color:#475569;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px}
+  .spec-pill b{color:#0f3768}
+  .equip-change{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .equip-change select{max-width:240px}
+
+  /* 포함옵션 */
+  .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:18px 24px}
+  .opt-check{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f8fafc;border:1px solid #e5edf5;border-radius:7px;font-size:13px;color:#0f172a}
+  .opt-check input{width:14px;height:14px;accent-color:#1e56c8;margin-top:1px}
+
+  /* 추가옵션 */
+  .extra-wrap{padding:18px 24px}
+  .extra-sugg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .pill-btn{background:#fff;color:#0f3768;border:1px solid #cbd5e1;border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .pill-btn:hover{background:#f1f5f9}
+  .extra-tbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  .extra-tbl th{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:8px 12px;border-bottom:1px solid #e5edf5;background:#fafbfd}
+  .extra-tbl td{padding:10px 12px;border-bottom:1px solid #f1f5f9}
+  .extra-tbl input{border:0;background:transparent;padding:4px 0;width:100%}
+  .extra-tbl input:focus{box-shadow:none;border-bottom:1px solid #1e56c8}
+  .extra-tbl tr:last-child td{border-bottom:0}
+  .add-line{display:flex;align-items:center;gap:6px;margin-top:10px;color:#0f3768;background:transparent;border:0;font-size:13px;font-weight:600;cursor:pointer;padding:6px 0}
+  .add-line:hover{color:#1e56c8}
+
+  /* 특기사항 */
+  .notes-ta{min-height:100px;font-size:13px;line-height:1.7;padding:14px 16px}
+
+  /* 우측 — Quote Summary (영수증 스타일) */
+  .summary{background:#fff;border:1px solid #e5edf5;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(15,55,104,.06)}
+  .summary-head{padding:18px 22px;border-bottom:1px solid #f1f5f9}
+  .summary-head .lbl{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .summary-head .qno{font-family:'SF Mono','Menlo','Consolas',monospace;font-size:14px;color:#0f172a;font-weight:700;letter-spacing:.3px}
+  .summary-head .issued{font-size:11.5px;color:#64748b;margin-top:4px}
+  .summary-items{padding:14px 22px}
+  .sum-line{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;font-size:13px;color:#475569;font-variant-numeric:tabular-nums}
+  .sum-line .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px}
+  .sum-line .amt{font-weight:600;color:#0f172a}
+  .sum-line.title{padding-top:14px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.8px;border-top:1px solid #f1f5f9;margin-top:4px}
+  .sum-sub{padding:8px 22px 12px}
+  .sum-sub-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#475569;font-variant-numeric:tabular-nums;border-bottom:1px dashed #e5edf5}
+  .sum-sub-row:last-child{border-bottom:0}
+  .sum-sub-row b{color:#0f172a;font-weight:600}
+  .summary-total{padding:18px 22px;background:#0f3768;color:#fff}
+  .summary-total .lbl{font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .summary-total .amt{font-size:30px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+  .summary-total .vat{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+  .summary-actions{padding:14px 22px;display:flex;flex-direction:column;gap:8px;border-top:1px solid #f1f5f9}
+  .summary-actions .btn{width:100%;padding:12px;font-size:14px}
+  .summary-help{padding:0 22px 18px;font-size:11.5px;color:#64748b;line-height:1.55}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark">재</div>
+    <span class="brand-name">JaeHyun tech <span class="sep">/</span> <span class="role">견적 관리</span></span>
+    <span class="sample-tag">샘플 A · Invoice 스타일</span>
+  </div>
+  <div class="nav">
+    <a href="index.html">← 인덱스</a>
+    <a href="variant-a-invoice.html" class="active">A · Invoice</a>
+    <a href="variant-b-minimal.html">B · Minimal</a>
+    <a href="variant-c-enterprise.html">C · Enterprise</a>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <h2>신청 목록</h2>
+      <button>새로고침</button>
+    </div>
+    <div class="tab-btns">
+      <button class="tab-btn active">전체</button>
+      <button class="tab-btn">신청중</button>
+      <button class="tab-btn">완료</button>
+    </div>
+    <div class="req-list">
+      <div class="req-item active">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+          <span class="req-company">주식회사 인쇄</span>
+          <span class="badge new">신청중</span>
+        </div>
+        <div class="req-meta">2026-05-12 14:23</div>
+        <div class="req-equip">
+          <span>XTRA OR16</span>
+          <span style="font-weight:600;color:#0f3768">박현석 부장</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+          <span class="req-company">스마트커팅 주식회사</span>
+          <span class="badge draft">임시</span>
+        </div>
+        <div class="req-meta">2026-05-11 14:05</div>
+        <div class="req-equip"><span>JP1311</span><span style="color:#94a3b8">미지정</span></div>
+      </div>
+      <div class="req-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+          <span class="req-company">대한프린팅</span>
+          <span class="badge confirmed">완료</span>
+        </div>
+        <div class="req-meta">2026-05-10 09:11</div>
+        <div class="req-equip"><span>XTRA 2512S</span><span style="font-weight:600;color:#0f3768">이담당 대리</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <div class="main-grid">
+      <div class="main-left">
+
+        <!-- deal header -->
+        <div class="deal-header">
+          <div>
+            <h1><span class="company">주식회사 인쇄</span></h1>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+              <span class="badge new">신청중</span>
+              <span style="font-size:12px;color:#64748b">접수번호 REQ-20260512-12345 · 2026-05-12 14:23</span>
+            </div>
+          </div>
+          <div class="deal-meta">
+            <div>견적번호 <span class="quote-id">260512-0001-v1</span></div>
+          </div>
+        </div>
+
+        <!-- 신청기업 정보 -->
+        <div class="card flush">
+          <h2>신청기업 정보</h2>
+          <div class="assignee-row">
+            <label>담당자 지정</label>
+            <select disabled><option>박현석 부장</option></select>
+            <button class="btn ghost">변경</button>
+            <span class="name">박현석 부장</span>
+          </div>
+          <dl class="info-dl">
+            <div><dt>업체명</dt><dd>주식회사 인쇄</dd></div>
+            <div><dt>사업자등록번호</dt><dd>123-45-67890</dd></div>
+            <div><dt>대표자</dt><dd>홍길동</dd></div>
+            <div><dt>담당자 연락처</dt><dd>010-1234-5678</dd></div>
+            <div><dt>이메일</dt><dd>hong@printing.kr</dd></div>
+            <div><dt>사업장 주소</dt><dd>서울시 마포구 성산동 123</dd></div>
+            <div><dt>사업자등록일</dt><dd>2018-03-15</dd></div>
+            <div><dt>주업종</dt><dd>C18 인쇄·기록매체 복제</dd></div>
+            <div><dt>접수번호</dt><dd>REQ-20260512-12345</dd></div>
+          </dl>
+          <div class="info-meta">
+            <span><b>문제공정</b> · 인쇄 공정</span>
+            <span><b>도입목적</b> · 기존장비 교체</span>
+            <span class="req-issues">· 노후 프린터 잦은 고장으로 생산 중단·납기 지연 반복 → 설비 안정성 확보 목표</span>
+          </div>
+        </div>
+
+        <!-- 영업일지 -->
+        <div class="card note-card">
+          <h2>영업일지 <span style="font-size:10.5px;color:#a16207;font-weight:500;text-transform:none;letter-spacing:0">— 내부용 / 견적서 미출력</span></h2>
+          <textarea class="note-ta" placeholder="상담 내용, 고객 요청사항, 방문 일정, 특이사항 등 내부 메모"></textarea>
+        </div>
+
+        <!-- 선택 장비 hero -->
+        <div class="card flush">
+          <h2 style="display:flex;justify-content:space-between;align-items:center;padding-right:24px">
+            선택 장비
+            <button class="btn ghost" style="text-transform:none;letter-spacing:0">장비 변경 ▾</button>
+          </h2>
+          <div class="equip-hero">
+            <div class="equip-photo">XTRA OR16<br>(사진 placeholder)</div>
+            <div class="equip-body">
+              <span class="equip-cat">UV LED Roll-to-Roll Printer</span>
+              <h3 class="equip-name">XTRA OR16</h3>
+              <div class="equip-specs">
+                <span class="spec-pill">최대 폭 <b>1.6 m</b></span>
+                <span class="spec-pill">기본 공급가 <b>₩44,000,000</b></span>
+                <span class="spec-pill">포함옵션 <b>6개</b></span>
+                <span class="spec-pill">추가옵션 <b>8개</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 포함옵션 -->
+        <div class="card flush">
+          <h2>포함 옵션 <span style="font-size:11px;color:#64748b;font-weight:500;text-transform:none;letter-spacing:0;margin-left:6px">6개 항목</span></h2>
+          <div class="opt-grid">
+            <label class="opt-check"><input type="checkbox" checked> RIP 소프트웨어 (Photoprint / Ergosoft 등)</label>
+            <label class="opt-check"><input type="checkbox" checked> 잉크 기본 세트 포함</label>
+            <label class="opt-check"><input type="checkbox" checked> 설치 및 기초 사용 교육</label>
+            <label class="opt-check"><input type="checkbox" checked> 1년 무상 A/S</label>
+            <label class="opt-check"><input type="checkbox" checked> 미디어 클램프 / 앵커 세트</label>
+            <label class="opt-check"><input type="checkbox" checked> 전원 케이블 및 연결 자재</label>
+          </div>
+        </div>
+
+        <!-- 추가옵션 -->
+        <div class="card flush">
+          <h2>추가 옵션</h2>
+          <div class="extra-wrap">
+            <div class="extra-sugg">
+              <button class="pill-btn">+ 화이트 잉크 키트</button>
+              <button class="pill-btn">+ 바니시 잉크 키트</button>
+              <button class="pill-btn">+ 롤 피더 유닛</button>
+              <button class="pill-btn">+ LED 경화 업그레이드</button>
+              <button class="pill-btn">+ 연장 보증 2년</button>
+            </div>
+            <table class="extra-tbl">
+              <thead><tr><th>옵션명</th><th style="width:160px;text-align:right">단가 (원)</th><th style="width:36px"></th></tr></thead>
+              <tbody>
+                <tr><td><input value="화이트 잉크 키트"></td><td style="text-align:right">1,500,000</td><td style="text-align:center;color:#94a3b8;cursor:pointer">✕</td></tr>
+                <tr><td><input value="현장 출장 설치비"></td><td style="text-align:right">300,000</td><td style="text-align:center;color:#94a3b8;cursor:pointer">✕</td></tr>
+              </tbody>
+            </table>
+            <button class="add-line">＋ 항목 직접 추가</button>
+          </div>
+        </div>
+
+        <!-- 특기사항 -->
+        <div class="card">
+          <h2>특기사항 (견적서 출력용)</h2>
+          <textarea class="notes-ta">상기금액은 부가세(V.A.T) 별도 금액 입니다.
+PC 셋트는 고객 준비사항 입니다.
+본 견적서의 유효기간은 발행일로 부터 15일 입니다.</textarea>
+        </div>
+
+      </div>
+
+      <!-- 우측 sticky summary -->
+      <aside class="main-right">
+        <div class="summary">
+          <div class="summary-head">
+            <div class="lbl">Quote</div>
+            <div class="qno">260512-0001-v1</div>
+            <div class="issued">발급일 2026-05-12 · 유효 15일</div>
+          </div>
+          <div class="summary-items">
+            <div class="sum-line title">장비</div>
+            <div class="sum-line"><span class="name">XTRA OR16</span><span class="amt">44,000,000</span></div>
+            <div class="sum-line title">추가 옵션</div>
+            <div class="sum-line"><span class="name">화이트 잉크 키트</span><span class="amt">1,500,000</span></div>
+            <div class="sum-line"><span class="name">현장 출장 설치비</span><span class="amt">300,000</span></div>
+          </div>
+          <div class="sum-sub">
+            <div class="sum-sub-row"><span>소계</span><b>45,800,000</b></div>
+            <div class="sum-sub-row"><span>부가세 (VAT 별도)</span><b style="color:#64748b">—</b></div>
+          </div>
+          <div class="summary-total">
+            <div class="lbl">합계 금액</div>
+            <div class="amt">₩ 45,800,000</div>
+            <div class="vat">VAT 별도 · 일금 사천오백팔십만원정</div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn primary">견적 확정</button>
+            <button class="btn secondary">임시 저장</button>
+          </div>
+          <div class="summary-help">확정 시 PDF가 자동 생성되어 Google Drive · 견적서발급관리 시트에 동기화됩니다.</div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

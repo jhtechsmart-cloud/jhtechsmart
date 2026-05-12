@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 (주)재현테크의 **2026 소공인 스마트제조 지원사업** 견적 신청 및 관리 시스템. 정적 HTML 프런트엔드 + Google Apps Script(GAS) 백엔드 + Google Sheets/Drive 저장소 조합으로 동작한다. 빌드/번들/테스트 도구가 전혀 없는 단일 폴더 정적 사이트다.
 
 - 배포: GitHub Pages (`https://jhtechsmart-cloud.github.io/jhtechsmart/`)
-- 백엔드: Google Apps Script Web App (`Code.gs`)
+- 백엔드: Google Apps Script Web App (`appscript/Code.gs`)
 - 스토리지: Google Sheets `1HoFkaRY0xOGEriXAjrQ7tyH9LOZ5UkPamyRzxc_W3Ts` + Google Drive `재현테크_견적서/YYYY-MM/`
 
 ## 파일 구조 (큰 그림)
@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|---|
 | `quote.html` | 일반 신청자용 5단계 신청 위저드 (자가진단 → 정보입력 → 공정분석 → 장비선택 → 제출) | ~592 |
 | `admin.html` | 담당자/관리자 포털: 로그인, 신청목록, 견적서 편집·확정·PDF 출력 | ~1742 |
-| `Code.gs` | GAS 백엔드: doPost/doGet 라우터, 시트 읽기/쓰기, PDF Drive 저장 | ~415 |
+| `appscript/Code.gs` | GAS 백엔드: doPost/doGet 라우터, 시트 읽기/쓰기, PDF Drive 저장 | ~415 |
 
 `작업내역.md`는 11차에 걸친 변경 이력 + 버그수정 이력을 모은 일종의 changelog로, 새 작업 전에 반드시 참고할 것.
 
@@ -60,7 +60,7 @@ GAS 배포 URL은 **`config.js` 한 파일에서만 관리**한다. 두 HTML이 
 
 ### 3. 데이터 모델 (Google Sheets = DB)
 
-`Code.gs::initSheets()`가 정의하는 3개 시트:
+`appscript/Code.gs::initSheets()`가 정의하는 3개 시트:
 
 - **신청관리** (21컬럼): 접수번호 / 접수일시 / 업체명 / ... / 상태 / 담당자 / 공정흐름도. `handleSubmit()`이 행 추가, `handleConfirm()`이 19번째 컬럼(상태) 갱신, `handleUpdateAssignee()`가 20번째 컬럼(담당자) 갱신
 - **견적서발급관리** (13컬럼): 견적번호 / 접수번호 / ... / 담당자. 재발행 시 `(접수번호, 견적번호)` 일치 행을 갱신, 없으면 신규 추가
@@ -82,7 +82,7 @@ ID 형식은 `generateId(prefix)` 산출 — `REQ-YYYYMMDD-NNNNN` (신청), `QT-
 2. `saveQuoteToDrive()`가 숨김 iframe을 만들고 그 안에 html2pdf.js를 CDN 동적 로드 (`prepareHtml` → `generatePdf`)
 3. iframe 내부에서 견적서 HTML을 PDF Blob으로 변환 → FileReader로 base64 인코딩
 4. GAS `action=saveQuote`에 `{pdf:base64, filename, company}` POST
-5. `Code.gs::handleSaveQuote()`가 `Utilities.base64Decode` → DriveApp으로 `재현테크_견적서/YYYY-MM/업체명_YYYYMMDD.pdf` 저장 + `ANYONE_WITH_LINK` VIEW 권한 부여
+5. `appscript/Code.gs::handleSaveQuote()`가 `Utilities.base64Decode` → DriveApp으로 `재현테크_견적서/YYYY-MM/업체명_YYYYMMDD.pdf` 저장 + `ANYONE_WITH_LINK` VIEW 권한 부여
 
 iframe을 쓰는 이유는 메인 문서의 CSS와 격리해서 PDF 레이아웃이 의도대로 출력되게 하기 위함.
 
