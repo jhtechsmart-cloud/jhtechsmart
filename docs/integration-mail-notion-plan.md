@@ -13,15 +13,42 @@ bpksmart2026이 사용자가 요청한 8가지 기능을 모두 구현한 refere
 - jhtechsmart는 신청관리(21열)/견적서발급관리(13열) 구조이고 매칭 키는 `REQ-YYYYMMDD-NNNNN` 접수번호 (bpksmart는 사업자번호)
 - bpksmart는 양방향 Notion sync, 별도 Mailer Web App, 큐 시스템, Make.com 백업까지 운영 노하우가 누적된 결과물
 
-## 첫 도입 시 단순화 결정 (변경 가능 — 사용자 검토)
+## 첫 도입 시 단순화 결정 (2026-05-13 사용자 확인)
 
 | bpksmart | jhtechsmart 첫 도입 | 이유 |
 |---|---|---|
-| 양방향 Notion sync (시트↔노션) | 단방향만 (시트→노션) | last-write-wins 정책 복잡, 안정화 후 추가 |
-| 별도 Mailer Web App 배포 | main GAS의 `MailApp.sendEmail` 직접 호출 | 별도 배포·인증 부담 제거, 일 200통(개인)/1500통(Workspace) 한도 |
-| `_sync_queue` 시트 + 재시도 | 첫 도입엔 생략 — `guide_error` 컬럼만 | 실패는 다음 폴링에서 자연 재시도 |
-| Make.com 즉시 발송 백업 | 생략 | 필요해지면 "지금 발송" 버튼 추가 |
-| GPT 응답 5-PART 분리 | 1개 PART (동영상 가이드만) | 사용자 요구 = "동영상 가이드 부분만 수정" |
+| 양방향 Notion sync (시트↔노션) | **단방향만 (시트→노션)** | last-write-wins 정책 복잡, 안정화 후 추가 |
+| 별도 Mailer Web App 배포 | **유지 — 별도 배포 필수** ⚠ | 스크립트 실행 계정(`smart@paxc.co.kr`) ≠ 발송 계정(`jhtechsmart@gmail.com`). `MailApp.sendEmail`은 스크립트 계정으로 발송되므로 별도 Web App 필요 |
+| `_sync_queue` 시트 + 재시도 | **첫 도입엔 생략 — `guide_error` 컬럼만** | 실패는 다음 폴링에서 자연 재시도 |
+| Make.com 즉시 발송 백업 | **생략** | 필요해지면 "지금 발송" 버튼 추가 |
+| GPT 응답 5-PART 분리 | **5개 PART 유지** ⚠ | `jaehyun_tech_guide_fixed.html`에 5개 마커(자기소개·...·마무리) 존재. bpksmart와 동일 구조 |
+
+### Mailer Web App 구조 (확정)
+
+```
+[main GAS — smart@paxc.co.kr 계정]
+   ├ doPost(submit, confirm 등) ← admin.html/quote.html이 호출
+   ├ 시트 read/write, Drive 저장, GPT API 호출
+   └ callMailer(payload) → HTTP POST →┐
+                                       ▼
+              [Mailer GAS Web App — jhtechsmart@gmail.com 계정]
+                ├ doPost(token 검증)
+                └ MailApp.sendEmail({to, subject, html, attachments})
+                   ↑ 이 계정으로 발송됨 (jhtechsmart@gmail.com)
+```
+
+### 5개 PART 마커 (jaehyun_tech_guide_fixed.html)
+
+```
+<!-- 단계별 스크립트 -->   ← 5개 PART 영역 시작
+  <!-- 1. 자기소개 -->     ← PART 1 본문 영역
+  <!-- 2. ?? -->
+  <!-- 3. ?? -->
+  <!-- 4. ?? -->
+  <!-- 5. 마무리 -->        ← PART 5 본문 영역
+```
+
+본문 내용만 GPT 응답으로 치환, 마커는 보존.
 
 ---
 
@@ -117,26 +144,47 @@ bpksmart2026이 사용자가 요청한 8가지 기능을 모두 구현한 refere
 
 ---
 
-## Phase 4 — Time-driven 트리거 자동 발송 (기능 #9)
+## Phase 4 — Time-driven 트리거 자동 발송 + Mailer Web App (기능 #9)
 
-### 내가 작성하는 코드
+### 내가 작성하는 코드 — main GAS (smart@paxc.co.kr)
 - [ ] `pollAndSendGuides()` — 발송 큐 수집, LockService, 30건/회 한도
-- [ ] `sendGuideForRow(row)` — 본문 fetch + PDF 첨부 + `MailApp.sendEmail`
+- [ ] `sendGuideForRow(row)` — 본문 HTML fetch + PDF blob 준비
+- [ ] `callMailer(payload)` — Mailer Web App에 HTTP POST (token 인증)
 - [ ] 시트 update (status, sent_at, send_request=FALSE)
-- [ ] 5분 내 중복 발송 차단
+- [ ] 5분 내 중복 발송 차단 (멱등성)
+
+### 내가 작성하는 코드 — Mailer Web App (별도 GAS 프로젝트, jhtechsmart@gmail.com 계정)
+- [ ] `doPost(e)` — payload + token 검증
+- [ ] `MailApp.sendEmail({to, subject, htmlBody, attachments, name})` 호출
+- [ ] 첨부 크기 한도 체크 (25MB)
+- [ ] 응답 JSON: `{status:'ok', sentAt:...}` 또는 `{status:'error', message}`
 
 ### 사용자 사전 작업
-- [ ] 운영 GAS 에디터 → 좌측 트리거 → "+ 트리거 추가"
+
+**A. Mailer Web App 생성 (jhtechsmart@gmail.com으로 로그인)**
+- [ ] `jhtechsmart@gmail.com`으로 Apps Script 열기 (https://script.google.com/)
+- [ ] "새 프로젝트" → 이름 `재현테크 메일 발송 (jhtech)`
+- [ ] 내가 제공할 mailer/Code.gs 붙여넣기
+- [ ] Script Properties에 `MAILER_TOKEN` (임의 32자 hex) 저장
+- [ ] 배포 → Web App → 액세스 권한 "모든 사용자" → URL 확보
+
+**B. main GAS Script Properties 설정 (smart@paxc.co.kr)**
+- [ ] `MAILER_WEBAPP_URL` = 위 A에서 받은 Web App URL
+- [ ] `MAILER_TOKEN` = A와 동일한 token
+
+**C. 트리거 추가 (main GAS)**
+- [ ] 좌측 트리거 → "+ 트리거 추가"
   - 함수: `pollAndSendGuides`
-  - 이벤트: "시간 기반" / "분 단위 타이머" / "10분마다" (또는 5분)
+  - 이벤트: "시간 기반" / "분 단위 타이머" / "10분마다"
   - 저장
 
 ### 검증 체크리스트
-- [ ] Phase 2~3 완료 후 5~10분 안에 메일 inbox 도착
+- [ ] Phase 2~3 완료 후 10분 안에 메일 inbox 도착
+- [ ] 발송자 `jhtechsmart@gmail.com` 확인
 - [ ] 통합정보 `guide_sent_status=발송완료` 변경
 
-### MailApp 일 한도
-- 개인 Gmail: 200건 / Google Workspace: 1,500건
+### MailApp 일 한도 (`jhtechsmart@gmail.com` 기준)
+- 개인 Gmail: 200건/일 / Google Workspace: 1,500건/일
 
 ---
 

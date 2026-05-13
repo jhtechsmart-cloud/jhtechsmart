@@ -51,7 +51,9 @@ const UNIFIED_HEADERS = [
   // 가이드/메일 그룹 (6) — Phase 2~4에서 사용
   '가이드_생성일시','가이드_HTML_URL','가이드_발송요청','가이드_발송일시','가이드_발송상태','가이드_에러',
   // Notion sync 메타 (2) — Phase 5에서 사용
-  'Notion_PageID','최종푸시일시'
+  'Notion_PageID','최종푸시일시',
+  // PDF URL (2) — Phase 2 추가. 항상 헤더 끝에 두어 기존 시트 끝에 자동 append 되도록
+  '견적PDF_URL','장비사진PDF_URL'
 ];
 
 // 헤더명 → 컬럼 인덱스(0-based) 매핑
@@ -257,6 +259,219 @@ function backfillUnified() {
     count++;
   }
   Logger.log('backfillUnified: ' + count + '개 행 처리 완료');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Phase 2 — 이메일 본문 자동 생성 + Drive 저장 + 발송 큐 등록
+// 견적 PDF + 장비사진 PDF가 모두 Drive에 저장된 시점에 자동 호출됨.
+// 본문 HTML은 jaehyun_tech_guide_fixed.html 템플릿의 5 PART(자기소개~마무리)
+// 영역만 GPT 응답으로 치환(Phase 2는 placeholder). 나머지 정적 부분은 원본 그대로.
+// ═══════════════════════════════════════════════════════════════════
+
+/* Script Properties 조회 — 누락 시 명확한 에러 메시지로 즉시 fail-fast */
+function _guideProp(key) {
+  const v = PropertiesService.getScriptProperties().getProperty(key);
+  if (!v) throw new Error('Script Property "' + key + '" 미설정. Apps Script ⚙ 프로젝트 설정 → 스크립트 속성에서 추가하세요.');
+  return v;
+}
+
+/* 통합정보 시트에서 접수번호로 한 행 읽어 객체로 반환.
+   헤더 기준 dynamic 매핑 — UNIFIED_HEADERS 순서가 바뀌어도 동작.
+   결과 객체 키 = 헤더 이름, 값 = 셀 값. __row에 시트 행 번호도 포함. */
+function _readUnifiedRow(reqId) {
+  if (!reqId) return null;
+  const sheet = _getUnifiedSheet();
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return null;
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const reqIdCol = headers.indexOf('접수번호');
+  if (reqIdCol < 0) return null;
+  const ids = sheet.getRange(2, reqIdCol + 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(reqId)) {
+      const rowValues = sheet.getRange(i + 2, 1, 1, lastCol).getValues()[0];
+      const obj = {};
+      headers.forEach((h, idx) => { if (h) obj[h] = rowValues[idx]; });
+      obj.__row = i + 2;
+      return obj;
+    }
+  }
+  return null;
+}
+
+/* 통합정보 시트의 단일 필드 update — 헤더 이름으로 컬럼 위치 dynamic 조회. */
+function _updateUnifiedField(reqId, columnName, value) {
+  return _updateUnifiedFields(reqId, _kv(columnName, value));
+}
+function _kv(k, v) { const o = {}; o[k] = v; return o; }
+
+/* 통합정보 시트의 여러 필드 동시 update. */
+function _updateUnifiedFields(reqId, fields) {
+  if (!reqId || !fields) return false;
+  const sheet = _getUnifiedSheet();
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return false;
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const reqIdCol = headers.indexOf('접수번호');
+  if (reqIdCol < 0) return false;
+  const ids = sheet.getRange(2, reqIdCol + 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(reqId)) {
+      const targetRow = i + 2;
+      Object.keys(fields).forEach(k => {
+        const colIdx = headers.indexOf(k);
+        if (colIdx >= 0) sheet.getRange(targetRow, colIdx + 1).setValue(fields[k]);
+        else Logger.log('_updateUnifiedFields: 컬럼 "' + k + '" 없음 — skip');
+      });
+      return true;
+    }
+  }
+  return false;
+}
+
+/* 이메일 템플릿 로드 — GUIDE_TEMPLATE_FILE_ID에서 Drive HTML fetch + 5분 캐시 + 5 마커 검증.
+   마커 형식: <!-- 1. 자기소개 -->, <!-- 2. xxx -->, ... <!-- 5. 마무리 --> */
+const GUIDE_TEMPLATE_CACHE_KEY = 'jhtech_guide_template_v1';
+const GUIDE_TEMPLATE_CACHE_SEC = 300;
+
+function loadEmailTemplate() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(GUIDE_TEMPLATE_CACHE_KEY);
+  if (cached) return cached;
+  const fileId = _guideProp('GUIDE_TEMPLATE_FILE_ID');
+  const file = DriveApp.getFileById(fileId);
+  const html = file.getBlob().getDataAsString('UTF-8');
+  // 5 PART 마커 존재 검증
+  for (let i = 1; i <= 5; i++) {
+    const re = new RegExp('<!--\\s*' + i + '\\.\\s+[^>]*-->', 'i');
+    if (!re.test(html)) {
+      throw new Error('Template missing PART ' + i + ' marker. 예상 형식: "<!-- ' + i + '. 제목 -->"');
+    }
+  }
+  // 캐시 크기 한도 (~100KB) — 템플릿이 그보다 크면 캐시 안 함
+  if (html.length < 100000) {
+    cache.put(GUIDE_TEMPLATE_CACHE_KEY, html, GUIDE_TEMPLATE_CACHE_SEC);
+  }
+  return html;
+}
+
+/* GPT 응답(markdown) 5 PART 파싱. Phase 3에서 callOpenAI 결과를 이걸로 처리.
+   예상 입력 형식:
+     ## PART 1 · 자기소개 및 필수 문구 (10초)
+     본문 줄...
+     ## PART 2 · ...
+   결과: {part1, part2, part3, part4, part5} — 본문 텍스트 (마크다운/일반 텍스트) */
+function parseGuideScript(rawMarkdown) {
+  const empty = {part1:'', part2:'', part3:'', part4:'', part5:''};
+  if (!rawMarkdown) return empty;
+  const text = String(rawMarkdown).trim();
+  // ## PART N 다음 본문을 추출 (다음 ## PART 직전까지)
+  const re = /^##\s*PART\s*(\d+)[^\n]*\n([\s\S]*?)(?=^##\s*PART\s*\d+|\Z)/gm;
+  const out = Object.assign({}, empty);
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const n = Number(m[1]);
+    if (n >= 1 && n <= 5) out['part' + n] = (m[2] || '').trim();
+  }
+  return out;
+}
+
+/* 텍스트를 메일 본문용 HTML로 안전 변환.
+   - HTML escape (& < >)
+   - **bold** → <strong> (PART 3 강조 유지)
+   - \n → <br>
+   - 큰따옴표(") 보존 */
+function _formatGuidePartHtml(text) {
+  if (!text) return '';
+  let s = String(text);
+  // HTML escape — & 먼저
+  s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // **bold** → <strong>
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong style="color:#8b4543">$1</strong>');
+  // 줄바꿈 정리 → <br>
+  s = s.replace(/\r\n/g, '\n').replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+  return s;
+}
+
+/* 템플릿의 5 PART 본문 영역을 GPT 응답 내용으로 교체.
+   마커 <!-- N. xxx --> 직후 가장 가까운 <div style="background-color:#f9f5ed;...">...</div>
+   내부 content를 교체. style(border-left 색 포함)은 보존 — PART 3은 #8b4543(빨강) 유지. */
+function mergeGuideTemplate(templateHtml, parts5) {
+  let html = String(templateHtml);
+  for (let n = 1; n <= 5; n++) {
+    const partKey = 'part' + n;
+    if (!parts5 || parts5[partKey] === undefined) continue;
+    const bodyHtml = _formatGuidePartHtml(parts5[partKey]);
+    // 마커 찾기
+    const markerRe = new RegExp('<!--\\s*' + n + '\\.\\s+[^>]*-->', 'i');
+    const markerMatch = markerRe.exec(html);
+    if (!markerMatch) {
+      Logger.log('mergeGuideTemplate: PART ' + n + ' 마커 못 찾음 — skip');
+      continue;
+    }
+    const markerEnd = markerMatch.index + markerMatch[0].length;
+    // 마커 뒤에서 background-color:#f9f5ed div 찾기 (가장 가까운 것)
+    const after = html.substring(markerEnd);
+    const divRe = /<div\s+style="(background-color:#f9f5ed;[^"]*)"[^>]*>([\s\S]*?)<\/div>/i;
+    const divMatch = divRe.exec(after);
+    if (!divMatch) {
+      Logger.log('mergeGuideTemplate: PART ' + n + ' 본문 div 못 찾음 — skip');
+      continue;
+    }
+    const divStart = markerEnd + divMatch.index;
+    const divEnd = divStart + divMatch[0].length;
+    const preservedStyle = divMatch[1];
+    const newDiv = '<div style="' + preservedStyle + '">' + bodyHtml + '</div>';
+    html = html.substring(0, divStart) + newDiv + html.substring(divEnd);
+  }
+  return html;
+}
+
+/* 회사별 가이드 HTML을 Drive 폴더(GUIDE_DRIVE_FOLDER_ID)에 저장 + ANYONE_WITH_LINK VIEW.
+   파일명: {회사명}_가이드메일_{YYYYMMDD-HHmm}_v{N}.html */
+function saveGuideHtmlToDrive(html, company, reqId, version) {
+  const folderId = _guideProp('GUIDE_DRIVE_FOLDER_ID');
+  const folder = DriveApp.getFolderById(folderId);
+  const safeCompany = String(company || 'unknown').replace(/[\/\\:*?"<>|]/g, '_').substring(0, 50);
+  const stamp = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd-HHmm');
+  const vLabel = version ? 'v' + version : 'v1';
+  const filename = safeCompany + '_가이드메일_' + stamp + '_' + vLabel + '.html';
+  const blob = Utilities.newBlob(html, 'text/html', filename);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return {fileId: file.getId(), url: file.getUrl(), name: filename};
+}
+
+/* 통합정보 행을 기준으로 가이드 본문 생성 + Drive 저장 + 시트 메타 update.
+   Phase 2: placeholder 5 PART로 본문 생성 (GPT 호출은 Phase 3에서 활성화).
+   멱등: 이미 가이드_HTML_URL이 있으면 skip — 같은 견적이 두 번 처리돼도 새 파일 안 만듦.
+   Phase 3에서 version 비교로 정식 멱등 강화 예정. */
+function _ensureGuideForUnified(row) {
+  if (!row || !row['접수번호']) return null;
+  // 멱등 — 이미 가이드 URL이 있고 같은 견적 version이면 skip
+  if (row['가이드_HTML_URL']) {
+    Logger.log('_ensureGuideForUnified: 이미 가이드 있음 — ' + row['접수번호']);
+    return {skipped: true, url: row['가이드_HTML_URL']};
+  }
+  // Phase 2 placeholder (Phase 3에서 GPT 응답으로 교체)
+  const placeholder = '[GPT 응답 예정 — Phase 3에서 동영상 가이드가 자동 생성됩니다.]';
+  const parts5 = {
+    part1: placeholder, part2: placeholder, part3: placeholder,
+    part4: placeholder, part5: placeholder
+  };
+  const template = loadEmailTemplate();
+  const merged = mergeGuideTemplate(template, parts5);
+  const saved = saveGuideHtmlToDrive(merged, row['업체명'], row['접수번호'], row['version']);
+  _updateUnifiedFields(row['접수번호'], {
+    '가이드_생성일시': Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
+    '가이드_HTML_URL': saved.url,
+    '가이드_발송요청': true,
+    '가이드_발송상태': '발송대기',
+    '가이드_에러': ''
+  });
+  return {skipped: false, url: saved.url, fileId: saved.fileId};
 }
 
 // ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
@@ -978,6 +1193,22 @@ function handleSaveQuote(data, user) {
   }
 
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  // === Phase 2 훅: 통합정보 시트에 PDF URL 기록 + 두 PDF 모두 채워지면 가이드 본문 자동 생성 ===
+  // filename prefix '장비사진_'로 견적/장비사진 PDF 자동 구분. admin.html 변경 X.
+  // 실패해도 PDF 저장 자체는 성공 응답 — try-catch로 격리.
+  try {
+    if (data.reqId) {
+      const isEquip = String(data.filename || '').indexOf('장비사진_') === 0;
+      const colName = isEquip ? '장비사진PDF_URL' : '견적PDF_URL';
+      _updateUnifiedField(data.reqId, colName, file.getUrl());
+      const row = _readUnifiedRow(data.reqId);
+      if (row && row['견적PDF_URL'] && row['장비사진PDF_URL']) {
+        _ensureGuideForUnified(row);
+      }
+    }
+  } catch (e) { Logger.log('handleSaveQuote: 가이드 훅 실패 — ' + e); }
+
   return jsonResponse({status:'ok', url:file.getUrl(), name:file.getName(), folderId:folder.getId()});
 }
 
