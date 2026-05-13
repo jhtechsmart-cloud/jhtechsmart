@@ -664,6 +664,8 @@ function pollAndSendGuides() {
       }
     }
     Logger.log('pollAndSendGuides: 처리 ' + processed + '건 / 성공 ' + sent + ' / 실패 ' + failed);
+    // Phase 6: 노션→시트 양방향 sync — 운영자가 노션에서 수정한 6 필드 반영. sync 결과로 발송요청=TRUE가 되면 다음 trigger에서 발송됨
+    try { syncFromNotion(); } catch (e) { Logger.log('syncFromNotion 실패 — ' + e); }
     // Phase 5: 10분 보조 노션 sync — push 안 된 행 batch 처리. 폴링과 같은 트리거로 통합 운영.
     try { syncPendingToNotion(); } catch (e) { Logger.log('syncPendingToNotion 실패 — ' + e); }
   } finally {
@@ -1001,6 +1003,15 @@ function pushToNotion(reqId) {
     'Notion_PageID': pageId,
     '최종푸시일시': Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')
   });
+  // Phase 6: push 직후 양방향 6 필드의 현재 hash 저장 — syncFromNotion에서 무한루프 차단 기준
+  try {
+    const fresh = _readUnifiedRow(reqId);
+    if (fresh) {
+      const sheetValues = {};
+      BIDIRECTIONAL_FIELDS.forEach(k => { sheetValues[k] = fresh[k]; });
+      _setStoredHash(reqId, _calcBidirectionalHash(sheetValues));
+    }
+  } catch (e) { Logger.log('pushToNotion: hash 저장 실패 (sync 무한루프 보호 약화) — ' + e); }
   return result;
 }
 
@@ -1040,6 +1051,209 @@ function syncPendingToNotion() {
     count++;
   }
   Logger.log('syncPendingToNotion: ' + count + '건 push');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Phase 6 — 노션 → 시트 양방향 sync (운영자가 노션에서 수정한 6 필드만)
+// 매 polling(5~10분)마다 노션 DB에서 last_edited_time > LAST_SYNC_AT 페이지 query.
+// 양방향 6 필드를 시트(통합정보 + 신청관리)에 update. hash 비교로 무한루프 방지.
+// ═══════════════════════════════════════════════════════════════════
+
+/* 노션→시트로 가져올 양방향 필드 — 시트 컬럼명 기준. */
+const BIDIRECTIONAL_FIELDS = ['이메일', '연락처', '상태', '담당자', '가이드_발송요청', '가이드_발송상태'];
+
+/* 통합정보 시트 컬럼 → 신청관리 시트 컬럼 인덱스(1-based) 매핑.
+   양방향 필드 중 신청관리에도 존재하는 필드만. 발송요청/발송상태는 신청관리에 없음 — skip. */
+const REQUEST_SHEET_COLS = {
+  '이메일':   7,   // 신청관리 컬럼 G
+  '연락처':   6,   // F
+  '상태':    19,   // S
+  '담당자':  20    // T
+};
+
+/* sync 진입점 — pollAndSendGuides 끝에서 호출. LockService는 pollAndSendGuides가 이미 보유. */
+function syncFromNotion() {
+  const dbId = _guideProp('NOTION_DB_ID');
+  const sinceIso = PropertiesService.getScriptProperties().getProperty('LAST_SYNC_AT') || '';
+  const filter = sinceIso ? {
+    timestamp: 'last_edited_time',
+    last_edited_time: {after: sinceIso}
+  } : undefined;
+  let pages;
+  try {
+    pages = _fetchNotionUpdatedPages(dbId, filter);
+  } catch (e) {
+    Logger.log('[NOTION SYNC] fetch 실패 — ' + e);
+    return;
+  }
+  let applied = 0, skipped = 0;
+  const nowIso = Utilities.formatDate(new Date(), 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  pages.forEach(page => {
+    try {
+      const r = _applyNotionPageToSheet(page);
+      if (r && r.applied) applied++;
+      else if (r && r.skipped) skipped++;
+    } catch (e) {
+      Logger.log('[NOTION SYNC] page 적용 실패 — page=' + page.id + ': ' + e);
+    }
+  });
+  PropertiesService.getScriptProperties().setProperty('LAST_SYNC_AT', nowIso);
+  Logger.log('syncFromNotion: ' + pages.length + '개 페이지 조회 / 적용 ' + applied + ' / hash 동일 skip ' + skipped);
+}
+
+/* 노션 DB query — last_edited_time 기준 페이지 페이지네이션 fetch. 한 번에 최대 50개. */
+function _fetchNotionUpdatedPages(dbId, filter) {
+  const all = [];
+  let cursor = null;
+  for (let safety = 0; safety < 10; safety++) {
+    const body = {
+      page_size: 50,
+      sorts: [{timestamp: 'last_edited_time', direction: 'descending'}]
+    };
+    if (filter) body.filter = filter;
+    if (cursor) body.start_cursor = cursor;
+    const result = _notionFetch('/v1/databases/' + dbId + '/query', 'POST', body);
+    if (result && result.results) all.push.apply(all, result.results);
+    if (!result || !result.has_more) break;
+    cursor = result.next_cursor;
+  }
+  return all;
+}
+
+/* 노션 페이지 객체에서 양방향 6 필드 값 추출. 빈값은 빈 문자열 또는 false(checkbox). */
+function _extractBidirectionalFromNotion(page) {
+  const out = {};
+  const props = page.properties || {};
+  BIDIRECTIONAL_FIELDS.forEach(sheetCol => {
+    const item = NOTION_PROP_MAP.find(p => p.sheet === sheetCol);
+    if (!item) return;
+    const np = props[item.notion];
+    if (!np) { out[sheetCol] = ''; return; }
+    switch (item.type) {
+      case 'title': {
+        const arr = np.title || [];
+        out[sheetCol] = arr.map(t => t.plain_text || '').join('');
+        break;
+      }
+      case 'rich_text': {
+        const arr = np.rich_text || [];
+        out[sheetCol] = arr.map(t => t.plain_text || '').join('');
+        break;
+      }
+      case 'select':
+        out[sheetCol] = np.select ? np.select.name : '';
+        break;
+      case 'checkbox':
+        out[sheetCol] = !!np.checkbox;
+        break;
+      case 'email':
+        out[sheetCol] = np.email || '';
+        break;
+      case 'phone_number':
+        out[sheetCol] = np.phone_number || '';
+        break;
+      case 'number':
+        out[sheetCol] = (np.number === null || np.number === undefined) ? '' : np.number;
+        break;
+      case 'date':
+        out[sheetCol] = (np.date && np.date.start) ? np.date.start : '';
+        break;
+      case 'url':
+        out[sheetCol] = np.url || '';
+        break;
+      default:
+        out[sheetCol] = '';
+    }
+  });
+  return out;
+}
+
+/* 양방향 필드 값 객체 → 정규화된 hash 입력 문자열. */
+function _normalizeBidirectionalValues(values) {
+  return BIDIRECTIONAL_FIELDS.map(k => {
+    const v = values[k];
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? '1' : '0';
+    return String(v).trim();
+  }).join('');
+}
+
+function _calcBidirectionalHash(values) {
+  const input = _normalizeBidirectionalValues(values);
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, input);
+  return bytes.map(b => ('00' + (b < 0 ? b + 256 : b).toString(16)).slice(-2)).join('');
+}
+
+function _getStoredHash(reqId) {
+  return PropertiesService.getScriptProperties().getProperty('hash_' + reqId) || '';
+}
+function _setStoredHash(reqId, hash) {
+  PropertiesService.getScriptProperties().setProperty('hash_' + reqId, hash);
+}
+
+/* 노션 페이지를 시트에 적용. hash 비교로 무한루프 차단. */
+function _applyNotionPageToSheet(page) {
+  // 접수번호 추출 (rich_text 속성)
+  const item = NOTION_PROP_MAP.find(p => p.sheet === '접수번호');
+  if (!item) return {skipped: true, reason: 'no req mapping'};
+  const reqProp = page.properties && page.properties[item.notion];
+  if (!reqProp || !reqProp.rich_text || !reqProp.rich_text.length) return {skipped: true, reason: 'no req in page'};
+  const reqId = reqProp.rich_text.map(t => t.plain_text || '').join('').trim();
+  if (!reqId) return {skipped: true, reason: 'empty req'};
+  // 노션 양방향 값 추출 + hash
+  const notionValues = _extractBidirectionalFromNotion(page);
+  const notionHash = _calcBidirectionalHash(notionValues);
+  const lastHash = _getStoredHash(reqId);
+  if (lastHash && lastHash === notionHash) {
+    return {skipped: true, reason: 'hash equal'};
+  }
+  // 시트의 현재 값과도 비교 — 시트가 더 최신(다른 hash)이면 last-write-wins로 노션을 시트값으로 덮어씀
+  const row = _readUnifiedRow(reqId);
+  if (!row) {
+    Logger.log('[NOTION SYNC] 시트에 없는 접수번호 — ' + reqId + ' (페이지 무시)');
+    return {skipped: true, reason: 'no sheet row'};
+  }
+  const sheetValues = {};
+  BIDIRECTIONAL_FIELDS.forEach(k => { sheetValues[k] = row[k]; });
+  const sheetHash = _calcBidirectionalHash(sheetValues);
+  if (sheetHash === notionHash) {
+    // 시트와 노션이 우연히 같은 값 — hash 갱신 후 skip
+    _setStoredHash(reqId, sheetHash);
+    return {skipped: true, reason: 'sheet equal'};
+  }
+  if (lastHash && lastHash === sheetHash) {
+    // 시트는 push 시점 그대로, 노션이 더 새 값 → 시트에 적용
+    const updates = {};
+    BIDIRECTIONAL_FIELDS.forEach(k => { updates[k] = notionValues[k]; });
+    _updateUnifiedFields(reqId, updates);
+    // 신청관리 시트에도 동기 (이메일·연락처·상태·담당자)
+    Object.keys(REQUEST_SHEET_COLS).forEach(k => {
+      if (updates[k] !== undefined) _updateRequestSheetField(reqId, REQUEST_SHEET_COLS[k], updates[k]);
+    });
+    _setStoredHash(reqId, notionHash);
+    return {applied: true};
+  }
+  // 시트와 노션 모두 옛 hash와 다름 → 시트가 우선 (last-write-wins). 노션을 시트값으로 덮음.
+  Logger.log('[NOTION SYNC] last-write-wins 시트 우선 — ' + reqId);
+  _setStoredHash(reqId, sheetHash);
+  _safePushToNotion(reqId);
+  return {applied: false, skipped: true, reason: 'conflict resolved to sheet'};
+}
+
+/* 신청관리 시트의 한 컬럼 update — 양방향 필드 중 신청관리에도 존재하는 것에 사용. */
+function _updateRequestSheetField(reqId, colIdx1, value) {
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const sheet = ss.getSheetByName('신청관리');
+  if (!sheet) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === String(reqId)) {
+      sheet.getRange(i + 2, colIdx1).setValue(value);
+      return;
+    }
+  }
 }
 
 /* 수동 — 특정 접수번호 또는 가장 최근 행을 노션에 강제 push. GAS 에디터에서 디버깅용. */
