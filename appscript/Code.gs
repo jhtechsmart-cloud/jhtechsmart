@@ -597,6 +597,153 @@ function _ensureGuideForUnified(row) {
   return {skipped: false, url: saved.url, fileId: saved.fileId, version: curVersion};
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Phase 4 — Time-driven 트리거 자동 발송 + Mailer Web App 호출
+// 통합정보 시트에서 가이드_발송요청=TRUE 행을 수집해 Mailer Web App(별도 배포)
+// 으로 HTTP POST → 그 Web App이 jhtechsmart@gmail.com 계정으로 발송.
+// 동시 실행 방지: LockService. 한 번에 최대 30건 처리.
+// ═══════════════════════════════════════════════════════════════════
+
+const MAIL_POLL_MAX_PER_TICK = 30;
+const MAIL_RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 5분 내 중복 발송 차단
+
+/* Time-driven 트리거에 등록되는 진입점. 사용자가 GAS 에디터에서 트리거로
+   이 함수를 10분(또는 5분)마다 실행하도록 설정해야 함.
+   수동 실행도 가능 — GAS 에디터 함수 드롭다운에서 ▶ 실행. */
+function pollAndSendGuides() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    Logger.log('pollAndSendGuides: 이전 실행이 아직 진행 중. skip.');
+    return;
+  }
+  try {
+    const sheet = _getUnifiedSheet();
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) { Logger.log('pollAndSendGuides: 데이터 없음'); return; }
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    let processed = 0, sent = 0, failed = 0;
+    for (let i = 0; i < values.length; i++) {
+      if (processed >= MAIL_POLL_MAX_PER_TICK) break;
+      const row = {__row: i + 2};
+      headers.forEach((h, idx) => { if (h) row[h] = values[i][idx]; });
+      // 발송 대상 필터링
+      if (!row['가이드_발송요청']) continue;
+      if (String(row['가이드_발송상태']) === '발송완료') continue;
+      if (!row['이메일']) continue;
+      if (!row['가이드_HTML_URL']) continue;
+      // 5분 내 재발송 방지
+      if (row['가이드_발송일시']) {
+        try {
+          const lastTime = new Date(row['가이드_발송일시']).getTime();
+          if (!isNaN(lastTime) && Date.now() - lastTime < MAIL_RESEND_COOLDOWN_MS) {
+            Logger.log('pollAndSendGuides: 5분 cooldown — ' + row['접수번호']);
+            continue;
+          }
+        } catch (_) {}
+      }
+      processed++;
+      try {
+        sendGuideForRow(row);
+        sent++;
+      } catch (e) {
+        failed++;
+        Logger.log('pollAndSendGuides: 발송 실패 — ' + row['접수번호'] + ': ' + e);
+        try {
+          _updateUnifiedFields(row['접수번호'], {
+            '가이드_발송상태': '오류',
+            '가이드_에러': '발송 실패: ' + (e.message || e)
+          });
+        } catch (_) {}
+      }
+    }
+    Logger.log('pollAndSendGuides: 처리 ' + processed + '건 / 성공 ' + sent + ' / 실패 ' + failed);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* 한 행 발송 — Drive에서 본문 HTML fetch + 견적/장비사진 PDF를 첨부로 묶어 Mailer 호출. */
+function sendGuideForRow(row) {
+  if (!row || !row['접수번호']) throw new Error('row 또는 접수번호 누락');
+  const to = String(row['이메일'] || '').trim();
+  if (!to) throw new Error('이메일 비어있음');
+  // 본문 HTML fetch (Drive 가이드 폴더 파일)
+  const htmlUrl = row['가이드_HTML_URL'];
+  if (!htmlUrl) throw new Error('가이드_HTML_URL 비어있음');
+  const html = _fetchDriveHtml(htmlUrl);
+  // 첨부: 견적 PDF + 장비사진 PDF (있는 것만)
+  const attachments = [];
+  if (row['견적PDF_URL']) {
+    attachments.push({url: row['견적PDF_URL'], name: _safeFilename(row['업체명'], '_견적서.pdf')});
+  }
+  if (row['장비사진PDF_URL']) {
+    attachments.push({url: row['장비사진PDF_URL'], name: _safeFilename(row['업체명'], '_장비사진.pdf')});
+  }
+  // 메일 제목 — 회사명만 동적
+  const subject = '[(주)재현테크] 견적서 송부 및 동영상 촬영 가이드 · ' + (row['업체명'] || '');
+  // Mailer Web App 호출
+  const result = callMailer({
+    to: to,
+    subject: subject,
+    htmlBody: html,
+    name: '(주)재현테크',
+    replyTo: 'smart@paxc.co.kr',
+    attachments: attachments
+  });
+  if (result.status !== 'ok') {
+    throw new Error('Mailer 응답 비정상: ' + JSON.stringify(result));
+  }
+  // 시트 update — 발송 완료
+  _updateUnifiedFields(row['접수번호'], {
+    '가이드_발송요청': false,
+    '가이드_발송상태': '발송완료',
+    '가이드_발송일시': result.sentAt || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
+    '가이드_에러': ''
+  });
+  return result;
+}
+
+/* Mailer Web App에 HTTP POST. Content-Type은 application/x-www-form-urlencoded로
+   (preflight 회피 패턴) — payload는 data=<json string> 형식. */
+function callMailer(payload) {
+  const url = _guideProp('MAILER_WEBAPP_URL');
+  const token = _guideProp('MAILER_TOKEN');
+  const body = Object.assign({}, payload, {token: token});
+  const response = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload: {data: JSON.stringify(body)},
+    muteHttpExceptions: true,
+    followRedirects: true
+  });
+  const code = response.getResponseCode();
+  const text = response.getContentText();
+  if (code !== 200) {
+    throw new Error('Mailer HTTP ' + code + ': ' + text.substring(0, 500));
+  }
+  try { return JSON.parse(text); }
+  catch (e) { throw new Error('Mailer 응답 JSON 파싱 실패: ' + text.substring(0, 500)); }
+}
+
+/* Drive 파일 URL에서 HTML content fetch. file ID 추출 → DriveApp으로 blob. */
+function _fetchDriveHtml(url) {
+  if (!url) return '';
+  const m1 = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const m2 = String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  const fileId = (m1 && m1[1]) || (m2 && m2[1]);
+  if (!fileId) throw new Error('Drive URL에서 file ID 추출 실패: ' + url);
+  const file = DriveApp.getFileById(fileId);
+  return file.getBlob().getDataAsString('UTF-8');
+}
+
+/* 파일명 safe 처리 — 회사명에 특수문자 포함 시 _로 치환. */
+function _safeFilename(company, suffix) {
+  const safe = String(company || 'unknown').replace(/[\/\\:*?"<>|]/g, '_').substring(0, 50);
+  return safe + (suffix || '');
+}
+
 /* 수동 재생성 (옵션) — 견적 정보는 그대로 두고 가이드만 다시 생성하고 싶을 때 사용.
    GAS 에디터 함수 드롭다운에서 reqId 인자 없이 실행하면 가장 최근 발급된 견적의 가이드 재생성.
    특정 reqId 지정 호출도 가능: regenerateGuide('REQ-...') */
