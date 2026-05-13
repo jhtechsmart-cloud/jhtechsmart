@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>OG · Admin</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{
+    font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    background:#0a1d3f;
+    background-image:
+      radial-gradient(ellipse at 80% 20%,rgba(30,86,200,0.55) 0%,transparent 55%),
+      radial-gradient(ellipse at 10% 90%,rgba(249,115,22,0.18) 0%,transparent 55%),
+      linear-gradient(135deg,#06142e 0%,#0a1d3f 60%,#0d3778 100%);
+    color:#fff;
+    position:relative;
+    display:flex;
+    align-items:center;
+    padding:0 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.045) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(circle at 70% 40%,#000 0%,transparent 70%)}
+  .glow{position:absolute;width:640px;height:640px;right:-200px;top:-180px;background:radial-gradient(circle,rgba(96,165,250,0.25) 0%,transparent 65%);border-radius:50%;filter:blur(20px)}
+  .content{position:relative;z-index:2;max-width:760px}
+  .tag{display:inline-flex;align-items:center;gap:12px;background:rgba(249,115,22,0.16);border:1px solid rgba(249,115,22,0.42);padding:10px 22px;border-radius:999px;font-size:18px;font-weight:700;letter-spacing:2px;color:#fdba74;margin-bottom:32px;text-transform:uppercase}
+  .tag .square{width:8px;height:8px;background:#f97316;box-shadow:0 0 12px #f97316}
+  h1{font-size:104px;line-height:1.02;letter-spacing:-3.5px;font-weight:800;margin-bottom:28px;text-shadow:0 4px 30px rgba(0,0,0,0.4)}
+  h1 .em{background:linear-gradient(135deg,#fbbf24 0%,#f97316 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .subtitle{font-size:28px;font-weight:500;line-height:1.45;opacity:.88;margin-bottom:48px;letter-spacing:-.5px;color:#cbd5e1}
+  .flow{display:flex;align-items:center;gap:14px;margin-bottom:52px}
+  .flow .step{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);padding:12px 20px;border-radius:12px;font-size:19px;font-weight:600;color:#e2e8f0;letter-spacing:-.3px}
+  .flow .arrow{color:#60a5fa;font-size:24px;font-weight:700}
+  .footer{display:flex;align-items:center;gap:18px}
+  .footer .bar{width:5px;height:34px;background:#f97316;border-radius:3px;box-shadow:0 0 16px rgba(249,115,22,0.6)}
+  .footer .company{font-size:26px;font-weight:700;letter-spacing:-.4px}
+  .footer .sep{width:1px;height:24px;background:rgba(255,255,255,0.25);margin:0 4px}
+  .footer .role{font-size:20px;font-weight:600;color:#94a3b8;letter-spacing:.2px}
+  .right{position:absolute;right:80px;top:50%;transform:translateY(-50%);z-index:2}
+  .badge{width:300px;height:300px;background:rgba(255,255,255,0.97);border-radius:48px;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(96,165,250,0.4) inset,0 0 40px rgba(96,165,250,0.18);display:flex;align-items:center;justify-content:center;padding:38px;position:relative}
+  .badge::after{content:'ADMIN';position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);background:#f97316;color:#fff;font-size:14px;font-weight:800;letter-spacing:3px;padding:6px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(249,115,22,0.4)}
+  .badge img{width:100%;height:100%;object-fit:contain}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="grid"></div>
+  <div class="content">
+    <div class="tag"><span class="square"></span>ADMIN · 견적 관리 포털</div>
+    <h1>견적 <span class="em">관리 시스템</span></h1>
+    <div class="subtitle">신청 접수부터 견적 확정·PDF 발급까지<br>한 화면에서 관리하세요</div>
+    <div class="flow">
+      <div class="step">신청 접수</div>
+      <div class="arrow">→</div>
+      <div class="step">견적 발급</div>
+      <div class="arrow">→</div>
+      <div class="step">PDF 저장</div>
+    </div>
+    <div class="footer">
+      <div class="bar"></div>
+      <div class="company">(주)재현테크</div>
+      <div class="sep"></div>
+      <div class="role">담당자 전용</div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="badge"><img src="../logo.png" alt="logo"></div>
+  </div>
+</body>
+</html>
