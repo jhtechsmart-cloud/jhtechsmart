@@ -776,9 +776,9 @@ const NOTION_PROP_MAP = [
   {sheet: '주소',           notion: '주소',           type: 'rich_text'},
   {sheet: '사업자등록일',   notion: '사업자등록일',   type: 'date'},
   {sheet: '주업종',         notion: '주업종',         type: 'rich_text'},
-  {sheet: '매출2023',       notion: '매출2023',       type: 'rich_text'},
-  {sheet: '매출2024',       notion: '매출2024',       type: 'rich_text'},
-  {sheet: '매출2025',       notion: '매출2025',       type: 'rich_text'},
+  {sheet: '매출2023',       notion: '매출2023',       type: 'number'},
+  {sheet: '매출2024',       notion: '매출2024',       type: 'number'},
+  {sheet: '매출2025',       notion: '매출2025',       type: 'number'},
   {sheet: '문제공정',       notion: '문제공정',       type: 'rich_text'},
   {sheet: '도입목적',       notion: '도입목적',       type: 'rich_text'},
   {sheet: '선택문제목표',   notion: '선택문제목표',   type: 'rich_text'},
@@ -911,20 +911,35 @@ function _buildNotionProperties(row) {
 }
 
 /* DB 스키마 자동 보강 — NOTION_PROP_MAP에 정의된 속성 중 DB에 없는 것을 추가.
-   Title 속성은 첫 번째여야 하므로 이미 있어야 함 (없으면 새 컬럼은 select로 만들 수 없음). */
+   Title 속성은 첫 번째여야 하므로 이미 있어야 함 (없으면 새 컬럼은 select로 만들 수 없음).
+   타입 자동 변경은 하지 않음 — 사용자가 노션에서 의도적으로 바꿨을 수 있음.
+   불일치만 경고로 출력해 운영자가 한쪽을 정렬할 수 있게. */
 function ensureNotionSchema() {
   const dbId = _guideProp('NOTION_DB_ID');
   const db = _notionFetch('/v1/databases/' + dbId, 'GET');
   const existing = db.properties || {};
   const toAdd = {};
+  const mismatches = [];
   NOTION_PROP_MAP.forEach(item => {
     if (item.skip) return;
-    if (existing[item.notion]) return;
     if (item.type === 'title') return; // title은 이미 있어야 함
-    toAdd[item.notion] = _emptySchemaForType(item.type);
+    const existingProp = existing[item.notion];
+    if (!existingProp) {
+      toAdd[item.notion] = _emptySchemaForType(item.type);
+      return;
+    }
+    // 타입 일치 검사 — 노션 API의 속성 객체는 type 필드를 가짐
+    const actualType = existingProp.type;
+    if (actualType && actualType !== item.type) {
+      mismatches.push(item.notion + ': 코드=' + item.type + ' / 노션=' + actualType);
+    }
   });
+  if (mismatches.length > 0) {
+    Logger.log('⚠ ensureNotionSchema: 타입 불일치 ' + mismatches.length + '건. PATCH 시 validation_error 발생 가능 — 한쪽을 맞춰주세요:');
+    mismatches.forEach(m => Logger.log('  ' + m));
+  }
   if (Object.keys(toAdd).length === 0) {
-    Logger.log('ensureNotionSchema: 모든 속성 이미 존재');
+    Logger.log('ensureNotionSchema: 모든 속성 이미 존재' + (mismatches.length ? ' (위 불일치 처리 필요)' : ''));
     return;
   }
   _notionFetch('/v1/databases/' + dbId, 'PATCH', {properties: toAdd});
