@@ -32,6 +32,233 @@ function _fmtKstDate(v){
   catch(e) { return String(v); }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 통합정보 시트 — 신청 + 견적 + 가이드/메일 + Notion sync 메타 (Phase 1)
+// 신청관리·견적서발급관리에 행이 들어오면 통합정보 시트의 같은 접수번호 행을
+// 자동으로 upsert. 접수번호가 매칭 키.
+// ═══════════════════════════════════════════════════════════════════
+
+const UNIFIED_SHEET_NAME = '통합정보';
+
+const UNIFIED_HEADERS = [
+  // 신청 그룹 (21) — 신청관리와 동일
+  '접수번호','접수일시','업체명','사업자번호','대표자','연락처','이메일','주소',
+  '사업자등록일','주업종','매출2023','매출2024','매출2025',
+  '문제공정','도입목적','선택문제목표','선택장비','요청사항','상태','담당자','공정흐름도',
+  // 견적 그룹 (10) — 견적서발급관리 중복 제외 + 버전 메타
+  '견적번호','발급일시','포함옵션','추가옵션(JSON)','공급가액','부가세','합계','유효기간',
+  'version','isLatest',
+  // 가이드/메일 그룹 (6) — Phase 2~4에서 사용
+  '가이드_생성일시','가이드_HTML_URL','가이드_발송요청','가이드_발송일시','가이드_발송상태','가이드_에러',
+  // Notion sync 메타 (2) — Phase 5에서 사용
+  'Notion_PageID','최종푸시일시'
+];
+
+// 헤더명 → 컬럼 인덱스(0-based) 매핑
+const UNIFIED_COL = (() => {
+  const m = {};
+  UNIFIED_HEADERS.forEach((h, i) => { m[h] = i; });
+  return m;
+})();
+
+/* 견적번호 끝의 -vN을 정수로 추출. 없으면 0 (v1 미만으로 간주). */
+function _extractVersionFromQuoteNo(quoteNo) {
+  if (!quoteNo) return 0;
+  const m = String(quoteNo).match(/-v(\d+)$/i);
+  if (m) return Number(m[1]);
+  // 레거시 -R01 / -R00 형식도 변환 — admin.html의 getVersionLabel과 동일 규칙
+  const r = String(quoteNo).match(/-R(\d+)$/i);
+  if (r) return Number(r[1]) + 1;
+  return 1; // -v 접미 없음 → v1으로 간주
+}
+
+/* 통합정보 시트 핸들 — 없으면 생성, 헤더 누락 시 보강. */
+function _getUnifiedSheet() {
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  let sheet = ss.getSheetByName(UNIFIED_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(UNIFIED_SHEET_NAME);
+    sheet.appendRow(UNIFIED_HEADERS);
+    sheet.getRange(1, 1, 1, UNIFIED_HEADERS.length).setFontWeight('bold').setBackground('#f3f7fb');
+    sheet.setFrozenRows(1);
+  } else {
+    const lastCol = sheet.getLastColumn();
+    // 헤더 누락 시 확장 (멱등) — 기존 데이터는 그대로 두고 헤더만 보강
+    if (lastCol < UNIFIED_HEADERS.length) {
+      const cur = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+      const merged = UNIFIED_HEADERS.map((h, i) => (i < cur.length && cur[i]) ? cur[i] : h);
+      sheet.getRange(1, 1, 1, merged.length).setValues([merged]);
+      sheet.getRange(1, 1, 1, merged.length).setFontWeight('bold').setBackground('#f3f7fb');
+    }
+  }
+  return sheet;
+}
+
+/* 통합정보 upsert — 접수번호로 행 찾기 → INSERT 또는 UPDATE.
+   requestData: 신청 객체 (handleSubmit의 p 또는 handleConfirm의 data)
+     필드: id/bizNo/company/ceo/phone/email/address/foundDate/industry/
+           rev2023~2025/problemProcess/adoptionType/issues/equipment/
+           equipRequest/status/assignee/processFlow
+   quoteData: 견적 객체 (handleConfirm의 data) — null이면 견적 컬럼 미변경
+     필드: quoteNo/supplyPrice/taxPrice/totalPrice/validUntil/
+           includeOpts/extraOpts/status
+   동일 접수번호에 quoteData가 다시 들어오면 version 비교 후 최신 버전 값으로 overwrite. */
+function upsertUnified(reqId, requestData, quoteData) {
+  if (!reqId) return;
+  const sheet = _getUnifiedSheet();
+  const lastRow = sheet.getLastRow();
+
+  // 기존 행 찾기 (접수번호 = 컬럼1)
+  let targetRow = -1;
+  if (lastRow > 1) {
+    const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]) === String(reqId)) { targetRow = i + 2; break; }
+    }
+  }
+
+  // 행 데이터 초기화 (기존 행이면 읽어와서 업데이트할 필드만 교체)
+  let rowData;
+  if (targetRow > 0) {
+    rowData = sheet.getRange(targetRow, 1, 1, UNIFIED_HEADERS.length).getValues()[0];
+    while (rowData.length < UNIFIED_HEADERS.length) rowData.push('');
+  } else {
+    rowData = new Array(UNIFIED_HEADERS.length).fill('');
+    rowData[UNIFIED_COL['접수번호']] = reqId;
+  }
+
+  // 신청 필드 — 빈 값으로 덮어쓰지 않음 (수정 보호)
+  if (requestData) {
+    const reqMap = {
+      '접수번호': requestData.id || reqId,
+      '접수일시': requestData.submittedAt,
+      '업체명': requestData.company,
+      '사업자번호': requestData.bizNo,
+      '대표자': requestData.ceo,
+      '연락처': requestData.phone,
+      '이메일': requestData.email,
+      '주소': requestData.address,
+      '사업자등록일': requestData.foundDate,
+      '주업종': requestData.industry,
+      '매출2023': requestData.rev2023,
+      '매출2024': requestData.rev2024,
+      '매출2025': requestData.rev2025,
+      '문제공정': requestData.problemProcess,
+      '도입목적': requestData.adoptionType,
+      '선택문제목표': requestData.issues,
+      '선택장비': requestData.equipment,
+      '요청사항': requestData.equipRequest,
+      '상태': requestData.status,
+      '담당자': requestData.assignee,
+      '공정흐름도': requestData.processFlow
+    };
+    Object.keys(reqMap).forEach(k => {
+      const v = reqMap[k];
+      if (v !== undefined && v !== null && v !== '') {
+        rowData[UNIFIED_COL[k]] = v;
+      }
+    });
+  }
+
+  // 견적 필드 — 버전 비교 후 최신 버전만 반영 (멱등성·다운그레이드 방지)
+  if (quoteData && quoteData.quoteNo) {
+    const curVersion = Number(rowData[UNIFIED_COL['version']] || 0);
+    const newVersion = _extractVersionFromQuoteNo(quoteData.quoteNo);
+    if (newVersion >= curVersion) {
+      const inc = Array.isArray(quoteData.includeOpts)
+        ? quoteData.includeOpts.join(' | ')
+        : (quoteData.includeOpts || '');
+      const ext = typeof quoteData.extraOpts === 'string'
+        ? quoteData.extraOpts
+        : JSON.stringify(quoteData.extraOpts || []);
+      const issuedAt = quoteData.issuedAt || _fmtKstDateTime(new Date());
+      const qMap = {
+        '견적번호': quoteData.quoteNo,
+        '발급일시': issuedAt,
+        '포함옵션': inc,
+        '추가옵션(JSON)': ext,
+        '공급가액': quoteData.supplyPrice,
+        '부가세': quoteData.taxPrice,
+        '합계': quoteData.totalPrice,
+        '유효기간': quoteData.validUntil,
+        'version': newVersion,
+        'isLatest': '1'
+      };
+      Object.keys(qMap).forEach(k => {
+        const v = qMap[k];
+        if (v !== undefined && v !== null) {
+          rowData[UNIFIED_COL[k]] = v;
+        }
+      });
+      // 견적 확정 시 상태도 동기화 (신청 상태 확정 반영)
+      if (quoteData.status) rowData[UNIFIED_COL['상태']] = quoteData.status;
+    }
+  }
+
+  // 시트 반영
+  if (targetRow > 0) {
+    sheet.getRange(targetRow, 1, 1, UNIFIED_HEADERS.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+}
+
+/* 운영 환경 기존 데이터 1회 마이그레이션 — 신청관리·견적서발급관리에 이미 있는 데이터를
+   통합정보 시트에 backfill. GAS 에디터에서 수동 실행. 멱등(접수번호 기준 upsert). */
+function backfillUnified() {
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const s1 = ss.getSheetByName('신청관리');
+  const s2 = ss.getSheetByName('견적서발급관리');
+  if (!s1) { Logger.log('신청관리 시트 없음'); return; }
+
+  // 견적 인덱스: 접수번호 → 최신 버전 견적 객체
+  const quoteByReq = {};
+  if (s2 && s2.getLastRow() > 1) {
+    const qRows = s2.getDataRange().getValues();
+    for (let i = 1; i < qRows.length; i++) {
+      const r = qRows[i];
+      const reqId = r[1];
+      if (!reqId) continue;
+      const quoteNo = r[0];
+      const ver = _extractVersionFromQuoteNo(quoteNo);
+      const prev = quoteByReq[reqId];
+      if (!prev || ver >= prev._ver) {
+        quoteByReq[reqId] = {
+          quoteNo: quoteNo, reqId: reqId,
+          issuedAt: _fmtKstDateTime(r[2]),
+          company: r[3], equipment: r[4],
+          includeOpts: r[5] ? String(r[5]).split(' | ') : [],
+          extraOpts: safeParseJSON(r[6]),
+          supplyPrice: r[7], taxPrice: r[8], totalPrice: r[9],
+          validUntil: _fmtKstDate(r[10]),
+          status: r[11], assignee: r[12],
+          _ver: ver
+        };
+      }
+    }
+  }
+
+  const aRows = s1.getDataRange().getValues();
+  let count = 0;
+  for (let i = 1; i < aRows.length; i++) {
+    const r = aRows[i];
+    const reqId = r[0];
+    if (!reqId) continue;
+    const reqObj = {
+      id: reqId, submittedAt: _fmtKstDateTime(r[1]),
+      company: r[2], bizNo: r[3], ceo: r[4], phone: r[5], email: r[6], address: r[7],
+      foundDate: _fmtKstDate(r[8]), industry: r[9],
+      rev2023: r[10], rev2024: r[11], rev2025: r[12],
+      problemProcess: r[13], adoptionType: r[14], issues: r[15],
+      equipment: r[16], equipRequest: r[17],
+      status: r[18] || 'new', assignee: r[19], processFlow: r[20]
+    };
+    upsertUnified(reqId, reqObj, quoteByReq[reqId] || null);
+    count++;
+  }
+  Logger.log('backfillUnified: ' + count + '개 행 처리 완료');
+}
+
 // ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
 function initSheets() {
   const ss = SpreadsheetApp.openById(_getSpreadsheetId());
@@ -109,6 +336,9 @@ function initSheets() {
     s4.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#f3f7fb');
     s4.appendRow(['admin','박현석 부장','010-6247-6261','smart@paxc.co.kr','jhtech2026','TRUE']);
   }
+
+  // 통합정보 — 신청+견적+가이드/메일+Notion sync 메타 (Phase 1 도입)
+  _getUnifiedSheet();
 }
 
 /* 시트 마이그레이션 — 신청관리·견적서발급관리의 담당자 컬럼에 들어있는 '이름'을 'ID'로 변환.
@@ -359,6 +589,20 @@ function handleSubmit(p) {
     p.problemProcess||'', p.adoptionType||'', p.issues||'',
     p.equipment||'', p.equipRequest||'', 'new', '', p.processFlow||''
   ]);
+
+  // 통합정보 시트에도 동일 데이터 자동 복사 (Phase 1). 실패해도 신청 자체는 성공 처리.
+  try {
+    upsertUnified(id, {
+      id: id, submittedAt: now,
+      company: p.company, bizNo: p.bizNo, ceo: p.ceo, phone: p.phone, email: p.email,
+      address: p.address, foundDate: p.foundDate, industry: p.industry,
+      rev2023: p.rev2023, rev2024: p.rev2024, rev2025: p.rev2025,
+      problemProcess: p.problemProcess, adoptionType: p.adoptionType, issues: p.issues,
+      equipment: p.equipment, equipRequest: p.equipRequest,
+      status: 'new', assignee: '', processFlow: p.processFlow
+    }, null);
+  } catch (e) { Logger.log('upsertUnified(submit) 실패: ' + e); }
+
   return jsonResponse({status:'ok', id:id});
 }
 
@@ -435,6 +679,37 @@ function handleConfirm(data, user) {
     }
   }
   if (!updated) sheet2.appendRow(rowData);
+
+  // 통합정보 시트 업데이트 (Phase 1). 같은 접수번호 행에 견적 정보 반영.
+  // 신청 시점 정보는 시트에서 다시 읽어와 보강 (data엔 일부만 포함).
+  try {
+    let reqObj = null;
+    if (sheet1) {
+      const rows1b = sheet1.getDataRange().getValues();
+      for (let i = 1; i < rows1b.length; i++) {
+        if (rows1b[i][0] === data.id) {
+          const r = rows1b[i];
+          reqObj = {
+            id: r[0], submittedAt: _fmtKstDateTime(r[1]),
+            company: r[2], bizNo: r[3], ceo: r[4], phone: r[5], email: r[6], address: r[7],
+            foundDate: _fmtKstDate(r[8]), industry: r[9],
+            rev2023: r[10], rev2024: r[11], rev2025: r[12],
+            problemProcess: r[13], adoptionType: r[14], issues: r[15],
+            equipment: r[16], equipRequest: r[17],
+            status: data.status || r[18], assignee: r[19], processFlow: r[20]
+          };
+          break;
+        }
+      }
+    }
+    upsertUnified(data.id, reqObj, {
+      quoteNo: data.quoteNo,
+      issuedAt: rowData[2],  // 위에서 KST 포매팅된 발급일시
+      includeOpts: data.includeOpts, extraOpts: data.extraOpts,
+      supplyPrice: data.supplyPrice, taxPrice: data.taxPrice, totalPrice: data.totalPrice,
+      validUntil: data.validUntil, status: data.status, assignee: assigneeId
+    });
+  } catch (e) { Logger.log('upsertUnified(confirm) 실패: ' + e); }
 
   return jsonResponse({status:'ok'});
 }
