@@ -1580,6 +1580,8 @@ function doPost(e) {
     if (action === 'updateAssignee')   return handleUpdateAssignee(JSON.parse(params.data || '{}'), user);
     if (action === 'saveEquipConfig')  return handleSaveEquipConfig(JSON.parse(params.data || '{}'), user);
     if (action === 'saveUserConfig')   return handleSaveUserConfig(JSON.parse(params.data || '{}'), user);
+    if (action === 'updateRequest')    return handleUpdateRequest(JSON.parse(params.data || '{}'), user);
+    if (action === 'resendGuide')      return handleResendGuide(JSON.parse(params.data || '{}'), user);
     return jsonResponse({status:'error', message:'알 수 없는 action'});
   } catch (err) {
     return jsonResponse({status:'error', message:err.toString()});
@@ -1762,6 +1764,87 @@ function handleConfirm(data, user) {
   } catch (e) { Logger.log('upsertUnified(confirm) 실패: ' + e); }
 
   return jsonResponse({status:'ok'});
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Phase 7 — admin.html 즉시 발송 + 정보 수정 (이메일/연락처)
+// updateRequest: 신청관리 + 통합정보 + 노션 동시 update
+// resendGuide: cooldown 우회 즉시 발송. 분당 1회 throttle.
+// ═══════════════════════════════════════════════════════════════════
+
+/* admin에서 이메일/연락처 수정. 본인 담당 또는 관리자만 가능.
+   data = {id: 'REQ-...', fields: {email: '...', phone: '...'}}
+   허용 필드: email, phone만. 그 외 reject (mass-edit 방지). */
+function handleUpdateRequest(data, user) {
+  if (!data || !data.id) return jsonResponse({status:'error', message:'id 누락'});
+  const perm = _checkRequestPermission(data.id, user);
+  if (!perm.ok) return perm.error;
+  const fields = data.fields || {};
+  const allowed = {};
+  if (typeof fields.email === 'string') allowed.email = fields.email.trim();
+  if (typeof fields.phone === 'string') allowed.phone = fields.phone.trim();
+  if (Object.keys(allowed).length === 0) {
+    return jsonResponse({status:'error', message:'수정 가능 필드 없음 (email, phone만 허용)'});
+  }
+  // 이메일 형식 검증 (있을 때만)
+  if (allowed.email !== undefined && allowed.email !== '' &&
+      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(allowed.email)) {
+    return jsonResponse({status:'error', message:'이메일 형식 오류: ' + allowed.email});
+  }
+  // 신청관리 시트 update
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const sheet1 = ss.getSheetByName('신청관리');
+  if (!sheet1) return jsonResponse({status:'error', message:'신청관리 시트 없음'});
+  const rows = sheet1.getDataRange().getValues();
+  let found = false;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      if (allowed.email !== undefined) sheet1.getRange(i + 1, 7).setValue(allowed.email);  // G: 이메일
+      if (allowed.phone !== undefined) sheet1.getRange(i + 1, 6).setValue(allowed.phone);  // F: 연락처
+      found = true;
+      break;
+    }
+  }
+  if (!found) return jsonResponse({status:'error', message:'접수번호를 찾을 수 없음: ' + data.id});
+  // 통합정보 시트 동시 update
+  const unifiedUpdates = {};
+  if (allowed.email !== undefined) unifiedUpdates['이메일'] = allowed.email;
+  if (allowed.phone !== undefined) unifiedUpdates['연락처'] = allowed.phone;
+  _updateUnifiedFields(data.id, unifiedUpdates);
+  // 노션 push
+  _safePushToNotion(data.id);
+  return jsonResponse({status:'ok', updated: allowed});
+}
+
+/* admin에서 즉시 메일 발송. cooldown 우회 + 분당 1회 throttle.
+   본인 담당 또는 관리자만 가능. 가이드_HTML_URL이 없으면 reject. */
+function handleResendGuide(data, user) {
+  if (!data || !data.id) return jsonResponse({status:'error', message:'id 누락'});
+  const perm = _checkRequestPermission(data.id, user);
+  if (!perm.ok) return perm.error;
+  // 분당 1회 throttle
+  const props = PropertiesService.getScriptProperties();
+  const throttleKey = 'resend_throttle_' + data.id;
+  const lastTry = Number(props.getProperty(throttleKey) || 0);
+  if (lastTry && Date.now() - lastTry < 60 * 1000) {
+    const waitSec = Math.ceil((60 * 1000 - (Date.now() - lastTry)) / 1000);
+    return jsonResponse({status:'error', code:'THROTTLED', message:'분당 1회만 가능 — ' + waitSec + '초 후 다시 시도'});
+  }
+  props.setProperty(throttleKey, String(Date.now()));
+  // row 확인 — 가이드 HTML 있어야 발송 가능
+  const row = _readUnifiedRow(data.id);
+  if (!row) return jsonResponse({status:'error', message:'통합정보 시트에 없음'});
+  if (!row['가이드_HTML_URL']) return jsonResponse({status:'error', message:'가이드 본문 없음 — 견적 확정 후 가능'});
+  if (!row['이메일']) return jsonResponse({status:'error', message:'이메일 비어있음'});
+  // cooldown 우회를 위해 가이드_발송일시 임시 비우기 (sendGuideForRow의 5분 cooldown은 자동 polling용)
+  // 직접 sendGuideForRow를 호출하면 cooldown 검사가 없음 (그건 pollAndSendGuides에서만 검사) — 그래서 우회 불필요
+  try {
+    sendGuideForRow(row);
+    return jsonResponse({status:'ok', sentAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')});
+  } catch (e) {
+    // 실패는 sendGuideForRow가 시트에 기록함. 응답으로도 알림.
+    return jsonResponse({status:'error', message:'발송 실패: ' + (e.message || e)});
+  }
 }
 
 /* 담당자 배정 — 관리자 전용 */
