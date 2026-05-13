@@ -53,7 +53,9 @@ const UNIFIED_HEADERS = [
   // Notion sync 메타 (2) — Phase 5에서 사용
   'Notion_PageID','최종푸시일시',
   // PDF URL (2) — Phase 2 추가. 항상 헤더 끝에 두어 기존 시트 끝에 자동 append 되도록
-  '견적PDF_URL','장비사진PDF_URL'
+  '견적PDF_URL','장비사진PDF_URL',
+  // 가이드 버전 메타 (1) — Phase 3 추가. 가이드가 생성된 시점의 견적 version 추적 (멱등성 강화)
+  '가이드_version'
 ];
 
 // 헤더명 → 컬럼 인덱스(0-based) 매핑
@@ -444,34 +446,173 @@ function saveGuideHtmlToDrive(html, company, reqId, version) {
   return {fileId: file.getId(), url: file.getUrl(), name: filename};
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Phase 3 — OpenAI API 호출로 동영상 촬영 가이드 5 PART 생성
+// PART 1 (10초): 자기소개 + 부정수급 동의 필수 문구
+// PART 2 (15초): 대표 제품 및 공정 소개
+// PART 3 (30초, 핵심): 현 공정의 문제점 및 도입 장비
+// PART 4 (20초): 설치 장소 및 기대효과
+// PART 5 (5초): 마무리
+// ═══════════════════════════════════════════════════════════════════
+
+/* GPT system prompt — 5 PART markdown 형식 강제 + 필수 문구 + 장비명 보존.
+   응답 형식: ## PART N · 제목 \n 본문 \n ## PART (N+1) · ... */
+const GUIDE_SYSTEM_PROMPT = [
+  '당신은 (주)재현테크의 영업 담당자입니다. 소공인 스마트제조 지원사업 신청용 동영상 촬영 스크립트를 작성합니다.',
+  '아래 회사 정보를 바탕으로 동영상 스크립트 5개 PART를 작성하세요.',
+  '',
+  '【출력 형식 — 반드시 마크다운으로】',
+  '',
+  '## PART 1 · 자기소개 및 필수 문구 (10초)',
+  '본문...',
+  '',
+  '## PART 2 · 대표 제품 및 공정 소개 (15초)',
+  '본문...',
+  '',
+  '## PART 3 · 현 공정의 문제점 및 도입 장비 (30초)',
+  '본문...',
+  '',
+  '## PART 4 · 설치 장소 및 기대효과 (20초)',
+  '본문...',
+  '',
+  '## PART 5 · 간단한 마무리 (5초)',
+  '본문...',
+  '',
+  '【필수 규칙】',
+  '- PART 1 마지막에 반드시 다음 문구를 그대로 포함: "부정수급을 하지 않을 것이며, 부정수급 발생 시 보조금 환수 및 제재처분에 동의합니다."',
+  '- PART 3에서 도입 장비명은 input.equipment(예: "XTRA OR16")를 그대로 사용. 대체 표현(○○장비 등) 금지',
+  '- input.issues 또는 input.problemProcess가 있으면 PART 3의 어조와 디테일에 반영',
+  '- 견적 금액 / 공급가 / 부가세 등 가격은 절대 노출 금지',
+  '- 대표자명 / 회사명은 input.ceo / input.company 그대로 사용',
+  '- 각 PART는 자연스러운 1인칭 구어체 ("저희는 ~", "~합니다")',
+  '- 본문은 줄바꿈으로 단락 구분. 마크다운 헤더(#)·리스트(-)·테이블 사용 금지',
+  '- 응답은 위 5 PART 마크다운만, 다른 설명·주석·코드블록 없음'
+].join('\n');
+
+/* OpenAI Chat Completions 호출 — gpt-4o-mini, JSON 응답이 아닌 text 응답.
+   에러는 throw — 호출 측에서 try-catch로 가이드_에러 컬럼에 기록.
+   응답 형식 안전성: choices[0].message.content 검증. */
+function callOpenAI(promptInput) {
+  const apiKey = _guideProp('OPENAI_API_KEY');
+  const url = 'https://api.openai.com/v1/chat/completions';
+  const payload = {
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+    messages: [
+      {role: 'system', content: GUIDE_SYSTEM_PROMPT},
+      {role: 'user', content: JSON.stringify(promptInput, null, 2)}
+    ]
+  };
+  const response = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {Authorization: 'Bearer ' + apiKey},
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  const code = response.getResponseCode();
+  const body = response.getContentText();
+  if (code !== 200) {
+    throw new Error('OpenAI HTTP ' + code + ': ' + body.substring(0, 500));
+  }
+  const json = JSON.parse(body);
+  const content = json && json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+  if (!content) throw new Error('OpenAI 응답에서 content 누락: ' + body.substring(0, 500));
+  return String(content).trim();
+}
+
+/* 통합정보 행에서 GPT 입력용 핵심 필드만 추출. */
+function _buildGuidePromptInput(row) {
+  return {
+    company: row['업체명'] || '',
+    ceo: row['대표자'] || '',
+    industry: row['주업종'] || '',
+    equipment: row['선택장비'] || '',
+    problemProcess: row['문제공정'] || '',
+    adoptionType: row['도입목적'] || '',
+    issues: row['선택문제목표'] || '',
+    equipRequest: row['요청사항'] || ''
+  };
+}
+
 /* 통합정보 행을 기준으로 가이드 본문 생성 + Drive 저장 + 시트 메타 update.
-   Phase 2: placeholder 5 PART로 본문 생성 (GPT 호출은 Phase 3에서 활성화).
-   멱등: 이미 가이드_HTML_URL이 있으면 skip — 같은 견적이 두 번 처리돼도 새 파일 안 만듦.
-   Phase 3에서 version 비교로 정식 멱등 강화 예정. */
+   Phase 3: callOpenAI 결과를 parseGuideScript로 5 PART 분리 → mergeGuideTemplate → Drive 저장.
+   멱등 규칙: 가이드_version === row.version 이면 skip (같은 견적 버전엔 한 번만 생성).
+   새 견적 버전(v2, v3 ...) 발급되면 자동으로 새 가이드 생성.
+   GPT 호출 실패 시 가이드_에러 컬럼에 메시지 기록 — 다음 호출에서 재시도. */
 function _ensureGuideForUnified(row) {
   if (!row || !row['접수번호']) return null;
-  // 멱등 — 이미 가이드 URL이 있고 같은 견적 version이면 skip
-  if (row['가이드_HTML_URL']) {
-    Logger.log('_ensureGuideForUnified: 이미 가이드 있음 — ' + row['접수번호']);
+  const reqId = row['접수번호'];
+  const curVersion = Number(row['version'] || 0) || 1;
+  const lastGuideVersion = Number(row['가이드_version'] || 0) || 0;
+  // 멱등: 같은 견적 version에 가이드가 이미 있으면 skip
+  if (row['가이드_HTML_URL'] && lastGuideVersion >= curVersion) {
+    Logger.log('_ensureGuideForUnified: 이미 v' + lastGuideVersion + ' 가이드 있음 — ' + reqId);
     return {skipped: true, url: row['가이드_HTML_URL']};
   }
-  // Phase 2 placeholder (Phase 3에서 GPT 응답으로 교체)
-  const placeholder = '[GPT 응답 예정 — Phase 3에서 동영상 가이드가 자동 생성됩니다.]';
-  const parts5 = {
-    part1: placeholder, part2: placeholder, part3: placeholder,
-    part4: placeholder, part5: placeholder
-  };
+  // GPT 호출 — 실패해도 시트엔 에러 기록 후 throw (handleSaveQuote의 try-catch가 잡음)
+  let parts5;
+  try {
+    const promptInput = _buildGuidePromptInput(row);
+    const rawScript = callOpenAI(promptInput);
+    parts5 = parseGuideScript(rawScript);
+    // 파싱 결과 검증 — 5 PART 모두 본문이 채워졌는지
+    for (let i = 1; i <= 5; i++) {
+      if (!parts5['part' + i]) {
+        throw new Error('GPT 응답에서 PART ' + i + ' 본문이 비어있음. 원본 응답 일부: ' + rawScript.substring(0, 200));
+      }
+    }
+  } catch (e) {
+    _updateUnifiedFields(reqId, {
+      '가이드_발송상태': '오류',
+      '가이드_에러': 'GPT 호출/파싱 실패: ' + (e.message || e)
+    });
+    throw e;
+  }
+  // 본문 HTML 생성 + Drive 저장
   const template = loadEmailTemplate();
   const merged = mergeGuideTemplate(template, parts5);
-  const saved = saveGuideHtmlToDrive(merged, row['업체명'], row['접수번호'], row['version']);
-  _updateUnifiedFields(row['접수번호'], {
+  const saved = saveGuideHtmlToDrive(merged, row['업체명'], reqId, curVersion);
+  _updateUnifiedFields(reqId, {
     '가이드_생성일시': Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
     '가이드_HTML_URL': saved.url,
+    '가이드_version': curVersion,
     '가이드_발송요청': true,
     '가이드_발송상태': '발송대기',
     '가이드_에러': ''
   });
-  return {skipped: false, url: saved.url, fileId: saved.fileId};
+  return {skipped: false, url: saved.url, fileId: saved.fileId, version: curVersion};
+}
+
+/* 수동 재생성 (옵션) — 견적 정보는 그대로 두고 가이드만 다시 생성하고 싶을 때 사용.
+   GAS 에디터 함수 드롭다운에서 reqId 인자 없이 실행하면 가장 최근 발급된 견적의 가이드 재생성.
+   특정 reqId 지정 호출도 가능: regenerateGuide('REQ-...') */
+function regenerateGuide(reqId) {
+  if (!reqId) {
+    // 가장 최근 견적 발급된 행 찾기
+    const sheet = _getUnifiedSheet();
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2) { Logger.log('regenerateGuide: 데이터 없음'); return; }
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const verCol = headers.indexOf('발급일시');
+    const idCol = headers.indexOf('접수번호');
+    const values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    let latest = null;
+    values.forEach(r => {
+      const t = r[verCol];
+      if (t && (!latest || t > latest._t)) latest = {_t: t, id: r[idCol]};
+    });
+    if (!latest) { Logger.log('regenerateGuide: 발급일시 비어있음'); return; }
+    reqId = latest.id;
+  }
+  const row = _readUnifiedRow(reqId);
+  if (!row) { Logger.log('regenerateGuide: 행 없음 — ' + reqId); return; }
+  // 멱등 우회 — 가이드_version을 0으로 초기화해 재생성 트리거
+  _updateUnifiedField(reqId, '가이드_version', 0);
+  row['가이드_version'] = 0;
+  const result = _ensureGuideForUnified(row);
+  Logger.log('regenerateGuide: ' + reqId + ' → ' + JSON.stringify(result));
 }
 
 // ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
