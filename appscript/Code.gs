@@ -962,8 +962,16 @@ function _emptySchemaForType(type) {
   }
 }
 
-/* 접수번호로 노션 페이지 upsert. 시트의 Notion_PageID 컬럼에 페이지 ID 저장 (다음번 호출 시 PATCH).
-   첫 호출이면 query → page 없으면 POST(create), 있으면 PATCH(update). */
+/* 접수번호 + 사업자번호로 노션 페이지 upsert. 시트의 Notion_PageID 컬럼에 페이지 ID 저장.
+   매칭 우선순위:
+     1. Notion_PageID 캐시 (시트에 저장됨) → 그대로 PATCH
+     2. 노션 query — 접수번호 OR 사업자번호 (둘 중 첫 매칭 페이지)
+        · 접수번호 매칭은 같은 신청건 재push 시 안전망
+        · 사업자번호 매칭은 운영자가 사전 등록한 페이지에 신청 데이터 자동 병합 (사업자번호=고유키)
+     3. 없으면 POST로 새 페이지 생성
+   사전 등록 시나리오: 사용자가 노션에 사업자번호만 적힌 페이지를 미리 만들어 두면, 신청이
+   들어왔을 때 그 페이지로 자동 병합. 사전 등록 페이지의 상태/담당자/메모 등 운영 메타는
+   PATCH가 전송 필드만 update하므로 그대로 보존됨. */
 function pushToNotion(reqId) {
   if (!reqId) return null;
   const row = _readUnifiedRow(reqId);
@@ -971,18 +979,22 @@ function pushToNotion(reqId) {
   const dbId = _guideProp('NOTION_DB_ID');
   const properties = _buildNotionProperties(row);
   let pageId = row['Notion_PageID'] || '';
-  // pageId 없으면 query로 기존 페이지 검색 (접수번호 기준)
+  // pageId 없으면 query로 기존 페이지 검색 (접수번호 OR 사업자번호)
   if (!pageId) {
     try {
+      const orFilters = [{property: '접수번호', rich_text: {equals: String(reqId)}}];
+      const bizNo = String(row['사업자번호'] || '').trim();
+      if (bizNo) orFilters.push({property: '사업자번호', rich_text: {equals: bizNo}});
+      const filter = orFilters.length > 1 ? {or: orFilters} : orFilters[0];
       const query = _notionFetch('/v1/databases/' + dbId + '/query', 'POST', {
-        filter: {property: '접수번호', rich_text: {equals: reqId}},
-        page_size: 1
+        filter: filter, page_size: 1
       });
       if (query && query.results && query.results.length > 0) {
         pageId = query.results[0].id;
+        Logger.log('pushToNotion: 기존 페이지 매칭 — reqId=' + reqId + ' bizNo=' + bizNo + ' pageId=' + pageId);
       }
     } catch (e) {
-      // 접수번호 속성이 없거나 권한 문제 — 새 페이지 생성으로 진행
+      // 접수번호/사업자번호 속성이 없거나 권한 문제 — 새 페이지 생성으로 진행
       Logger.log('pushToNotion: query 실패 (정상 가능 — 첫 push) — ' + e);
     }
   }
