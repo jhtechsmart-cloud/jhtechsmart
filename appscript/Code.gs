@@ -364,18 +364,22 @@ function loadEmailTemplate() {
      ## PART 1 · 자기소개 및 필수 문구 (10초)
      본문 줄...
      ## PART 2 · ...
-   결과: {part1, part2, part3, part4, part5} — 본문 텍스트 (마크다운/일반 텍스트) */
+   결과: {part1, part2, part3, part4, part5} — 본문 텍스트
+
+   구현 메모: `split + capture group` 방식. JavaScript 정규식엔 `\Z` 미지원이라
+   기존 lookahead `(?=...|\Z)` 패턴이 마지막 PART를 못 잡았음. split이 더 안전·간단. */
 function parseGuideScript(rawMarkdown) {
   const empty = {part1:'', part2:'', part3:'', part4:'', part5:''};
   if (!rawMarkdown) return empty;
   const text = String(rawMarkdown).trim();
-  // ## PART N 다음 본문을 추출 (다음 ## PART 직전까지)
-  const re = /^##\s*PART\s*(\d+)[^\n]*\n([\s\S]*?)(?=^##\s*PART\s*\d+|\Z)/gm;
+  // ## PART (\d+) 헤더로 split — capture group 덕분에 split 결과에 PART 번호도 포함됨.
+  // 결과 형태: [before_first_header, '1', body1, '2', body2, ..., '5', body5]
+  const tokens = text.split(/##\s*PART\s*(\d+)[^\n]*\n?/);
   const out = Object.assign({}, empty);
-  let m;
-  while ((m = re.exec(text)) !== null) {
-    const n = Number(m[1]);
-    if (n >= 1 && n <= 5) out['part' + n] = (m[2] || '').trim();
+  for (let i = 1; i < tokens.length; i += 2) {
+    const n = Number(tokens[i]);
+    const body = String(tokens[i + 1] || '').trim();
+    if (n >= 1 && n <= 5) out['part' + n] = body;
   }
   return out;
 }
@@ -491,13 +495,17 @@ const GUIDE_SYSTEM_PROMPT = [
 
 /* OpenAI Chat Completions 호출 — gpt-4o-mini, JSON 응답이 아닌 text 응답.
    에러는 throw — 호출 측에서 try-catch로 가이드_에러 컬럼에 기록.
-   응답 형식 안전성: choices[0].message.content 검증. */
+
+   max_tokens: 2500 — 5 PART 각 ~400자(약 300토큰) × 5 = 1500토큰 + 여유.
+     명시 안 하면 디폴트로 짧게 잘리는 경우 발생 (실측: PART 2에서 truncation).
+   finish_reason 검증 — 'stop' 외의 값(특히 'length')이면 응답이 잘린 것이므로 명확한 에러. */
 function callOpenAI(promptInput) {
   const apiKey = _guideProp('OPENAI_API_KEY');
   const url = 'https://api.openai.com/v1/chat/completions';
   const payload = {
     model: 'gpt-4o-mini',
     temperature: 0.7,
+    max_tokens: 2500,
     messages: [
       {role: 'system', content: GUIDE_SYSTEM_PROMPT},
       {role: 'user', content: JSON.stringify(promptInput, null, 2)}
@@ -516,8 +524,13 @@ function callOpenAI(promptInput) {
     throw new Error('OpenAI HTTP ' + code + ': ' + body.substring(0, 500));
   }
   const json = JSON.parse(body);
-  const content = json && json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+  const choice = json && json.choices && json.choices[0];
+  const content = choice && choice.message && choice.message.content;
   if (!content) throw new Error('OpenAI 응답에서 content 누락: ' + body.substring(0, 500));
+  const finishReason = choice.finish_reason;
+  if (finishReason && finishReason !== 'stop') {
+    throw new Error('OpenAI 응답이 비정상 종료 (finish_reason=' + finishReason + '). max_tokens 부족 또는 정책 차단 가능성. content 끝부분: ' + String(content).slice(-200));
+  }
   return String(content).trim();
 }
 
