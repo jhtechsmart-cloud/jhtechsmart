@@ -205,6 +205,9 @@ function upsertUnified(reqId, requestData, quoteData) {
   } else {
     sheet.appendRow(rowData);
   }
+
+  // Phase 5: Notion 즉시 push (실패해도 시트 update 자체는 성공)
+  _safePushToNotion(reqId);
 }
 
 /* 운영 환경 기존 데이터 1회 마이그레이션 — 신청관리·견적서발급관리에 이미 있는 데이터를
@@ -659,6 +662,8 @@ function pollAndSendGuides() {
       }
     }
     Logger.log('pollAndSendGuides: 처리 ' + processed + '건 / 성공 ' + sent + ' / 실패 ' + failed);
+    // Phase 5: 10분 보조 노션 sync — push 안 된 행 batch 처리. 폴링과 같은 트리거로 통합 운영.
+    try { syncPendingToNotion(); } catch (e) { Logger.log('syncPendingToNotion 실패 — ' + e); }
   } finally {
     lock.releaseLock();
   }
@@ -702,6 +707,8 @@ function sendGuideForRow(row) {
     '가이드_발송일시': result.sentAt || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
     '가이드_에러': ''
   });
+  // Phase 5: 발송 후 노션 push
+  _safePushToNotion(row['접수번호']);
   return result;
 }
 
@@ -742,6 +749,295 @@ function _fetchDriveHtml(url) {
 function _safeFilename(company, suffix) {
   const safe = String(company || 'unknown').replace(/[\/\\:*?"<>|]/g, '_').substring(0, 50);
   return safe + (suffix || '');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Phase 5 — Notion DB 단방향 동기화 (시트 → 노션)
+// 통합정보 42개 컬럼을 Notion DB로 push. 접수번호로 페이지 upsert.
+// 즉시 push (upsertUnified, sendGuideForRow 끝) + 10분 보조 sync (pollAndSendGuides 끝).
+// ═══════════════════════════════════════════════════════════════════
+
+const NOTION_API_VERSION = '2022-06-28';
+
+/* 통합정보 컬럼 → Notion 속성 매핑.
+   Notion 속성명은 한글 그대로 사용 (사용자 친화).
+   skip: true 면 노션에 보내지 않음 (Notion_PageID는 노션 페이지 ID 자체라 의미 없음, 최종푸시일시도 sync 메타). */
+const NOTION_PROP_MAP = [
+  // 신청 그룹
+  {sheet: '업체명',         notion: '업체명',         type: 'title'},
+  {sheet: '접수번호',       notion: '접수번호',       type: 'rich_text'},
+  {sheet: '접수일시',       notion: '접수일시',       type: 'date'},
+  {sheet: '사업자번호',     notion: '사업자번호',     type: 'rich_text'},
+  {sheet: '대표자',         notion: '대표자',         type: 'rich_text'},
+  {sheet: '연락처',         notion: '연락처',         type: 'phone_number'},
+  {sheet: '이메일',         notion: '이메일',         type: 'email'},
+  {sheet: '주소',           notion: '주소',           type: 'rich_text'},
+  {sheet: '사업자등록일',   notion: '사업자등록일',   type: 'date'},
+  {sheet: '주업종',         notion: '주업종',         type: 'rich_text'},
+  {sheet: '매출2023',       notion: '매출2023',       type: 'rich_text'},
+  {sheet: '매출2024',       notion: '매출2024',       type: 'rich_text'},
+  {sheet: '매출2025',       notion: '매출2025',       type: 'rich_text'},
+  {sheet: '문제공정',       notion: '문제공정',       type: 'rich_text'},
+  {sheet: '도입목적',       notion: '도입목적',       type: 'rich_text'},
+  {sheet: '선택문제목표',   notion: '선택문제목표',   type: 'rich_text'},
+  {sheet: '선택장비',       notion: '선택장비',       type: 'rich_text'},
+  {sheet: '요청사항',       notion: '요청사항',       type: 'rich_text'},
+  {sheet: '상태',           notion: '상태',           type: 'select'},
+  {sheet: '담당자',         notion: '담당자',         type: 'select'},
+  {sheet: '공정흐름도',     notion: '공정흐름도',     type: 'rich_text'},
+  // 견적 그룹
+  {sheet: '견적번호',       notion: '견적번호',       type: 'rich_text'},
+  {sheet: '발급일시',       notion: '발급일시',       type: 'date'},
+  {sheet: '포함옵션',       notion: '포함옵션',       type: 'rich_text'},
+  {sheet: '추가옵션(JSON)', notion: '추가옵션',       type: 'rich_text'},
+  {sheet: '공급가액',       notion: '공급가액',       type: 'number'},
+  {sheet: '부가세',         notion: '부가세',         type: 'number'},
+  {sheet: '합계',           notion: '합계',           type: 'number'},
+  {sheet: '유효기간',       notion: '유효기간',       type: 'date'},
+  {sheet: 'version',        notion: '견적_version',   type: 'number'},
+  {sheet: 'isLatest',       notion: 'isLatest',       type: 'checkbox'},
+  // 가이드/메일 그룹
+  {sheet: '가이드_생성일시', notion: '가이드_생성일시', type: 'date'},
+  {sheet: '가이드_HTML_URL', notion: '가이드_HTML',    type: 'url'},
+  {sheet: '가이드_발송요청', notion: '발송요청',       type: 'checkbox'},
+  {sheet: '가이드_발송일시', notion: '메일발송일시',   type: 'date'},
+  {sheet: '가이드_발송상태', notion: '발송상태',       type: 'select'},
+  {sheet: '가이드_에러',     notion: '발송에러',       type: 'rich_text'},
+  // PDF URL
+  {sheet: '견적PDF_URL',     notion: '견적PDF',        type: 'url'},
+  {sheet: '장비사진PDF_URL', notion: '장비사진PDF',    type: 'url'},
+  // 가이드 버전
+  {sheet: '가이드_version',  notion: '가이드_version', type: 'number'}
+  // Notion_PageID, 최종푸시일시 — sync 메타라 노션에 보내지 않음
+];
+
+/* Notion API 호출 wrapper — 인증 + 에러 처리.
+   path: '/v1/...' / method: 'GET'|'POST'|'PATCH' / body: object 또는 null */
+function _notionFetch(path, method, body) {
+  const token = _guideProp('NOTION_TOKEN');
+  const url = 'https://api.notion.com' + path;
+  const options = {
+    method: (method || 'GET').toLowerCase(),
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Notion-Version': NOTION_API_VERSION,
+      'Content-Type': 'application/json'
+    },
+    muteHttpExceptions: true
+  };
+  if (body) options.payload = JSON.stringify(body);
+  const response = UrlFetchApp.fetch(url, options);
+  const code = response.getResponseCode();
+  const text = response.getContentText();
+  if (code < 200 || code >= 300) {
+    throw new Error('Notion HTTP ' + code + ': ' + text.substring(0, 500));
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+/* 시트 셀 값을 Notion 속성 value 형식으로 변환. 빈값은 null 반환(빈 속성 update). */
+function _toNotionValue(item, raw) {
+  const empty = (raw === null || raw === undefined || raw === '');
+  switch (item.type) {
+    case 'title': {
+      return {title: empty ? [] : [{type: 'text', text: {content: String(raw).substring(0, 2000)}}]};
+    }
+    case 'rich_text': {
+      return {rich_text: empty ? [] : [{type: 'text', text: {content: String(raw).substring(0, 2000)}}]};
+    }
+    case 'number': {
+      if (empty) return {number: null};
+      const n = Number(String(raw).replace(/,/g, ''));
+      return {number: isNaN(n) ? null : n};
+    }
+    case 'date': {
+      if (empty) return {date: null};
+      // yyyy-MM-dd 또는 yyyy-MM-dd HH:mm 형식 → Notion ISO 8601
+      const s = String(raw);
+      const dt = _parseKstToIso(s);
+      return {date: dt ? {start: dt} : null};
+    }
+    case 'select': {
+      if (empty) return {select: null};
+      return {select: {name: String(raw).substring(0, 100)}};
+    }
+    case 'checkbox': {
+      const v = (raw === true || raw === 'TRUE' || raw === 'true' || raw === 1 || raw === '1');
+      return {checkbox: v};
+    }
+    case 'url': {
+      return {url: empty ? null : String(raw)};
+    }
+    case 'email': {
+      return {email: empty ? null : String(raw)};
+    }
+    case 'phone_number': {
+      return {phone_number: empty ? null : String(raw)};
+    }
+    default:
+      return {rich_text: empty ? [] : [{type: 'text', text: {content: String(raw).substring(0, 2000)}}]};
+  }
+}
+
+/* "yyyy-MM-dd" 또는 "yyyy-MM-dd HH:mm" → ISO 8601(KST 오프셋 포함). */
+function _parseKstToIso(s) {
+  if (!s) return null;
+  const text = String(s).trim();
+  // yyyy-MM-dd HH:mm
+  let m = text.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3] + 'T' + m[4] + ':' + m[5] + ':00+09:00';
+  // yyyy-MM-dd
+  m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  // 그 외: Date 파싱 시도
+  try {
+    const d = new Date(text);
+    if (!isNaN(d.getTime())) return Utilities.formatDate(d, 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  } catch (_) {}
+  return null;
+}
+
+/* 통합정보 row 객체 → Notion properties 객체 변환. */
+function _buildNotionProperties(row) {
+  const props = {};
+  NOTION_PROP_MAP.forEach(item => {
+    if (item.skip) return;
+    const raw = row[item.sheet];
+    props[item.notion] = _toNotionValue(item, raw);
+  });
+  return props;
+}
+
+/* DB 스키마 자동 보강 — NOTION_PROP_MAP에 정의된 속성 중 DB에 없는 것을 추가.
+   Title 속성은 첫 번째여야 하므로 이미 있어야 함 (없으면 새 컬럼은 select로 만들 수 없음). */
+function ensureNotionSchema() {
+  const dbId = _guideProp('NOTION_DB_ID');
+  const db = _notionFetch('/v1/databases/' + dbId, 'GET');
+  const existing = db.properties || {};
+  const toAdd = {};
+  NOTION_PROP_MAP.forEach(item => {
+    if (item.skip) return;
+    if (existing[item.notion]) return;
+    if (item.type === 'title') return; // title은 이미 있어야 함
+    toAdd[item.notion] = _emptySchemaForType(item.type);
+  });
+  if (Object.keys(toAdd).length === 0) {
+    Logger.log('ensureNotionSchema: 모든 속성 이미 존재');
+    return;
+  }
+  _notionFetch('/v1/databases/' + dbId, 'PATCH', {properties: toAdd});
+  Logger.log('ensureNotionSchema: ' + Object.keys(toAdd).length + '개 속성 추가됨 → ' + Object.keys(toAdd).join(', '));
+}
+
+function _emptySchemaForType(type) {
+  switch (type) {
+    case 'rich_text':   return {rich_text: {}};
+    case 'number':      return {number: {format: 'number'}};
+    case 'date':        return {date: {}};
+    case 'select':      return {select: {options: []}};
+    case 'checkbox':    return {checkbox: {}};
+    case 'url':         return {url: {}};
+    case 'email':       return {email: {}};
+    case 'phone_number':return {phone_number: {}};
+    default:            return {rich_text: {}};
+  }
+}
+
+/* 접수번호로 노션 페이지 upsert. 시트의 Notion_PageID 컬럼에 페이지 ID 저장 (다음번 호출 시 PATCH).
+   첫 호출이면 query → page 없으면 POST(create), 있으면 PATCH(update). */
+function pushToNotion(reqId) {
+  if (!reqId) return null;
+  const row = _readUnifiedRow(reqId);
+  if (!row) { Logger.log('pushToNotion: 행 없음 — ' + reqId); return null; }
+  const dbId = _guideProp('NOTION_DB_ID');
+  const properties = _buildNotionProperties(row);
+  let pageId = row['Notion_PageID'] || '';
+  // pageId 없으면 query로 기존 페이지 검색 (접수번호 기준)
+  if (!pageId) {
+    try {
+      const query = _notionFetch('/v1/databases/' + dbId + '/query', 'POST', {
+        filter: {property: '접수번호', rich_text: {equals: reqId}},
+        page_size: 1
+      });
+      if (query && query.results && query.results.length > 0) {
+        pageId = query.results[0].id;
+      }
+    } catch (e) {
+      // 접수번호 속성이 없거나 권한 문제 — 새 페이지 생성으로 진행
+      Logger.log('pushToNotion: query 실패 (정상 가능 — 첫 push) — ' + e);
+    }
+  }
+  let result;
+  if (pageId) {
+    // PATCH 갱신
+    result = _notionFetch('/v1/pages/' + pageId, 'PATCH', {properties: properties});
+  } else {
+    // POST 새 페이지
+    result = _notionFetch('/v1/pages', 'POST', {
+      parent: {database_id: dbId},
+      properties: properties
+    });
+    pageId = result.id;
+  }
+  // 시트에 페이지 ID + 최종푸시일시 업데이트
+  _updateUnifiedFields(reqId, {
+    'Notion_PageID': pageId,
+    '최종푸시일시': Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')
+  });
+  return result;
+}
+
+/* 즉시 push의 안전 wrapper — 예외는 삼키고 로그만. 호출 측 로직(예: upsertUnified)을 막지 않음. */
+function _safePushToNotion(reqId) {
+  try { pushToNotion(reqId); }
+  catch (e) { Logger.log('pushToNotion 실패 (skip) — ' + reqId + ': ' + e); }
+}
+
+/* 보조 동기화 — 통합정보 시트에서 Notion_PageID가 비어있거나 최종푸시일시가 너무 옛날인 행을 push.
+   Time-driven 트리거에 등록되거나 pollAndSendGuides 끝에서 호출. 한 번에 최대 20건. */
+function syncPendingToNotion() {
+  const sheet = _getUnifiedSheet();
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return;
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  const reqIdCol = headers.indexOf('접수번호');
+  const pageIdCol = headers.indexOf('Notion_PageID');
+  if (reqIdCol < 0 || pageIdCol < 0) return;
+  let count = 0;
+  const MAX = 20;
+  for (let i = 0; i < values.length && count < MAX; i++) {
+    const reqId = values[i][reqIdCol];
+    const pageId = values[i][pageIdCol];
+    if (!reqId) continue;
+    if (pageId) continue; // 이미 push됨 — skip (단순 정책: push 안 된 행만 보조 sync)
+    _safePushToNotion(reqId);
+    count++;
+  }
+  Logger.log('syncPendingToNotion: ' + count + '건 push');
+}
+
+/* 수동 — 특정 접수번호 또는 가장 최근 행을 노션에 강제 push. GAS 에디터에서 디버깅용. */
+function manualPushToNotion(reqId) {
+  if (!reqId) {
+    const sheet = _getUnifiedSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) { Logger.log('manualPushToNotion: 데이터 없음'); return; }
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const idCol = headers.indexOf('접수번호');
+    const verCol = headers.indexOf('발급일시');
+    const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    let latest = null;
+    values.forEach(r => {
+      const t = r[verCol];
+      if (t && (!latest || t > latest._t)) latest = {_t: t, id: r[idCol]};
+    });
+    if (!latest) { Logger.log('manualPushToNotion: 발급일시 비어있음 — 임의 행 사용'); reqId = values[0][idCol]; }
+    else reqId = latest.id;
+  }
+  const result = pushToNotion(reqId);
+  Logger.log('manualPushToNotion: ' + reqId + ' → ' + (result ? result.id || 'PATCH OK' : 'null'));
 }
 
 /* 수동 재생성 (옵션) — 견적 정보는 그대로 두고 가이드만 다시 생성하고 싶을 때 사용.
