@@ -335,8 +335,10 @@
     .q-mail-row .v.empty{color:#cbd5e1;font-weight:500;font-style:italic}
     .q-mail-input{flex:1;font-size:12.5px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;padding:6px 10px;font-family:inherit;color:#0f172a;outline:none;min-width:0}
     .q-mail-input:focus{border-color:#1e56c8;box-shadow:0 0 0 2px rgba(30,86,200,.12)}
-    .q-mail-btn{background:transparent;border:0;cursor:pointer;font-size:13px;padding:4px 8px;color:#0f3768;font-family:inherit;border-radius:6px;font-weight:600}
+    .q-mail-btn{background:transparent;border:0;cursor:pointer;font-size:13px;padding:4px 8px;color:#0f3768;font-family:inherit;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
     .q-mail-btn:hover:not(:disabled){background:#eef2f8}
+    .q-mail-btn.icon-only{padding:5px 7px;color:#94a3b8;line-height:0}
+    .q-mail-btn.icon-only:hover:not(:disabled){color:#0f3768;background:#eef2f8}
     .q-mail-btn:disabled{opacity:.4;cursor:not-allowed}
     .q-mail-btn.primary{background:#0f3768;color:#fff;padding:5px 11px;font-size:12px}
     .q-mail-btn.primary:hover:not(:disabled){background:#0a2950}
@@ -1425,7 +1427,7 @@ function renderDetail(){
           <h1>${r.company}</h1>
           <div class="banner-status">
             <span class="v2-badge ${_statusClass}">${_statusLabel}</span>
-            ${isRevising?`<span class="v2-badge" style="background:#fde68a;color:#78350f;border:1px solid #f59e0b">✏️ 수정 모드</span>`:''}
+            ${isRevising?`<span class="v2-badge" style="background:#fde68a;color:#78350f;border:1px solid #f59e0b;display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>수정 모드</span>`:''}
             <span class="meta">${r.id} · ${fmtDateTime(r.submittedAt)}</span>
           </div>
         </div>
@@ -1634,7 +1636,7 @@ function renderDetail(){
               ? `<button class="v2-btn secondary" onclick="returnToCurrentVersion()">최신 버전</button>
                  <button class="v2-btn primary" onclick="printHistoryQuote('${r.quoteNo}')">이 버전 출력</button>`
               : isConfirmed && !isRevising
-                ? `${isAssignedToMe?`<button class="v2-btn warn" onclick="startRevise()">✏️ 수정</button>`:''}
+                ? `${isAssignedToMe?`<button class="v2-btn warn" onclick="startRevise()" style="display:inline-flex;align-items:center;justify-content:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>수정</button>`:''}
                    <button class="v2-btn secondary" onclick="printEquipPhoto()">장비사진</button>
                    <button class="v2-btn primary" onclick="printQuote()">견적서 출력</button>`
                 : isRevising
@@ -1657,7 +1659,7 @@ function renderDetail(){
               <span class="k">이메일</span>
               <span class="v ${r.email?'':'empty'}" id="mailEmailView">${r.email || '미입력'}</span>
               <input class="q-mail-input" id="mailEmailEdit" value="${r.email||''}" placeholder="abc@example.com" style="display:none">
-              <button class="q-mail-btn" id="mailEmailEditBtn" onclick="startEditMail('email')" title="수정">✏️</button>
+              <button class="q-mail-btn icon-only" id="mailEmailEditBtn" onclick="startEditMail('email')" title="수정"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
               <button class="q-mail-btn primary" id="mailEmailSaveBtn" onclick="saveMailField('email')" style="display:none">저장</button>
               <button class="q-mail-btn" id="mailEmailCancelBtn" onclick="cancelEditMail('email')" style="display:none">취소</button>
             </div>
@@ -1665,7 +1667,7 @@ function renderDetail(){
               <span class="k">연락처</span>
               <span class="v ${r.phone?'':'empty'}" id="mailPhoneView">${r.phone || '미입력'}</span>
               <input class="q-mail-input" id="mailPhoneEdit" value="${r.phone||''}" placeholder="010-1234-5678" style="display:none">
-              <button class="q-mail-btn" id="mailPhoneEditBtn" onclick="startEditMail('phone')" title="수정">✏️</button>
+              <button class="q-mail-btn icon-only" id="mailPhoneEditBtn" onclick="startEditMail('phone')" title="수정"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
               <button class="q-mail-btn primary" id="mailPhoneSaveBtn" onclick="saveMailField('phone')" style="display:none">저장</button>
               <button class="q-mail-btn" id="mailPhoneCancelBtn" onclick="cancelEditMail('phone')" style="display:none">취소</button>
             </div>
