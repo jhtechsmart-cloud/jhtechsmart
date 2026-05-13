@@ -611,9 +611,29 @@ function _ensureGuideForUnified(row) {
 
 const MAIL_POLL_MAX_PER_TICK = 30;
 const MAIL_RESEND_COOLDOWN_MS = 5 * 60 * 1000; // 5분 내 중복 발송 차단
+const MAIL_POLL_INTERVAL_MIN = 5;              // trigger polling 주기 (분)
 
-/* Time-driven 트리거에 등록되는 진입점. 사용자가 GAS 에디터에서 트리거로
-   이 함수를 10분(또는 5분)마다 실행하도록 설정해야 함.
+/* pollAndSendGuides time-driven 트리거 자동 설정 — 멱등.
+   GAS 에디터 함수 드롭다운에서 ▶ 한 번 실행하면 기존 동일 함수 trigger는 모두
+   삭제되고 MAIL_POLL_INTERVAL_MIN 분 간격으로 새 trigger 1개가 생성된다.
+   trigger 간격 변경 시: MAIL_POLL_INTERVAL_MIN 상수만 수정하고 setupTriggers ▶ 재실행. */
+function setupTriggers() {
+  const existing = ScriptApp.getProjectTriggers();
+  let removed = 0;
+  existing.forEach(t => {
+    if (t.getHandlerFunction() === 'pollAndSendGuides') {
+      ScriptApp.deleteTrigger(t);
+      removed++;
+    }
+  });
+  ScriptApp.newTrigger('pollAndSendGuides')
+    .timeBased()
+    .everyMinutes(MAIL_POLL_INTERVAL_MIN)
+    .create();
+  Logger.log('setupTriggers: 기존 pollAndSendGuides trigger ' + removed + '개 삭제 + ' + MAIL_POLL_INTERVAL_MIN + '분 간격 trigger 새로 생성');
+}
+
+/* Time-driven 트리거에 등록되는 진입점. setupTriggers ▶ 실행으로 자동 등록됨.
    수동 실행도 가능 — GAS 에디터 함수 드롭다운에서 ▶ 실행. */
 function pollAndSendGuides() {
   const lock = LockService.getScriptLock();
