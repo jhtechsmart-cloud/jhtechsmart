@@ -634,8 +634,10 @@ function pollAndSendGuides() {
       const row = {__row: i + 2};
       headers.forEach((h, idx) => { if (h) row[h] = values[i][idx]; });
       // 발송 대상 필터링
+      // 발송요청=TRUE가 운영자의 의도 표현 — 발송완료 상태라도 재체크하면 재발송 의도로 봄.
+      // 무한 재발송은 아래 5분 cooldown으로 차단되므로 발송상태 체크는 빼야 함 (안 빼면
+      // 노션에서 운영자가 발송완료 행에 발송요청 켜도 영원히 안 가는 문제 발생).
       if (!row['가이드_발송요청']) continue;
-      if (String(row['가이드_발송상태']) === '발송완료') continue;
       if (!row['이메일']) continue;
       if (!row['가이드_HTML_URL']) continue;
       // 5분 내 재발송 방지
