@@ -597,6 +597,8 @@ function _ensureGuideForUnified(row) {
     '가이드_발송상태': '발송대기',
     '가이드_에러': ''
   });
+  // Phase 5: 가이드 메타 update 후 노션에 반영
+  _safePushToNotion(reqId);
   return {skipped: false, url: saved.url, fileId: saved.fileId, version: curVersion};
 }
 
@@ -987,10 +989,17 @@ function pushToNotion(reqId) {
   return result;
 }
 
-/* 즉시 push의 안전 wrapper — 예외는 삼키고 로그만. 호출 측 로직(예: upsertUnified)을 막지 않음. */
+/* 즉시 push의 안전 wrapper — 예외는 삼키고 로그만. 호출 측 로직(예: upsertUnified)을 막지 않음.
+   디버깅을 위해 시트 flush를 먼저 호출(write 반영 보장) + 에러 메시지에 stack 포함. */
 function _safePushToNotion(reqId) {
-  try { pushToNotion(reqId); }
-  catch (e) { Logger.log('pushToNotion 실패 (skip) — ' + reqId + ': ' + e); }
+  try {
+    SpreadsheetApp.flush(); // upsertUnified/_updateUnifiedFields 직후 호출 시 시트 write 반영 보장
+    pushToNotion(reqId);
+  } catch (e) {
+    const msg = e && e.message ? e.message : String(e);
+    const stack = e && e.stack ? '\n' + String(e.stack).substring(0, 800) : '';
+    Logger.log('[NOTION PUSH FAILED] reqId=' + reqId + ' / ' + msg + stack);
+  }
 }
 
 /* 보조 동기화 — 통합정보 시트에서 Notion_PageID가 비어있거나 최종푸시일시가 너무 옛날인 행을 push.
@@ -1799,6 +1808,8 @@ function handleSaveQuote(data, user) {
       const isEquip = String(data.filename || '').indexOf('장비사진_') === 0;
       const colName = isEquip ? '장비사진PDF_URL' : '견적PDF_URL';
       _updateUnifiedField(data.reqId, colName, file.getUrl());
+      // Phase 5: PDF URL update 직후 노션에도 반영 (둘째 PDF 들어오면 다시 한 번 push되어 둘 다 반영됨)
+      _safePushToNotion(data.reqId);
       const row = _readUnifiedRow(data.reqId);
       if (row && row['견적PDF_URL'] && row['장비사진PDF_URL']) {
         _ensureGuideForUnified(row);
