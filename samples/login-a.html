@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Login Sample A · Bold Split</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{--blue:#1e56c8;--blue2:#0d3778;--blue3:#06142e;--orange:#f97316;--yellow:#fbbf24;--line:#dce8f5;--muted:#64748b;--text:#0f172a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden}
+  body{font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;display:flex;-webkit-font-smoothing:antialiased;color:var(--text)}
+  /* ─── Left brand panel ─── */
+  .brand{position:relative;width:720px;height:100%;background:linear-gradient(135deg,#06142e 0%,#0d3778 55%,#1748b0 100%);color:#fff;padding:64px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .brand .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(circle at 30% 40%,#000 0%,transparent 80%)}
+  .brand .glow{position:absolute;width:680px;height:680px;right:-220px;bottom:-220px;background:radial-gradient(circle,rgba(96,165,250,0.35) 0%,transparent 65%);border-radius:50%;filter:blur(10px)}
+  .brand .accent{position:absolute;width:380px;height:380px;left:-120px;top:-120px;background:radial-gradient(circle,rgba(249,115,22,0.22) 0%,transparent 65%);border-radius:50%;filter:blur(20px)}
+  .top{position:relative;z-index:2;display:flex;align-items:center;gap:14px}
+  .top .logo{width:54px;height:54px;background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+  .top .logo img{width:100%;height:100%;object-fit:contain}
+  .top .name{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  .top .sub{font-size:13px;opacity:.7;font-weight:500;margin-top:2px;letter-spacing:.3px}
+  .hero{position:relative;z-index:2}
+  .hero .tag{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.20);padding:8px 18px;border-radius:999px;font-size:14px;font-weight:600;letter-spacing:.2px;margin-bottom:28px;backdrop-filter:blur(8px)}
+  .hero .tag .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e}
+  .hero h1{font-size:72px;line-height:1.05;letter-spacing:-2.5px;font-weight:800;margin-bottom:22px}
+  .hero h1 .em{background:linear-gradient(135deg,#fbbf24 0%,#f97316 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .hero .lead{font-size:19px;font-weight:500;line-height:1.55;opacity:.85;max-width:520px;color:#cbd5e1}
+  .stats{position:relative;z-index:2;display:flex;gap:36px}
+  .stat .n{font-size:32px;font-weight:800;letter-spacing:-1px}
+  .stat .l{font-size:13px;opacity:.7;margin-top:2px;letter-spacing:.2px}
+  .stat .bar{width:32px;height:3px;background:#f97316;border-radius:2px;margin-top:8px}
+  /* ─── Right form ─── */
+  .panel{flex:1;background:#fff;display:flex;align-items:center;justify-content:center;padding:48px;position:relative}
+  .panel::before{content:'';position:absolute;top:32px;right:32px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.4px}
+  .corner{position:absolute;top:36px;right:48px;font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  .corner .badge{display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:6px;vertical-align:middle;box-shadow:0 0 8px rgba(34,197,94,0.6)}
+  .form{width:420px}
+  .form .hi{font-size:14px;color:var(--blue);font-weight:700;letter-spacing:.3px;margin-bottom:8px;text-transform:uppercase}
+  .form h2{font-size:36px;font-weight:800;letter-spacing:-1px;color:var(--blue2);margin-bottom:10px}
+  .form .desc{color:var(--muted);font-size:15px;margin-bottom:36px;line-height:1.6}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:7px;letter-spacing:-.1px}
+  .input-wrap{position:relative}
+  .input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;width:18px;height:18px}
+  .input-wrap input{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:14px 14px 14px 44px;font-size:15px;font-family:inherit;outline:none;background:#f8fafc;transition:all .15s;color:var(--text)}
+  .input-wrap input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(30,86,200,0.08)}
+  .row{display:flex;align-items:center;justify-content:space-between;margin:14px 0 24px}
+  .check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#475569;cursor:pointer;font-weight:500}
+  .check input{accent-color:var(--blue);width:15px;height:15px}
+  .row a{font-size:13.5px;color:var(--blue);font-weight:600;text-decoration:none}
+  .btn{width:100%;border:0;border-radius:11px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,var(--orange) 0%,#ea580c 100%);color:#fff;box-shadow:0 8px 24px rgba(249,115,22,0.32);letter-spacing:-.1px;transition:all .2s}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(249,115,22,0.42)}
+  .foot{margin-top:36px;font-size:13px;color:var(--muted);text-align:center}
+  .foot a{color:var(--blue2);font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+  <aside class="brand">
+    <div class="grid"></div>
+    <div class="glow"></div>
+    <div class="accent"></div>
+    <div class="top">
+      <div class="logo"><img src="../logo.png" alt=""></div>
+      <div>
+        <div class="name">(주)재현테크</div>
+        <div class="sub">JAEHYUN TECH CO., LTD.</div>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="tag"><span class="dot"></span>2026 소공인 스마트제조 지원사업</div>
+      <h1>견적 관리,<br>한 곳에서 <span class="em">스마트하게</span>.</h1>
+      <div class="lead">신청 접수 · 견적 발급 · PDF 자동 저장까지<br>담당자가 한 화면에서 처리합니다.</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">5단계</div><div class="l">간편 신청 위저드</div><div class="bar"></div></div>
+      <div class="stat"><div class="n">자동</div><div class="l">견적서 PDF 발급</div><div class="bar"></div></div>
+      <div class="stat"><div class="n">실시간</div><div class="l">신청 현황 동기화</div><div class="bar"></div></div>
+    </div>
+  </aside>
+  <section class="panel">
+    <div class="corner"><span class="badge"></span>시스템 정상 · v2.4</div>
+    <div class="form">
+      <div class="hi">ADMIN PORTAL</div>
+      <h2>다시 만나서 반가워요</h2>
+      <div class="desc">담당자 계정으로 로그인하면<br>본인 견적서에 자동으로 이름이 표시됩니다.</div>
+      <div class="field">
+        <label>아이디</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" placeholder="park" value="">
+        </div>
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" placeholder="••••••••" value="">
+        </div>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" checked> 이 컴퓨터에서 로그인 유지</label>
+        <a href="#">비밀번호 분실</a>
+      </div>
+      <button class="btn">로그인 →</button>
+      <div class="foot">계정이 없으신가요? <a href="#">관리자에게 문의</a></div>
+    </div>
+  </section>
+</body>
+</html>

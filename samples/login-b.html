@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Login Sample B · Glass Hero</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden}
+  body{
+    font-family:'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    background:#06142e;
+    background-image:
+      radial-gradient(ellipse at 80% 20%,rgba(30,86,200,0.55) 0%,transparent 55%),
+      radial-gradient(ellipse at 10% 90%,rgba(249,115,22,0.22) 0%,transparent 55%),
+      radial-gradient(ellipse at 50% 50%,rgba(96,165,250,0.18) 0%,transparent 60%),
+      linear-gradient(135deg,#06142e 0%,#0a1d3f 55%,#0d3778 100%);
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow:hidden;
+  }
+  .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:54px 54px;mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 80%)}
+  /* floating decorative chips */
+  .chip{position:absolute;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(20px);border-radius:18px;padding:14px 20px;font-size:14px;font-weight:600;color:#cbd5e1;display:flex;align-items:center;gap:10px;box-shadow:0 12px 36px rgba(0,0,0,0.3)}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e}
+  .chip-1{top:140px;left:120px;transform:rotate(-4deg)}
+  .chip-2{top:210px;right:120px;transform:rotate(3deg)}
+  .chip-3{bottom:200px;left:160px;transform:rotate(2deg)}
+  .chip-4{bottom:140px;right:140px;transform:rotate(-3deg)}
+  .chip svg{width:18px;height:18px;color:#fbbf24}
+  /* top header */
+  .header{position:absolute;top:36px;left:48px;right:48px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+  .header .brand{display:flex;align-items:center;gap:12px}
+  .header .brand .logo{width:42px;height:42px;background:#fff;border-radius:11px;padding:6px;display:flex;align-items:center;justify-content:center}
+  .header .brand .logo img{width:100%;height:100%;object-fit:contain}
+  .header .brand .name{font-size:16px;font-weight:700;letter-spacing:-.2px}
+  .header .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#cbd5e1;font-weight:500}
+  .header .status .pulse{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e}
+  /* center glass card */
+  .card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:460px;background:rgba(255,255,255,0.06);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.16);border-radius:28px;padding:48px 44px;box-shadow:0 40px 100px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.06) inset;z-index:3}
+  .card .tag{display:inline-flex;align-items:center;gap:10px;background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.4);padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:2px;color:#fdba74;margin-bottom:22px;text-transform:uppercase}
+  .card .tag .sq{width:7px;height:7px;background:#f97316;box-shadow:0 0 10px #f97316}
+  .card h1{font-size:32px;font-weight:800;letter-spacing:-.8px;margin-bottom:8px;color:#fff}
+  .card .lead{font-size:14.5px;color:#94a3b8;line-height:1.55;margin-bottom:30px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:#cbd5e1;margin-bottom:7px;letter-spacing:.1px}
+  .input-wrap{position:relative}
+  .input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b;width:17px;height:17px}
+  .input-wrap input{width:100%;border:1px solid rgba(255,255,255,0.14);border-radius:11px;padding:13px 14px 13px 42px;font-size:14.5px;font-family:inherit;outline:none;background:rgba(255,255,255,0.04);color:#fff;transition:all .2s}
+  .input-wrap input::placeholder{color:#475569}
+  .input-wrap input:focus{border-color:#60a5fa;background:rgba(96,165,250,0.08);box-shadow:0 0 0 4px rgba(96,165,250,0.12)}
+  .row{display:flex;align-items:center;justify-content:space-between;margin:8px 0 22px}
+  .check{display:flex;align-items:center;gap:8px;font-size:13px;color:#cbd5e1;cursor:pointer}
+  .check input{accent-color:#f97316;width:14px;height:14px}
+  .row a{font-size:13px;color:#60a5fa;font-weight:600;text-decoration:none}
+  .btn{width:100%;border:0;border-radius:12px;padding:14px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#fbbf24 0%,#f97316 100%);color:#0a1d3f;box-shadow:0 10px 32px rgba(249,115,22,0.5),0 0 0 1px rgba(255,255,255,0.2) inset;letter-spacing:-.1px;transition:all .2s}
+  .btn:hover{transform:translateY(-1px)}
+  .foot{position:absolute;bottom:32px;left:0;right:0;text-align:center;font-size:12.5px;color:#64748b;z-index:3}
+  .foot b{color:#94a3b8;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="chip chip-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>신청 접수 12건</div>
+  <div class="chip chip-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>견적 발급 8건</div>
+  <div class="chip chip-3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>마지막 동기화 2분 전</div>
+  <div class="chip chip-4"><span class="dot"></span>GAS 백엔드 정상</div>
+  <header class="header">
+    <div class="brand">
+      <div class="logo"><img src="../logo.png" alt=""></div>
+      <div class="name">(주)재현테크 · 견적 관리 시스템</div>
+    </div>
+    <div class="status"><span class="pulse"></span>시스템 가동 중 · v2.4</div>
+  </header>
+  <div class="card">
+    <div class="tag"><span class="sq"></span>ADMIN · 담당자 전용</div>
+    <h1>견적 관리 시스템</h1>
+    <div class="lead">담당자 계정으로 로그인하세요. 본인 견적서에<br>이름과 연락처가 자동으로 표시됩니다.</div>
+    <div class="field">
+      <label>아이디</label>
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input type="text" placeholder="아이디 입력">
+      </div>
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" placeholder="••••••••">
+      </div>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" checked>로그인 유지</label>
+      <a href="#">비밀번호 분실</a>
+    </div>
+    <button class="btn">로그인 →</button>
+  </div>
+  <div class="foot">© 2026 (주)재현테크 · <b>JAEHYUN TECH CO., LTD.</b> · 2026 소공인 스마트제조 지원사업 견적 관리 포털</div>
+</body>
+</html>
