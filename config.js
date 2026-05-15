@@ -7,6 +7,6 @@
  *
  * 변경 후에는 GitHub Pages에 push 하여 정적 자산을 갱신할 것.
  */
-window.JHTECH_GAS_URL = 'https://script.google.com/macros/s/AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8zimTk0j/exec';
+//window.JHTECH_GAS_URL = 'https://script.google.com/macros/s/AKfycbytYKyoZSL4d0QqDjEr_Lca3bPJzrlg0jBifleERJha2KYsi4rpDCvityV937e70DRp/exec';
 
-//window.JHTECH_GAS_URL = 'https://script.google.com/macros/s/AKfycbytYKyoZSL4d0QqDjEr_Lca3bPJzrlg0jBifleERJha2KYsi4rpDCvityV937e70DRp/exec'; // 테스트 GAS
+window.JHTECH_GAS_URL = 'https://script.google.com/macros/s/AKfycbwuHdUnuGci3QTkPg1G75WCmHM-N3teWyyWuY72_09NMza-QSH8zIsHhVuz8zimTk0j/exec';

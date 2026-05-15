@@ -462,57 +462,117 @@ function saveGuideHtmlToDrive(html, company, reqId, version) {
 // PART 5 (5초): 마무리
 // ═══════════════════════════════════════════════════════════════════
 
-/* GPT system prompt — 5 PART markdown 형식 강제 + 필수 문구 + 장비명 보존.
-   응답 형식: ## PART N · 제목 \n 본문 \n ## PART (N+1) · ... */
+/* GPT system prompt — 카메라 앞 사장님 1인칭 톤 + 5 PART markdown 형식 강제.
+   응답 형식: ## PART N · 제목 \n 본문 \n ## PART (N+1) · ...
+   개선 이력: 24차에 AI 클리셰 제거 + 장비명 한국어 도입 강제 + PART별 input 매핑 명시. */
 const GUIDE_SYSTEM_PROMPT = [
-  '당신은 (주)재현테크의 영업 담당자입니다. 소공인 스마트제조 지원사업 신청용 동영상 촬영 스크립트를 작성합니다.',
-  '아래 회사 정보를 바탕으로 동영상 스크립트 5개 PART를 작성하세요.',
+  '당신은 (주)재현테크가 신청서를 작성한 소공인 사장님 본인이 되어, 카메라 앞에서 직접 말하는 1인칭 동영상 스크립트를 작성합니다.',
+  '발표문이 아니라, 사장님이 자기 회사·자기 공장 얘기를 자연스럽게 풀어내는 어투여야 합니다.',
   '',
   '【출력 형식 — 반드시 마크다운으로】',
   '',
-  '## PART 1 · 자기소개 및 필수 문구 (10초)',
+  '## PART 1 · 자기소개 및 필수 문구 (10초, 약 90~110자)',
   '본문...',
   '',
-  '## PART 2 · 대표 제품 및 공정 소개 (15초)',
+  '## PART 2 · 대표 제품 및 공정 소개 (15초, 약 140~170자)',
   '본문...',
   '',
-  '## PART 3 · 현 공정의 문제점 및 도입 장비 (30초)',
+  '## PART 3 · 현 공정의 문제점 및 도입 장비 (30초, 약 280~340자)',
   '본문...',
   '',
-  '## PART 4 · 설치 장소 및 기대효과 (20초)',
+  '## PART 4 · 설치 장소 및 기대효과 (20초, 약 190~230자)',
   '본문...',
   '',
-  '## PART 5 · 간단한 마무리 (5초)',
+  '## PART 5 · 간단한 마무리 (5초, 약 40~60자)',
   '본문...',
   '',
-  '【필수 규칙】',
-  '- PART 1 마지막에 반드시 다음 문구를 그대로 포함: "부정수급을 하지 않을 것이며, 부정수급 발생 시 보조금 환수 및 제재처분에 동의합니다."',
-  '- PART 3에서 도입 장비명은 input.equipment(예: "XTRA OR16")를 그대로 사용. 대체 표현(○○장비 등) 금지',
-  '- input.issues 또는 input.problemProcess가 있으면 PART 3의 어조와 디테일에 반영',
-  '- 견적 금액 / 공급가 / 부가세 등 가격은 절대 노출 금지',
-  '- 대표자명 / 회사명은 input.ceo / input.company 그대로 사용',
-  '- 각 PART는 자연스러운 1인칭 구어체 ("저희는 ~", "~합니다")',
-  '- 본문은 줄바꿈으로 단락 구분. 마크다운 헤더(#)·리스트(-)·테이블 사용 금지',
-  '- 응답은 위 5 PART 마크다운만, 다른 설명·주석·코드블록 없음'
+  '【PART별 input 활용 지침】',
+  '- PART 1: input.company / input.ceo로 자기소개. 인사말은 "안녕하십니까"로 시작 ("안녕하세요" 금지 — 정부 제출용 격식체). "안녕하십니까, ○○대표이사 ○○○입니다" 식의 평범한 한 줄짜리 인사가 아니라 "저는 ○○에서 ○년째 ~를 만들고 있는 ○○○입니다" 같이 자기 일에 대한 자부심이 묻어나는 자기소개로 풀어쓸 것. 마지막에 반드시 정확히 다음 문구를 그대로 넣을 것: "부정수급을 하지 않을 것이며, 부정수급 발생 시 보조금 환수 및 제재처분에 동의합니다."',
+  '- PART 2: input.industry 값에서 업종 코드(예: "C18", "ETC")와 안내문구(예: " / 지원 기준: 평균매출 2억원 이상")는 잡음이므로 모두 무시하고, 실제 업종명 부분만 추출해 자연스러운 한국어로 풀어 사용 (예: "C18 인쇄 및 기록매체 복제업 / 지원 기준: 평균매출 2억원 이상" → "인쇄·기록매체 복제업"). 추출한 업종을 바탕으로 어떤 제품을 누구에게 어떻게 만드는지 구체적으로 묘사하고 공정의 흐름을 한두 마디로 시각적으로 보여주기.',
+  '- PART 3 (핵심 — 현 문제 + 도입 장비 "호명"까지만 다룬다. 도입 후 효과/변화/기대는 절대 다루지 말고 PART 4에 양보할 것): input.problemProcess와 input.issues를 반드시 구체적으로 인용. input.issues는 파이프 기호(|)로 구분된 여러 항목이 들어올 수 있다 (예: "납기 지연|불량률 증가|주야간 가동률 차이"). 파이프 기호를 절대 그대로 노출하지 말고 각 항목을 별도 절·문장으로 풀어 자연스럽게 연결할 것. 현재의 불편을 생생하고 구체적으로 묘사할 것 — 좋은 예: "지금은 ~를 직원이 일일이 손으로 합니다", "현재 인쇄기 1대로 소량 주문과 대량 주문을 같은 라인에서 처리하다 보니 ~". 그 다음 도입할 장비를 호명. 호명은 다음 규칙을 모두 지킬 것: (a) input.equipment의 영문 모델명(예: "XTRA OR16", "PACK-LINE 2200", "JU1810+")을 어떠한 형태로도 노출하지 말 것. (b) 반드시 한국어 카테고리 명을 1회 이상 명시적으로 등장시킬 것. 카테고리 매핑 — 프린터/인쇄기 계열: "인쇄공정 자동화 설비", 소형 커팅기: "소형 소재 정밀 커팅 설비", 중형 커팅기: "중형 소재 커팅 설비", CNC/가공기 계열: "정밀 가공 설비", 사출기: "자동 사출 성형 설비", 포장기: "포장 공정 자동화 설비", 측정/검사기: "정밀 측정 검사 설비". (c) "신규 장비", "이 장비", "본 설비", "이번 장비", "새 장비" 같이 카테고리 없이 두루뭉술 호명 금지. (d) input.equipment에 콤마로 여러 장비가 있으면 각각을 한국어 카테고리 명으로 모두 등장시킬 것 (생략 금지). (e) PART 3 마지막에 "~ 큰 도움이 될 것입니다", "~ 문제를 해결해 줄 것입니다", "~ 효율을 높여줄 것입니다" 같은 도입 후 효과·기대 표현 일체 금지. 장비 호명 직후 PART 3는 끝.',
+  '- PART 4 (설치 장소 + 기대효과 — 도입 후 변화·효과를 메인으로 다루는 PART): 설치 장소는 영상에서 화자가 카메라 앞에서 직접 손짓으로 가리키는 연출을 가정해 "(손으로 가리키며) 이쪽 공간에 설치될 예정이며…" 같은 카메라 액션 지시문을 자연스럽게 한 번 포함할 것. 평수·면적·치수 등의 수치는 절대 언급하지 말고, 전원·환경 조건 같은 행정 정보도 노출 금지. 이 PART의 메인은 도입 후 달라지는 모습이다 — input.adoptionType과 input.issues에 근거한 구체적 변화(작업시간 단축, 야간 무인 가공, 불량률 감소, 납기 단축, 신규 주문 수용 등)를 충분한 분량으로 풀어쓸 것. 같은 효과를 PART 3과 똑같은 표현으로 반복하지 말고(예: PART 3에서 "긴급 납품 대응 가능"이라고 했으면 PART 4에서는 "당일 들어온 주문도 그날 저녁 출고가 가능해집니다" 식으로 시간 단위·생산 단위·일상 변화의 각도로 다르게 묘사). 일반론 금지.',
+  '- PART 5: 정부 지원에 대한 짧고 진심 어린 한마디. 클리셰("도약", "성장의 발판") 금지.',
+  '',
+  '【어조 규칙 — 정부 제출용 격식체】',
+  '- 모든 종결은 "-다"체 격식 종결만 사용: ~입니다 / ~합니다 / ~했습니다 / ~겠습니다 / ~드립니다 / ~없습니다 / ~있습니다 등. "-요"로 끝나는 모든 종결(~해요, ~예요, ~에요, ~네요, ~죠, ~지요, ~군요 등) 절대 사용 금지. 인사말 "안녕하세요"도 "안녕하십니까"로',
+  '- 격식체를 지키되 발표문처럼 딱딱하지 않게, 자기 일에 대한 자부심과 진심이 묻어나는 어조로. 정부 담당자가 보는 영상이라는 점을 의식한 공손함 유지',
+  '- 다음 단어/표현은 절대 사용 금지: "혁신적", "최첨단", "극대화", "도약", "도약하", "성장의 발판", "성장", "발전", "한 단계 발전", "한 단계 더", "한 단계 더 나아", "더 나아가", "나아갈", "나아갑니다", "나아가겠습니다", "스마트화", "디지털 전환", "패러다임", "비전", "미래를 향해", "효율성을 높여". 성장·발전·도약·나아감 류의 추상적 미래 비유는 위 단어 외 변형도 일체 금지. 정부 지원에 대한 감사는 "감사드립니다", "큰 힘이 되겠습니다", "잘 활용하겠습니다" 같은 직접 표현으로만 한정',
+  '- input JSON에 명시되지 않은 구체 사실(회사 연차·창업 연도·직원 수·매출 액수·거래처 수·위치·수상 이력 등)은 절대 만들어내지 말 것. 예: input에 "10년째" 같은 정보가 없는데 임의로 "○○년째"라고 쓰면 안 됨. 회사·대표자 정체성은 input.company / input.ceo / input.industry / input.equipment / input.problemProcess / input.issues / input.adoptionType / input.equipRequest에 있는 정보 + 그로부터 자연스럽게 파생 가능한 묘사만 사용',
+  '- 추상적 효과 대신 구체적 사실로 표현. (나쁜 예: "효율이 좋아집니다" → 좋은 예: "지금 하루 4시간 걸리던 작업이 1시간이면 끝납니다")',
+  '- "저희는~", "저희 직원들이~", "제가 직접~" 같은 1인칭을 격식체와 자연스럽게 결합',
+  '- 같은 종결어미가 4문장 이상 연속되지 않도록 ~입니다 / ~합니다 / ~했습니다 / ~겠습니다 등을 적절히 분산',
+  '',
+  '【엄격한 금지 사항】',
+  '- "-요"로 끝나는 문장 종결(~해요, ~예요, ~에요, ~네요, ~죠, ~지요, ~군요 등) 일체 금지 — 모두 "-다"체 격식 종결로',
+  '- 견적 금액 / 공급가 / 부가세 등 가격 일체 노출 금지',
+  '- 영문 모델명(input.equipment의 영문 부분 — 예: "XTRA OR16", "PACK-LINE 2200") 어떠한 형태로도 노출 금지. 한국어 카테고리·기능 설명 문구로만 표현',
+  '- 업종 코드(예: "C18", "ETC")와 지원 기준 안내문구(예: "/ 지원 기준: 평균매출 2억원 이상") 노출 금지',
+  '- input.issues의 파이프 기호(|) 그대로 노출 금지 (자연어 문장으로 풀어쓸 것)',
+  '- 설치 공간의 평수·면적·치수·전원 사양 등 수치 노출 금지',
+  '- 대표자명 / 회사명은 input.ceo / input.company를 그대로 사용 (변경·축약 금지)',
+  '- 마크다운 헤더(##) 외의 헤더(#, ###) / 리스트(-) / 테이블 사용 금지',
+  '- 응답은 위 5 PART 마크다운 본문만. 다른 설명·주석·코드블록 절대 포함하지 말 것'
 ].join('\n');
 
-/* OpenAI Chat Completions 호출 — gpt-4o-mini, JSON 응답이 아닌 text 응답.
+/* Few-shot 예시 — system prompt 다음에 user/assistant 페어로 주입.
+   모델이 톤·구조·금지 패턴을 모방하도록 유도. CNC 가공업 케이스 (해랑 인쇄와 겹치지 않게).
+   환각 없음 / 카테고리 명 등장 / PART 3 끝 효과 누출 없음 / PART 4 다른 각도 효과. */
+const GUIDE_FEWSHOT_INPUT = {
+  company: '성진정밀가공',
+  ceo: '김성진',
+  industry: 'C25 금속가공제품 제조업 / 지원 기준: 평균매출 2억원 이상',
+  equipment: 'DOOSAN VC630',
+  problemProcess: '복합 다축 가공이 필요한 부품을 2번에 나눠 가공',
+  adoptionType: '공정 통합',
+  issues: '공정 분리로 인한 작업시간 지연·재고정 오차 발생|숙련공 의존도 높아 신규 인력 양성 어려움',
+  equipRequest: '기존 머시닝센터 1대 자리에 교체 설치'
+};
+const GUIDE_FEWSHOT_OUTPUT = [
+  '## PART 1 · 자기소개 및 필수 문구 (10초, 약 90~110자)',
+  '안녕하십니까, 저는 성진정밀가공을 운영하고 있는 대표 김성진입니다. 저희는 정밀 금속 부품을 가공해 다양한 기계 제조사에 납품하고 있습니다. 부정수급을 하지 않을 것이며, 부정수급 발생 시 보조금 환수 및 제재처분에 동의합니다.',
+  '',
+  '## PART 2 · 대표 제품 및 공정 소개 (15초, 약 140~170자)',
+  '저희 성진정밀가공은 산업기계와 자동화 설비에 들어가는 정밀 금속 부품을 가공합니다. 도면 검토와 소재 준비를 거쳐 머시닝센터에서 절삭 가공한 뒤, 치수 검사 단계까지 사내에서 처리하는 일관 공정으로 작업이 진행됩니다. 한 부품이 들어와 완성품으로 나가기까지의 흐름을 저희 손으로 직접 관리하고 있습니다.',
+  '',
+  '## PART 3 · 현 공정의 문제점 및 도입 장비 (30초, 약 280~340자)',
+  '지금 저희가 가장 어려움을 겪는 부분은 복합 다축 가공이 필요한 부품을 한 번에 끝내지 못하고 두 번에 나눠서 가공해야 한다는 점입니다. 첫 번째 작업이 끝나면 부품을 다시 빼서 방향을 바꿔 고정한 뒤 다음 공정으로 옮겨야 하는데, 이 재고정 과정에서 미세한 오차가 누적되고 작업시간도 함께 늘어집니다. 또한 이런 방식의 세팅은 숙련공이 직접 잡아야 가능하다 보니 신규 직원이 들어와도 곧바로 같은 작업에 투입하기가 어렵습니다. 이런 문제를 해결하기 위해 이번에 도입하는 장비는 정밀 가공 설비입니다.',
+  '',
+  '## PART 4 · 설치 장소 및 기대효과 (20초, 약 190~230자)',
+  '(손으로 가리키며) 이쪽 공간에 설치될 예정이며, 지금까지 사용하던 머시닝센터를 빼낸 자리에 그대로 들어옵니다. 도입 후에는 한 번 고정한 상태에서 가공이 끝나기 때문에 부품 하나당 작업시간이 절반 수준으로 줄어듭니다. 재고정 단계가 사라지면서 치수 오차로 되돌려 보내는 부품도 거의 없어지고, 신규 직원도 저장된 기본 설정값만 불러오면 바로 가공을 시작할 수 있습니다.',
+  '',
+  '## PART 5 · 간단한 마무리 (5초, 약 40~60자)',
+  '이번 지원을 통해 저희가 더 좋은 부품을 만들 수 있도록 잘 활용하겠습니다. 감사드립니다.'
+].join('\n');
+
+/* Few-shot 메시지 페어 — callOpenAI / testGuidePrompt 공유.
+   system 다음, 실제 user 메시지 직전에 삽입. */
+function _guideFewshotMessages() {
+  return [
+    {role: 'user', content: JSON.stringify(GUIDE_FEWSHOT_INPUT, null, 2)},
+    {role: 'assistant', content: GUIDE_FEWSHOT_OUTPUT}
+  ];
+}
+
+/* OpenAI Chat Completions 호출 — gpt-4o, text 응답 (JSON 응답 아님).
    에러는 throw — 호출 측에서 try-catch로 가이드_에러 컬럼에 기록.
 
-   max_tokens: 2500 — 5 PART 각 ~400자(약 300토큰) × 5 = 1500토큰 + 여유.
+   모델: gpt-4o — 24차에 gpt-4o-mini에서 변경. 환각·지시 위반이 mini에서 반복돼 모델 업그레이드.
+   max_tokens: 2500 — 5 PART 각 ~400자(약 300토큰) × 5 = 1500토큰 + 여유 + few-shot.
      명시 안 하면 디폴트로 짧게 잘리는 경우 발생 (실측: PART 2에서 truncation).
    finish_reason 검증 — 'stop' 외의 값(특히 'length')이면 응답이 잘린 것이므로 명확한 에러. */
 function callOpenAI(promptInput) {
   const apiKey = _guideProp('OPENAI_API_KEY');
   const url = 'https://api.openai.com/v1/chat/completions';
   const payload = {
-    model: 'gpt-4o-mini',
-    temperature: 0.7,
+    model: 'gpt-4o',
+    temperature: 0.85,
+    top_p: 0.9,
+    frequency_penalty: 0.4,
+    presence_penalty: 0.3,
     max_tokens: 2500,
-    messages: [
-      {role: 'system', content: GUIDE_SYSTEM_PROMPT},
-      {role: 'user', content: JSON.stringify(promptInput, null, 2)}
-    ]
+    messages: [{role: 'system', content: GUIDE_SYSTEM_PROMPT}]
+      .concat(_guideFewshotMessages())
+      .concat([{role: 'user', content: JSON.stringify(promptInput, null, 2)}])
   };
   const response = UrlFetchApp.fetch(url, {
     method: 'post',
@@ -535,6 +595,236 @@ function callOpenAI(promptInput) {
     throw new Error('OpenAI 응답이 비정상 종료 (finish_reason=' + finishReason + '). max_tokens 부족 또는 정책 차단 가능성. content 끝부분: ' + String(content).slice(-200));
   }
   return String(content).trim();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 프롬프트 튜닝용 테스트 함수 — 시트/Drive 영향 없음
+//   사용법:
+//     1. 아래 SAMPLE_CASES 중 하나를 ACTIVE_CASE에서 선택 (또는 새로 추가)
+//     2. TEST_SYSTEM_PROMPT 를 직접 수정해서 실험 (GUIDE_SYSTEM_PROMPT 복사 후 수정 추천)
+//     3. TUNING 의 temperature 등 파라미터 수정
+//     4. GAS 에디터에서 testGuidePrompt 선택 → 실행
+//     5. "실행 > 로그 보기" (Ctrl+Enter) 로 응답 + 자동 검증 리포트 확인
+//     6. 만족스러우면 TEST_SYSTEM_PROMPT 내용을 GUIDE_SYSTEM_PROMPT 로 옮겨 운영 반영
+// ═══════════════════════════════════════════════════════════════════
+function testGuidePrompt() {
+  // ─── 1. 샘플 input 케이스 (실제 시트 row 흉내 — 자유 편집) ───
+  const SAMPLE_CASES = {
+    case_정밀가공: {
+      company: '(주)대성정밀',
+      ceo: '김대성',
+      industry: '정밀 기계 부품 가공업',
+      equipment: 'XTRA OR16',
+      problemProcess: '바이트 교체와 치수 측정을 작업자가 매번 수동으로 진행',
+      adoptionType: '공정 자동화',
+      issues: '주야간 가동률 차이가 커서 납기 대응이 늦음, 측정 오차로 재작업 발생',
+      equipRequest: '기존 라인 끝쪽 5평 공간에 설치 예정, 220V 전원 확보'
+    },
+    case_식품가공: {
+      company: '한울식품',
+      ceo: '박정민',
+      industry: '반찬류 소포장 식품 가공',
+      equipment: 'PACK-LINE 2200',
+      problemProcess: '소분과 라벨 부착을 직원 4명이 손으로 처리',
+      adoptionType: '포장 자동화',
+      issues: '하루 생산량이 직원 컨디션에 따라 들쭉날쭉, HACCP 위생 기준 충족이 빠듯',
+      equipRequest: '기존 포장실 옆 신축 공간에 설치, 위생 구역 분리'
+    },
+    case_사출성형: {
+      company: '제이엠플라스틱',
+      ceo: '이재민',
+      industry: '플라스틱 사출 성형',
+      equipment: 'SMART-MOLD 80T',
+      problemProcess: '구식 사출기로 사이클 타임 35초, 게이트 자국 후가공 필요',
+      adoptionType: '생산성 개선',
+      issues: '경쟁사 대비 단가가 높아 신규 수주 어려움, 불량률 3%대',
+      equipRequest: '기존 사출기 1기 철거 후 같은 자리에 교체 설치'
+    },
+    case_haerang_인쇄: {
+      company: '해랑',
+      ceo: '이한솔',
+      industry: '그 외 업종 / 지원 기준: 평균매출 2억원 이상',
+      equipment: 'JU1810+',
+      problemProcess: '인쇄공정',
+      adoptionType: '신규 장비 도입',
+      issues: '소량 다품종·맞춤형 디지털 인쇄 수요 대응 불가 → 소량 주문 내재화·수주 경쟁력 향상 목표|긴급 납품 요청(당일·익일) 대응 불가로 고객 이탈 → 납기 대응력 강화·고객 만족도 향상 목표',
+      equipRequest: ''
+    }
+  };
+  const ACTIVE_CASE = 'case_haerang_인쇄';  // ← 여기서 케이스 변경
+  const TEST_INPUT = SAMPLE_CASES[ACTIVE_CASE];
+
+  // ─── 2. 실험 중인 시스템 프롬프트 ───
+  //   기본값은 운영 GUIDE_SYSTEM_PROMPT 를 그대로 씀.
+  //   직접 수정하려면 아래 라인을 주석 처리하고 새 배열로 join 한 문자열 할당.
+  let TEST_SYSTEM_PROMPT = GUIDE_SYSTEM_PROMPT;
+  // 예시 — 프롬프트 부분 교체 실험할 때:
+  // TEST_SYSTEM_PROMPT = [
+  //   '당신은 ...',
+  //   '...'
+  // ].join('\n');
+
+  // ─── 3. API 튜닝 옵션 ───
+  const TUNING = {
+    model: 'gpt-4o',
+    temperature: 0.85,
+    top_p: 0.9,
+    frequency_penalty: 0.4,
+    presence_penalty: 0.3,
+    max_tokens: 2500,
+    useFewshot: true   // ← few-shot 예시 사용 여부 (비교 실험 시 false로 끄기)
+  };
+
+  // ─── 호출 ───
+  const apiKey = _guideProp('OPENAI_API_KEY');
+  const startedAt = new Date();
+  const fewshot = TUNING.useFewshot ? _guideFewshotMessages() : [];
+  const payload = {
+    model: TUNING.model,
+    temperature: TUNING.temperature,
+    top_p: TUNING.top_p,
+    frequency_penalty: TUNING.frequency_penalty,
+    presence_penalty: TUNING.presence_penalty,
+    max_tokens: TUNING.max_tokens,
+    messages: [{role: 'system', content: TEST_SYSTEM_PROMPT}]
+      .concat(fewshot)
+      .concat([{role: 'user', content: JSON.stringify(TEST_INPUT, null, 2)}])
+  };
+  const response = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {Authorization: 'Bearer ' + apiKey},
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+  const elapsedMs = new Date() - startedAt;
+  const code = response.getResponseCode();
+  const body = response.getContentText();
+  if (code !== 200) {
+    Logger.log('✗ HTTP ' + code + ': ' + body.substring(0, 500));
+    return;
+  }
+  const json = JSON.parse(body);
+  const choice = json.choices && json.choices[0];
+  const content = (choice && choice.message && choice.message.content) || '';
+  const finishReason = choice && choice.finish_reason;
+  const usage = json.usage || {};
+
+  // ─── 리포트 출력 ───
+  const bar = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+  Logger.log(bar);
+  Logger.log('▶ CASE: ' + ACTIVE_CASE + '  (' + elapsedMs + 'ms, finish=' + finishReason + ')');
+  Logger.log('   tokens: prompt=' + (usage.prompt_tokens || '?') + ', completion=' + (usage.completion_tokens || '?') + ', total=' + (usage.total_tokens || '?'));
+  Logger.log('   tuning: T=' + TUNING.temperature + ' top_p=' + TUNING.top_p + ' freq=' + TUNING.frequency_penalty + ' pres=' + TUNING.presence_penalty);
+  Logger.log(bar);
+  Logger.log('▶ INPUT');
+  Logger.log(JSON.stringify(TEST_INPUT, null, 2));
+  Logger.log(bar);
+  Logger.log('▶ RAW RESPONSE');
+  Logger.log(content);
+  Logger.log(bar);
+
+  // PART 분리 + 글자수
+  Logger.log('▶ PART별 분량 (가이드: 90~110 / 140~170 / 280~340 / 190~230 / 40~60)');
+  const targets = [[90,110],[140,170],[280,340],[190,230],[40,60]];
+  try {
+    const parts = parseGuideScript(content);
+    [1,2,3,4,5].forEach(function(n){
+      const body = parts['part'+n] || '';
+      const len = body.length;
+      const tgt = targets[n-1];
+      const flag = len === 0 ? '✗ 비어있음' : (len < tgt[0] ? '⚠ 짧음' : (len > tgt[1] ? '⚠ 김' : '✓'));
+      const preview = body.replace(/\n/g, ' ').substring(0, 70);
+      Logger.log('  PART ' + n + ': ' + len + '자 ' + flag + ' — ' + preview + (body.length > 70 ? '…' : ''));
+    });
+  } catch (e) {
+    Logger.log('  ✗ PART 파싱 실패: ' + e.message);
+  }
+  Logger.log(bar);
+
+  // 1) 클리셰 금지어 검출 (성장/발전/도약/나아감 류 우회 표현 포함)
+  const BANNED = ['혁신적','최첨단','극대화','도약','성장의 발판','성장','발전','한 단계 발전','한 단계 더','더 나아가','나아갈','나아갑니다','나아가겠','스마트화','디지털 전환','패러다임','비전','미래를 향해','효율성을 높여'];
+  const hits = BANNED.filter(function(w){ return content.indexOf(w) >= 0; });
+  Logger.log('▶ 클리셰 금지어: ' + (hits.length ? '✗ ' + hits.join(', ') : '✓ 없음'));
+
+  // 2) 필수 문구 포함 (PART 1)
+  const MANDATORY = '부정수급을 하지 않을 것이며, 부정수급 발생 시 보조금 환수 및 제재처분에 동의합니다.';
+  Logger.log('▶ 부정수급 필수 문구: ' + (content.indexOf(MANDATORY) >= 0 ? '✓ 포함' : '✗ 누락'));
+
+  // 3) 영문 모델명 노출 — 새 정책상 0회여야 정상
+  //    input.equipment 가 "XTRA OR16, PACK-LINE 2200" 처럼 콤마 결합일 수 있어 split해 각각 확인.
+  //    모델명 후보로 인정할 토큰만 추출 (영문/숫자/대시/공백 — 한국어 포함 토큰은 제외).
+  const eqRaw = String(TEST_INPUT.equipment || '');
+  const eqTokens = eqRaw.split(',').map(function(s){ return s.trim(); }).filter(function(s){
+    return s && /[A-Za-z]/.test(s) && !/[가-힣]/.test(s);
+  });
+  if (eqTokens.length === 0) {
+    Logger.log('▶ 영문 모델명 노출: (모델명 토큰 없음 — 건너뜀)');
+  } else {
+    const leaked = eqTokens.filter(function(tok){
+      const esc = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(esc, 'i').test(content);
+    });
+    Logger.log('▶ 영문 모델명 노출: ' + (leaked.length ? '✗ 노출됨 → ' + leaked.join(', ') : '✓ 없음'));
+  }
+
+  // 4) 업종 코드 / 지원 기준 안내문구 노출
+  const INDUSTRY_NOISE = [/\bC\d{1,2}\b/, /\bETC\b/, /지원\s*기준/, /평균\s*매출/];
+  const indNoise = INDUSTRY_NOISE.filter(function(p){ return p.test(content); });
+  Logger.log('▶ 업종 잡음 노출: ' + (indNoise.length ? '✗ 의심 패턴 ' + indNoise.length + '개' : '✓ 없음'));
+
+  // 5) 파이프 기호 그대로 노출
+  Logger.log('▶ 파이프(|) 노출: ' + (content.indexOf('|') >= 0 ? '✗ 있음' : '✓ 없음'));
+
+  // 6) PART 4 카메라 액션 지시문 포함
+  try {
+    const part4 = (parseGuideScript(content).part4 || '');
+    const hasGesture = /손으로\s*가리키|손짓|이쪽\s*공간|이\s*공간/.test(part4);
+    Logger.log('▶ PART 4 카메라 액션: ' + (hasGesture ? '✓ 포함' : '⚠ 누락 — "(손으로 가리키며) 이쪽 공간…" 류 표현 없음'));
+  } catch (e) {}
+
+  // 6-2) PART 3 한국어 카테고리 명 등장 여부 + 두루뭉술 호명 검출
+  try {
+    const part3 = (parseGuideScript(content).part3 || '');
+    const CATEGORIES = ['인쇄공정 자동화 설비','소형 소재 정밀 커팅 설비','중형 소재 커팅 설비','정밀 가공 설비','자동 사출 성형 설비','포장 공정 자동화 설비','정밀 측정 검사 설비'];
+    const matchedCat = CATEGORIES.filter(function(c){ return part3.indexOf(c) >= 0; });
+    Logger.log('▶ PART 3 한국어 카테고리: ' + (matchedCat.length ? '✓ ' + matchedCat.join(', ') : '⚠ 카테고리 명 등장 안 함 — 매핑된 한국어 설비 명 누락'));
+
+    const VAGUE = ['신규 장비','이 장비','본 설비','이번 장비','새 장비','해당 장비','이번에 도입하는 장비'];
+    const vagueHits = VAGUE.filter(function(v){ return part3.indexOf(v) >= 0; });
+    Logger.log('▶ PART 3 두루뭉술 호명: ' + (vagueHits.length ? '✗ ' + vagueHits.join(', ') + ' (카테고리 명으로 대체 필요)' : '✓ 없음'));
+
+    // PART 3 끝 효과·기대 표현 검출 (PART 4와 중복 방지)
+    const part3Tail = part3.slice(-200);
+    const EFFECT_TAIL = ['큰 도움이 될','문제를 해결해','효율을 높여','생산성을 높여','대응할 수 있게 됩니','만족도가 향상','경쟁력이 강화'];
+    const tailHits = EFFECT_TAIL.filter(function(p){ return part3Tail.indexOf(p) >= 0; });
+    Logger.log('▶ PART 3 효과 누출 (PART 4로 가야 할 표현이 PART 3에): ' + (tailHits.length ? '✗ ' + tailHits.join(', ') : '✓ 없음'));
+  } catch (e) {}
+
+  // 7) 평수/면적/치수/전압 수치 노출
+  const SIZE_PATTERNS = [/\d+\s*평\b/, /\d+\s*(?:m²|㎡|제곱미터)/, /\d+\s*(?:V|볼트)\b/i, /\d+\s*(?:m|미터|cm|mm)\b/];
+  const sizeHits = SIZE_PATTERNS.filter(function(p){ return p.test(content); });
+  Logger.log('▶ 평수/치수/전압 수치: ' + (sizeHits.length ? '✗ 의심 패턴 ' + sizeHits.length + '개' : '✓ 없음'));
+
+  // 8) "-요" 종결 검출 (정부 제출용 격식체 위반)
+  //    문장 끝의 "○요" 패턴 — false positive(주요/필요/요구 등 명사 안의 "요")를 피하려고
+  //    "요" 뒤에 문장 종결 기호(. ! ?) 또는 줄바꿈/공백 후 끝이 따라오는 경우만 잡음.
+  const yoMatches = content.match(/[가-힣]요(?=[\.\!\?]|\s*$|\n)/gm) || [];
+  // 흔히 종결로 쓰이는 형태만 따로 한 번 더 보여줌
+  const yoForms = ['해요','예요','에요','네요','지요','죠','군요','는데요','거든요','대요','래요','구요','네요'];
+  const yoFormHits = yoForms.filter(function(f){
+    return new RegExp('[가-힣]?' + f + '(?=[\\.\\!\\?]|\\s*$|\\n)', 'gm').test(content);
+  });
+  Logger.log('▶ "-요" 종결: ' + (yoMatches.length ? '✗ ' + yoMatches.length + '회 노출 (예: ' + yoMatches.slice(0, 5).join(', ') + ')' : '✓ 없음') + (yoFormHits.length ? ' / 패턴 매칭: ' + yoFormHits.join(', ') : ''));
+
+  // 9) 가격 노출
+  const PRICE_PATTERNS = [/[0-9,]+\s*원/, /부가세/, /공급가/, /견적\s*금액/];
+  const priceHits = PRICE_PATTERNS.filter(function(p){ return p.test(content); });
+  Logger.log('▶ 가격 노출: ' + (priceHits.length ? '✗ 의심 패턴 ' + priceHits.length + '개' : '✓ 없음'));
+
+  Logger.log(bar);
+  Logger.log('✓ 테스트 완료');
+  return content;
 }
 
 /* 통합정보 행에서 GPT 입력용 핵심 필드만 추출. */
