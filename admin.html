@@ -642,7 +642,8 @@ async function saveAssignee(){
   const btn = document.getElementById('assigneeSaveBtn');
   if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
   try {
-    const json = await gasCall('updateAssignee', {id:currentReq.id, assignee:userId});
+    const json = await runExclusive('담당자 저장 중…', () => gasCall('updateAssignee', {id:currentReq.id, assignee:userId}));
+    if(json===undefined){ if(btn){ btn.disabled=false; btn.textContent='저장'; } return; }
     if(json.status !== 'ok') throw new Error(json.message || '오류');
     const label = document.getElementById('assigneeLabel');
     if(label) label.textContent = selectedUser ? selectedUser.name : '미지정';
@@ -1199,16 +1200,14 @@ function loadDemoData(){
 
 /* ─── 목록 렌더링 ─── */
 /* v14: 서버에서 이미 권한 필터됨. r.assignee는 시트의 'u.id'. 표시는 _users.find로 이름 변환. */
-function renderList(){
-  const list = document.getElementById('reqList');
-  const users = getUsers();
-  const filtered = filterStatus==='all' ? allRequests : allRequests.filter(r => r.status === filterStatus);
-  if(!filtered.length){list.innerHTML='<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">해당 건이 없습니다.</div>';return;}
-  list.innerHTML = filtered.map(r => {
-    const assignedUser = r.assignee ? users.find(u=>u.id===r.assignee) : null;
-    const assigneeName = assignedUser ? assignedUser.name : '미지정';
-    const statusLabel = r.status==='confirmed'?'완료':r.status==='draft'?'임시':'신청중';
-    return `
+/* '신청중' 탭에서 접어둔 그룹 상태 (key: 'draft' | 'new'). 기본 펼침. */
+let _collapsedGroups = {};
+
+function _renderReqItem(r, users){
+  const assignedUser = r.assignee ? users.find(u=>u.id===r.assignee) : null;
+  const assigneeName = assignedUser ? assignedUser.name : '미지정';
+  const statusLabel = r.status==='confirmed'?'완료':r.status==='draft'?'임시':'신청중';
+  return `
     <div class="v2-req-item ${currentReq?.id===r.id?'active':''}" onclick="selectReq('${r.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <span class="req-company">${r.company}</span>
@@ -1220,7 +1219,43 @@ function renderList(){
         <span style="font-weight:${r.assignee?'700':'500'};color:${r.assignee?'#0f3768':'#94a3b8'}">${assigneeName}</span>
       </div>
     </div>`;
-  }).join('');
+}
+
+function renderList(){
+  const list = document.getElementById('reqList');
+  const users = getUsers();
+  let filtered;
+  if(filterStatus==='all') filtered = allRequests;
+  else if(filterStatus==='new') filtered = allRequests.filter(r => r.status==='new' || r.status==='draft');
+  else filtered = allRequests.filter(r => r.status === filterStatus);
+
+  if(!filtered.length){list.innerHTML='<div class="empty-list" style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">해당 건이 없습니다.</div>';return;}
+
+  // '신청중' 탭: 작업 중(임시저장) / 미착수 신청 두 그룹으로 접이식 표시
+  if(filterStatus==='new'){
+    const drafts = filtered.filter(r=>r.status==='draft');
+    const news   = filtered.filter(r=>r.status==='new');
+    const group = (key,title,arr) => {
+      if(!arr.length) return '';
+      const cl = !!_collapsedGroups[key];
+      return `
+        <div onclick="toggleReqGroup('${key}')" style="display:flex;align-items:center;gap:7px;padding:8px 11px;margin:8px 2px 4px;cursor:pointer;user-select:none;font-size:12px;font-weight:800;color:#475569;background:#f1f5f9;border-radius:8px">
+          <span style="display:inline-block;transition:transform .15s;transform:rotate(${cl?'0':'90'}deg);font-size:10px;color:#94a3b8">▶</span>
+          <span>${title}</span>
+          <span style="margin-left:auto;background:#fff;border:1px solid #e2e8f0;color:#475569;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700">${arr.length}</span>
+        </div>
+        <div${cl?' style="display:none"':''}>${arr.map(r=>_renderReqItem(r,users)).join('')}</div>`;
+    };
+    list.innerHTML = group('draft','작업 중 · 임시저장',drafts) + group('new','미착수 신청',news);
+    return;
+  }
+
+  list.innerHTML = filtered.map(r=>_renderReqItem(r,users)).join('');
+}
+
+function toggleReqGroup(key){
+  _collapsedGroups[key] = !_collapsedGroups[key];
+  renderList();
 }
 
 function filterList(status, btn){
@@ -1520,7 +1555,7 @@ function renderDetail(){
   const _statusClass = r.status==='confirmed'?'confirmed':r.status==='draft'?'draft':'new';
   const _catFull = eq ? (eq.cat==='cutter'?'평판커팅기':'UV 프린터') : '—';
   const _supplyNum = Number(r.supplyPrice||0);
-  const _extraNum = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0).reduce((s,o)=>s+Number(o.price||0),0);
+  const _extraNum = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)!==0).reduce((s,o)=>s+Number(o.price||0),0);
   const _grandNum = _supplyNum + _extraNum;
   const _fmt = n => n ? Number(n).toLocaleString('ko-KR') : '0';
   const _today = new Date();
@@ -1724,10 +1759,10 @@ function renderDetail(){
               <div class="q-subtotal"><span class="lbl">장비 소계</span><span class="amt" id="equipSubtotal">${_fmt(_supplyNum)}</span></div>
             </div>
             <div class="q-section">
-              <div class="q-head">추가 옵션 (<span id="extraCount">${(r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0).length}</span>)</div>
+              <div class="q-head">추가 옵션 (<span id="extraCount">${(r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)!==0).length}</span>)</div>
               <div id="extraPriceBreakdown">
                 ${(()=>{
-                  const extras = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)>0);
+                  const extras = (r.extraOpts||[]).filter(o=>o.name && Number(o.price||0)!==0);
                   if(!extras.length) return '<div class="q-empty">선택된 옵션 없음</div>';
                   return extras.map(o=>`<div class="q-line"><span class="n">${o.name}</span><span class="a">${_fmt(o.price)}</span></div>`).join('');
                 })()}
@@ -1838,7 +1873,13 @@ function updateExtra(i, field, val){
   if(!currentReq.extraOpts[i]) return;
   currentReq.extraOpts[i][field] = val.replace(/,/g,'');
 }
-function fmtExtraPrice(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
+function fmtExtraPrice(el){
+  // 맨 앞 '-' 1개만 부호로 허용 (옵션 제거 등으로 단가를 음수로 넣는 경우)
+  let v=el.value.replace(/[^0-9-]/g,'');
+  let neg=v.charAt(0)==='-';
+  let n=v.replace(/-/g,'');
+  el.value = n ? (neg?'-':'')+Number(n).toLocaleString('ko-KR') : (neg?'-':'');
+}
 function formatPriceInput(el){ let n=el.value.replace(/[^0-9]/g,''); el.value=n?Number(n).toLocaleString('ko-KR'):''; }
 
 /* Phase 7 — Quote Summary 발송 정보 섹션 핸들러: 이메일·연락처 인라인 편집 + 즉시 메일 발송 */
@@ -1871,7 +1912,8 @@ async function saveMailField(field){
   const saveBtn = document.getElementById('mail'+cap+'SaveBtn');
   saveBtn.disabled = true; saveBtn.textContent = '저장 중…';
   try{
-    const res = await gasCall('updateRequest', {id: currentReq.id, fields: {[field]: val}});
+    const res = await runExclusive('정보 수정 중…', () => gasCall('updateRequest', {id: currentReq.id, fields: {[field]: val}}));
+    if(res === undefined){ saveBtn.disabled=false; saveBtn.textContent='저장'; return; }
     if(res && res.status === 'ok'){
       currentReq[field] = val;
       // allRequests 동기화 — 좌측 목록과 일관 유지
@@ -1893,23 +1935,22 @@ async function resendGuideNow(){
   if(!confirm('아래 주소로 견적서·동영상 가이드 메일을 발송하시겠습니까?\n\n'+currentReq.email)) return;
   const statusEl = document.getElementById('mailSendStatus');
   if(statusEl) statusEl.innerHTML = '<span style="color:#0f3768">발송 요청 중…</span>';
-  showPdfOverlay(50, '메일 발송 중…');
-  try{
-    const res = await gasCall('resendGuide', {id: currentReq.id});
-    hidePdfOverlay();
-    if(res && res.status === 'ok'){
-      if(statusEl) statusEl.innerHTML = '<span class="done">✓ 발송 완료 · ' + (res.sentAt||'') + '</span>';
-      alert('발송 완료\n시각: ' + (res.sentAt||''));
-    } else {
-      const msg = (res && res.message) || '알 수 없는 오류';
-      if(statusEl) statusEl.innerHTML = '<span class="err">✗ ' + msg + '</span>';
-      alert('발송 실패: ' + msg);
+  const res = await runExclusive('메일 발송 중…', async () => {
+    try{
+      return await gasCall('resendGuide', {id: currentReq.id});
+    } catch(e){
+      return {status:'error', message:e.message, _auth:e.message==='AUTH_REQUIRED'};
     }
-  } catch(e){
-    hidePdfOverlay();
-    if(e.message === 'AUTH_REQUIRED') return;
-    if(statusEl) statusEl.innerHTML = '<span class="err">✗ ' + e.message + '</span>';
-    alert('발송 실패: ' + e.message);
+  });
+  if(res === undefined) return;          // 재진입 무시
+  if(res._auth) return;
+  if(res && res.status === 'ok'){
+    if(statusEl) statusEl.innerHTML = '<span class="done">✓ 발송 완료 · ' + (res.sentAt||'') + '</span>';
+    alert('발송 완료\n시각: ' + (res.sentAt||''));
+  } else {
+    const msg = (res && res.message) || '알 수 없는 오류';
+    if(statusEl) statusEl.innerHTML = '<span class="err">✗ ' + msg + '</span>';
+    alert('발송 실패: ' + msg);
   }
 }
 
@@ -1939,7 +1980,7 @@ function recalcPrice(){
       const name = ins[0].value.trim();
       const price = Number(ins[1].value.replace(/,/g,'')) || 0;
       extraTotal += price;
-      if(name && price>0) rowsArr.push({name,price});
+      if(name && price!==0) rowsArr.push({name,price});
     }
   });
   // 편집 가능한 행이 없으면 currentReq.extraOpts에서 직접 (view mode)
@@ -1947,7 +1988,7 @@ function recalcPrice(){
     (currentReq?.extraOpts||[]).forEach(o => {
       const p = Number(o.price||0)||0;
       extraTotal += p;
-      if(o.name && p>0) rowsArr.push({name:o.name, price:p});
+      if(o.name && p!==0) rowsArr.push({name:o.name, price:p});
     });
   }
   const total = base + extraTotal;
@@ -2005,18 +2046,21 @@ function collectFormData(){
 }
 
 async function saveDraft(){
-  collectFormData();
-  const prev = currentReq.status;
-  currentReq.status = 'draft';
-  const ok = await syncToSheet('draft');
-  if(!ok){
-    currentReq.status = prev; // 롤백
-    renderDetail();
+  const ok = await runExclusive('임시 저장 중…', async () => {
+    collectFormData();
+    const prev = currentReq.status;
+    currentReq.status = 'draft';
+    const r = await syncToSheet('draft');
+    if(!r){
+      currentReq.status = prev; // 롤백
+      renderDetail();
+      renderList();
+      return false;
+    }
     renderList();
-    return;
-  }
-  renderList();
-  alert('임시 저장되었습니다.');
+    return true;
+  });
+  if(ok) alert('임시 저장되었습니다.');
 }
 
 async function confirmQuote(){
@@ -2024,21 +2068,22 @@ async function confirmQuote(){
   if(!currentReq.quoteNo.trim()){alert('견적번호 오류: 새로고침 후 다시 시도해 주세요.');return;}
   if(!currentReq.supplyPrice){alert('공급가액을 입력해 주세요.');return;}
   if(!confirm(`[${currentReq.company}] 견적을 확정하시겠습니까?\n확정 후에는 수정이 불가합니다.`)) return;
-  const prev = currentReq.status;
-  currentReq.status = 'confirmed';
-  const ok = await syncToSheet('confirmed');
-  if(!ok){
-    // 시트 저장 실패 — 클라이언트 상태 롤백 + PDF 생성하지 않음
-    currentReq.status = prev;
+  await runExclusive('견적 확정 중…', async () => {
+    const prev = currentReq.status;
+    currentReq.status = 'confirmed';
+    const ok = await syncToSheet('confirmed');
+    if(!ok){
+      // 시트 저장 실패 — 클라이언트 상태 롤백 + PDF 생성하지 않음
+      currentReq.status = prev;
+      renderDetail();
+      renderList();
+      return;
+    }
     renderDetail();
     renderList();
-    return;
-  }
-  renderDetail();
-  renderList();
-  printQuote(currentReq, true);
-  // 새 견적 발급 직후 — 시트의 버전이력을 즉시 다시 가져와 화면 반영 (왼쪽 업체 재클릭 없이)
-  refreshVersionsAfterPdf(currentReq.id);
+    await printQuote(currentReq, true);   // PDF·Drive 완료까지 게이트 유지
+    refreshVersionsAfterPdf(currentReq.id);
+  });
 }
 
 /* PDF 저장(=시트의 견적서발급관리 행 추가) 직후 호출 — 폴링을 기다리지 않고 즉시 버전이력 갱신.
@@ -2062,6 +2107,11 @@ async function syncToSheet(status){
   try{
     const json = await gasCall('confirm', dataToSend);
     if(json.status !== 'ok') throw new Error(json.message || '저장 실패');
+    // 서버가 버전을 자동 +1 했으면(같은 번호로 재확정) 새 견적번호를 권위값으로 채택.
+    // renderDetail/printQuote/버전이력이 갱신된 번호를 쓰도록 이 시점에 반영.
+    if(json.quoteNo && currentReq && currentReq.id === dataToSend.id && currentReq.quoteNo !== json.quoteNo){
+      currentReq.quoteNo = json.quoteNo;
+    }
     return true;
   }catch(e){
     if(e.message === 'AUTH_REQUIRED') return false;
@@ -2084,6 +2134,30 @@ function showPdfOverlay(pct, label){
 function hidePdfOverlay(){
   document.getElementById('pdfOverlay').classList.remove('show');
   document.getElementById('pdfProgressBar').style.width = '0%';
+}
+
+/* ── 배타적 작업 게이트 ──────────────────────────────────────────────
+   외부 부수효과(시트/Drive/메일/네트워크 mutation)를 내는 모든 비동기 동작은
+   반드시 이 게이트를 통과시킨다. 클릭 즉시 전체화면 차단 + 이탈 경고 + 재진입 차단.
+   - #pdfOverlay(z-index 10000, inset:0)가 사이드바·탭·메뉴 클릭을 물리 차단
+   - beforeunload로 탭닫기/새로고침/주소이동 시 브라우저 경고
+   - _busy 플래그로 중복 클릭·재진입 무시
+   - finally에서 성공/실패/예외 무관 항상 해제
+   규약: 새 부수효과 비동기 추가 시 반드시 runExclusive로 감쌀 것 (CLAUDE.md 참조). */
+let _busy = false;
+function _beforeUnloadGuard(e){ e.preventDefault(); e.returnValue = ''; return ''; }
+async function runExclusive(label, fn){
+  if(_busy) return undefined;
+  _busy = true;
+  showPdfOverlay(8, label || '처리 중…');
+  window.addEventListener('beforeunload', _beforeUnloadGuard);
+  try {
+    return await fn();
+  } finally {
+    window.removeEventListener('beforeunload', _beforeUnloadGuard);
+    hidePdfOverlay();
+    _busy = false;
+  }
 }
 
 /* 외부 이미지(특히 한글/공백/`+` 포함 경로 png)를 base64 dataURL로 인라이닝.
@@ -2305,6 +2379,7 @@ function cancelRevise(){
 }
 async function confirmRevise(){
   if(!confirm('수정 내용을 확정하고 새 버전을 발급하시겠습니까?\n\n현재 버전이 이력에 저장되고 새 버전번호가 발급됩니다.')) return;
+  await runExclusive('수정 확정 중…', async () => {
   collectFormData();
   const oldQuoteNo = currentReq.quoteNo;
   const oldStatus = currentReq.status;
@@ -2334,9 +2409,10 @@ async function confirmRevise(){
   renderDetail();
   renderList();
   const _req = Object.assign({}, currentReq);
-  printQuote(_req, true);
+  await printQuote(_req, true);   // PDF·Drive 완료까지 게이트 유지
   // 수정확정 직후 — 시트에 추가된 새 버전을 즉시 fetch해서 버전이력 화면 반영
   refreshVersionsAfterPdf(currentReq.id);
+  });
 }
 
 /* ─── 한글금액 변환 (일 생략 규칙 적용) ─── */
@@ -2400,7 +2476,7 @@ function printHistoryQuote(quoteNo){
   }));
 }
 
-function printQuote(reqOverride, skipPrint){
+async function printQuote(reqOverride, skipPrint){
   const r = reqOverride || currentReq;
   if(!r) return;
 
@@ -2576,7 +2652,8 @@ function printQuote(reqOverride, skipPrint){
     if(w){w.document.write(html);w.document.close();}
   } else {
     // 확정/수정확정 시 자동 Drive 저장 (견적서 + 장비사진)
-    saveQuoteToDrive(html, r.quoteNo, r.company, buildEquipHtml(r));
+    // await + return: 호출부(runExclusive)가 PDF·Drive 완료까지 게이트를 유지하도록
+    return await saveQuoteToDrive(html, r.quoteNo, r.company, buildEquipHtml(r));
   }
 }
 

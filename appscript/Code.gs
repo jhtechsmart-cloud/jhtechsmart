@@ -2007,6 +2007,25 @@ function _checkRequestPermission(reqId, user) {
 }
 
 /* 견적 확정 (또는 임시저장) — 권한 체크 후 처리 */
+/* 견적번호에서 끝의 -vN(또는 레거시 -RN)을 떼어낸 base 부분 반환. */
+function _quoteBase(qno) {
+  const s = String(qno || '');
+  const m = s.match(/-v\d+$/i) || s.match(/-R\d+$/i);
+  return m ? s.slice(0, m.index) : s;
+}
+
+/* 견적서발급관리 한 행(13컬럼) 구성. issuedAt은 호출부에서 1회 계산해 공유. */
+function _buildQuoteRow(quoteNo, data, assigneeId, issuedAt) {
+  return [
+    quoteNo || '', data.id, issuedAt,
+    data.company || '', data.equipment || '',
+    (data.includeOpts || []).join(' | '),
+    JSON.stringify(data.extraOpts || []),
+    data.supplyPrice || '', data.taxPrice || '', data.totalPrice || '',
+    data.validUntil || '', data.status || 'confirmed', assigneeId
+  ];
+}
+
 function handleConfirm(data, user) {
   const perm = _checkRequestPermission(data.id, user);
   if (!perm.ok) return perm.error;
@@ -2031,30 +2050,44 @@ function handleConfirm(data, user) {
     }
   }
 
-  // v14: 견적서발급관리 컬럼 13 (담당자) — 이제 u.id 저장
+  // v14: 발급이력 컬럼 13(담당자)=u.id. 발급이력은 '확정본'만 기록 (P2: draft 제외).
   const assigneeId = data.assignee || '';
-  const rowData = [
-    data.quoteNo||'', data.id,
-    Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
-    data.company||'', data.equipment||'',
-    (data.includeOpts||[]).join(' | '),
-    JSON.stringify(data.extraOpts||[]),
-    data.supplyPrice||'', data.taxPrice||'', data.totalPrice||'',
-    data.validUntil||'', data.status||'confirmed', assigneeId
-  ];
+  const issuedAt = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+  const isConfirmed = String(data.status || 'confirmed').toLowerCase() === 'confirmed';
+  let finalQuoteNo = data.quoteNo || '';
 
-  const rows2 = sheet2.getDataRange().getValues();
-  let updated = false;
-  for (let i = 1; i < rows2.length; i++) {
-    if (rows2[i][1] === data.id && rows2[i][0] === data.quoteNo) {
-      const existingStatus = String(rows2[i][11]||'').toLowerCase();
-      if (existingStatus === 'confirmed') break;
-      sheet2.getRange(i+1, 1, 1, 13).setValues([rowData]);
-      updated = true;
-      break;
+  if (isConfirmed) {
+    const rows2 = sheet2.getDataRange().getValues();
+    // 같은 (접수번호, 견적번호) 정확 매칭 행 1개 탐색
+    let matchIdx = -1, matchConfirmed = false;
+    for (let i = 1; i < rows2.length; i++) {
+      if (rows2[i][1] === data.id && String(rows2[i][0]) === String(data.quoteNo)) {
+        matchIdx = i;
+        matchConfirmed = String(rows2[i][11] || '').toLowerCase() === 'confirmed';
+        break;
+      }
+    }
+
+    if (matchIdx >= 0 && !matchConfirmed) {
+      // 미확정 행을 확정으로 승격 — 버전 유지, in-place 갱신
+      sheet2.getRange(matchIdx + 1, 1, 1, 13)
+            .setValues([_buildQuoteRow(finalQuoteNo, data, assigneeId, issuedAt)]);
+    } else {
+      // 같은 번호가 이미 confirmed면 서버가 버전 자동 +1 (P3) —
+      // 클라이언트가 버전을 안 올렸어도 reqId의 같은 base 최대버전 +1로 강제.
+      if (matchIdx >= 0 && matchConfirmed) {
+        const base = _quoteBase(data.quoteNo);
+        let maxVer = 0;
+        for (let i = 1; i < rows2.length; i++) {
+          if (rows2[i][1] === data.id && _quoteBase(rows2[i][0]) === base) {
+            maxVer = Math.max(maxVer, _extractVersionFromQuoteNo(rows2[i][0]) || 1);
+          }
+        }
+        finalQuoteNo = base + '-v' + (maxVer + 1);
+      }
+      sheet2.appendRow(_buildQuoteRow(finalQuoteNo, data, assigneeId, issuedAt));
     }
   }
-  if (!updated) sheet2.appendRow(rowData);
 
   // 통합정보 시트 업데이트 (Phase 1). 같은 접수번호 행에 견적 정보 반영.
   // 신청 시점 정보는 시트에서 다시 읽어와 보강 (data엔 일부만 포함).
@@ -2079,15 +2112,15 @@ function handleConfirm(data, user) {
       }
     }
     upsertUnified(data.id, reqObj, {
-      quoteNo: data.quoteNo,
-      issuedAt: rowData[2],  // 위에서 KST 포매팅된 발급일시
+      quoteNo: finalQuoteNo,
+      issuedAt: issuedAt,
       includeOpts: data.includeOpts, extraOpts: data.extraOpts,
       supplyPrice: data.supplyPrice, taxPrice: data.taxPrice, totalPrice: data.totalPrice,
       validUntil: data.validUntil, status: data.status, assignee: assigneeId
     });
   } catch (e) { Logger.log('upsertUnified(confirm) 실패: ' + e); }
 
-  return jsonResponse({status:'ok'});
+  return jsonResponse({status:'ok', quoteNo: finalQuoteNo});
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2201,7 +2234,7 @@ function _filteredRequestRows(user) {
   const rows1 = sheet1.getDataRange().getValues();
   const rows2 = sheet2 ? sheet2.getDataRange().getValues() : [[]];
 
-  // 견적서발급관리 → reqId 별 모든 버전 배열 수집
+  // 견적서발급관리 → reqId별 확정 발급 버전 이력 (P2 이후 confirmed만 누적)
   const versionsMap = {};
   for (let i = 1; i < rows2.length; i++) {
     const r = rows2[i];
@@ -2225,11 +2258,19 @@ function _filteredRequestRows(user) {
     });
   }
 
-  const quoteMap = {};
-  Object.keys(versionsMap).forEach(reqId => {
-    const sorted = [...versionsMap[reqId]].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1);
-    quoteMap[reqId] = sorted[sorted.length - 1];
-  });
+  // 통합정보 → reqId별 현재 견적 상태 (draft·confirmed 단일 진실).
+  // P2로 draft가 견적서발급관리에서 빠졌으므로 화면 복원은 통합정보를 권위로 사용.
+  const uSheet = _getUnifiedSheet();
+  const uLast = uSheet.getLastRow();
+  const uMap = {};
+  if (uLast > 1) {
+    const uRows = uSheet.getRange(2, 1, uLast - 1, UNIFIED_HEADERS.length).getValues();
+    uRows.forEach(ur => {
+      const rid = String(ur[UNIFIED_COL['접수번호']] || '');
+      if (rid) uMap[rid] = ur;
+    });
+  }
+  const _s = v => (v !== '' && v !== null && v !== undefined) ? String(v) : '';
 
   const result = [];
   for (let i = 1; i < rows1.length; i++) {
@@ -2238,7 +2279,27 @@ function _filteredRequestRows(user) {
     const assigneeId = String(r[19] || '');
     if (!user.isAdmin && assigneeId !== user.id) continue;
 
-    const q = quoteMap[r[0]] || {};
+    // 현재 견적 상태: 통합정보 우선(draft 복원), 없으면 견적서발급관리 최신으로 폴백(옛 데이터)
+    let cur;
+    const u = uMap[r[0]];
+    if (u) {
+      const inc = u[UNIFIED_COL['포함옵션']];
+      cur = {
+        quoteNo: _s(u[UNIFIED_COL['견적번호']]),
+        validUntil: _fmtKstDate(u[UNIFIED_COL['유효기간']]),
+        includeOpts: inc ? String(inc).split(' | ') : [],
+        extraOpts: safeParseJSON(u[UNIFIED_COL['추가옵션(JSON)']]),
+        supplyPrice: _s(u[UNIFIED_COL['공급가액']]),
+        taxPrice: _s(u[UNIFIED_COL['부가세']]),
+        totalPrice: _s(u[UNIFIED_COL['합계']])
+      };
+    } else {
+      const vs = versionsMap[r[0]];
+      cur = (vs && vs.length)
+        ? [...vs].sort((a,b)=>String(a.quoteNo)<String(b.quoteNo)?-1:1)[vs.length-1]
+        : {};
+    }
+
     result.push({
       id:r[0], submittedAt:_fmtKstDateTime(r[1]), company:r[2], bizNo:r[3], ceo:r[4],
       phone:r[5], email:r[6], address:r[7], foundDate:_fmtKstDate(r[8]), industry:r[9],
@@ -2246,9 +2307,9 @@ function _filteredRequestRows(user) {
       problemProcess:r[13], adoptionType:r[14], issues:r[15],
       equipment:r[16], equipRequest:r[17], status:r[18]||'new', assignee:assigneeId,
       processFlow:r[20]||'',
-      quoteNo:q.quoteNo||'', validUntil:q.validUntil||'',
-      includeOpts:q.includeOpts||[], extraOpts:q.extraOpts||[],
-      supplyPrice:q.supplyPrice||'', taxPrice:q.taxPrice||'', totalPrice:q.totalPrice||'',
+      quoteNo:cur.quoteNo||'', validUntil:cur.validUntil||'',
+      includeOpts:cur.includeOpts||[], extraOpts:cur.extraOpts||[],
+      supplyPrice:cur.supplyPrice||'', taxPrice:cur.taxPrice||'', totalPrice:cur.totalPrice||'',
       versions: versionsMap[r[0]] || []
     });
   }
@@ -2260,6 +2321,62 @@ function getRequest(id, user) {
   const found = rows.find(r => r.id === id);
   if (!found) return {status:'error', code:'PERMISSION_DENIED', message:'없거나 접근 권한이 없습니다'};
   return {status:'ok', request: found};
+}
+
+/* 일회성 데이터 정리 — 견적 버전 오염 복구 (P2·P3 수정 전 쌓인 행 정리).
+   견적서발급관리에서 reqId의 draft 행을 전부 삭제하고, 남은 confirmed 행을
+   발급일시 오름차순으로 base-v1, base-v2 ... 버전 소급 재부여.
+   통합정보 시트는 최신 confirmed 기준으로 정합 + 노션 재push.
+   GAS 에디터에서 reqId만 바꿔 수동 실행. 여러 번 실행해도 안전(멱등). */
+function fixQuoteVersionHistory(reqId) {
+  reqId = reqId || 'REQ-20260515-50347';
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const sh = ss.getSheetByName('견적서발급관리');
+  if (!sh || sh.getLastRow() <= 1) { Logger.log('견적서발급관리 비어있음'); return; }
+
+  const rows = sh.getDataRange().getValues();
+  const mine = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][1] === reqId) mine.push({ rowNo: i + 1, data: rows[i] });
+  }
+  if (mine.length === 0) { Logger.log('해당 reqId 행 없음: ' + reqId); return; }
+
+  const isConf = r => String(r.data[11] || '').toLowerCase() === 'confirmed';
+  const toDelete = mine.filter(r => !isConf(r));
+  const keep     = mine.filter(isConf);
+
+  // 보존 행을 발급일시(컬럼 C) 오름차순 정렬 → base는 최신 행 기준
+  keep.sort((a, b) => new Date(a.data[2]) - new Date(b.data[2]));
+  const base = keep.length ? _quoteBase(keep[keep.length - 1].data[0]) : '';
+  keep.forEach((r, idx) => {
+    const newQno = base + '-v' + (idx + 1);
+    if (String(r.data[0]) !== newQno) {
+      sh.getRange(r.rowNo, 1).setValue(newQno);
+      r.data[0] = newQno;
+    }
+  });
+
+  // draft 행 삭제 (행번호 큰 것부터 — 인덱스 밀림 방지)
+  toDelete.sort((a, b) => b.rowNo - a.rowNo).forEach(r => sh.deleteRow(r.rowNo));
+
+  // 통합정보 시트 정합 — 최신 confirmed 기준
+  if (keep.length) {
+    const L = keep[keep.length - 1].data;
+    try {
+      upsertUnified(reqId, null, {
+        quoteNo: L[0], issuedAt: _fmtKstDateTime(L[2]),
+        includeOpts: L[5] ? String(L[5]).split(' | ') : [],
+        extraOpts: safeParseJSON(L[6]),
+        supplyPrice: L[7], taxPrice: L[8], totalPrice: L[9],
+        validUntil: L[10], status: 'confirmed', assignee: L[12]
+      });
+      _safePushToNotion(reqId);
+    } catch (e) { Logger.log('통합정보/노션 정합 실패: ' + e); }
+  }
+
+  Logger.log('정리 완료 — reqId=' + reqId + ' / draft 삭제 ' + toDelete.length +
+    '행 / 보존·재부여 ' + keep.length + '행: ' +
+    keep.map(r => r.data[0] + '(합계 ' + r.data[9] + ')').join(', '));
 }
 
 function getVersions(reqId, user) {

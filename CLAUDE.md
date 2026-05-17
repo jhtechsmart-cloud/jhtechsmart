@@ -100,6 +100,16 @@ iframe을 쓰는 이유는 메인 문서의 CSS와 격리해서 PDF 레이아웃
 
 평균매출 판정: 소공인 스마트제조 지원사업 기준상 **2억원 이상이 지원 대상**. `calcRevenue()`의 `ok = avg >= limit` 부등호 방향에 주의 (작업내역.md 5차 작업 참조 — 과거에 반대로 구현되어 수정한 적 있음).
 
+### 8. 비동기 부수효과 게이트 규약 (`runExclusive`) — 위반 금지
+
+외부 부수효과(시트 write / Drive 저장 / 메일 발송 / 네트워크 mutation)를 내는 **모든 비동기 동작은 `admin.html`의 `runExclusive(label, fn)`을 반드시 통과**시킨다.
+
+- **이유**: 버튼 클릭 후 첫 `await`까지 무방비 구간이 있고, 사용자가 그 사이/작업 중에 화면 이탈·중복 클릭·탭 닫기를 하면 작업이 깨진다(과거 견적 확정·메일 발송이 이 때문에 미완으로 끝남). `runExclusive`는 클릭 즉시 전체화면 차단(`#pdfOverlay` z-index 10000) + `beforeunload` 경고 + `_busy` 재진입 차단을 걸고 `finally`에서 항상 해제한다.
+- **작성 규칙**: 검증·`confirm()`은 게이트 **밖**(취소 시 게이트 미진입), 실제 `await` 작업만 `runExclusive` 안, 결과 `alert`는 게이트 **밖**(오버레이 내려간 뒤). 게이트 콜백이 무거운 후속(PDF→Drive)을 부르면 반드시 `await`로 체인을 끝까지 유지(예: `printQuote`를 `async`로, `confirmQuote`에서 `await printQuote(...)`). 재진입 시 `runExclusive`는 `undefined` 반환 → 호출부에서 체크.
+- **적용됨**: `saveDraft` `confirmQuote` `confirmRevise` `resendGuideNow` `saveAssignee` `saveMailField` + `printQuote`→`saveQuoteToDrive`. **예외**(별도 판단): `deleteUser` `saveEquipMgmt` — localStorage 우선 저장 + GAS 백그라운드 푸시 구조.
+- **새 mutation 기능 추가 시 pre-mortem 5문항 필수 답변**: ⓐ 중복 클릭 ⓑ 즉시 다른 메뉴/항목 클릭 ⓒ 탭 닫기·새로고침 ⓓ 브라우저 뒤로가기 ⓔ 네트워크 끊김 — 각각에서 데이터/상태가 깨지지 않는가?
+- **근본 지향(durable)**: 모달 차단은 증상 완화. 무거운 후속(메일 등)은 시트에 "요청 플래그"만 남기고 서버 time-driven trigger(`pollAndSendGuides` 패턴)가 완결하도록 점진 이전하면 클라 이탈과 무관해진다. 서버 측 멱등성(`handleConfirm`의 버전 자동 +1 사상)을 함께 둘 것.
+
 ## 보안 자산
 
 - `견적서/법인도장.png` — `.gitignore`로 제외. 로컬에만 보관. admin.html 견적서 출력 시 이 이미지를 참조하므로 새 환경에서는 수동 배치 필요.
