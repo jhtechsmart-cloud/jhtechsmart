@@ -1002,7 +1002,7 @@ function sendGuideForRow(row) {
   if (row['장비사진PDF_URL']) {
     attachments.push({url: row['장비사진PDF_URL'], name: _safeFilename(row['업체명'], '_장비사진.pdf')});
   }
-  attachments.push({url: 'https://jhtechsmart-cloud.github.io/jhtechsmart/manual.pdf', name: '사업신청 메뉴얼.pdf'});
+  attachments.push({url: 'https://drive.google.com/file/d/1IkDhoJW3joslgTmpsw8rIwlzsRv0vtrN/view', name: '사업신청 메뉴얼.pdf'});
   // 메일 제목 — 회사명만 동적
   const subject = '[(주)재현테크] 견적서 송부 및 동영상 촬영 가이드 · ' + (row['업체명'] || '');
   // Mailer Web App 호출
