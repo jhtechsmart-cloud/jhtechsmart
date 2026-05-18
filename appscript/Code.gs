@@ -994,7 +994,7 @@ function sendGuideForRow(row) {
   const htmlUrl = row['가이드_HTML_URL'];
   if (!htmlUrl) throw new Error('가이드_HTML_URL 비어있음');
   const html = _fetchDriveHtml(htmlUrl);
-  // 첨부: 견적 PDF + 장비사진 PDF (있는 것만)
+  // 첨부: 견적 PDF + 장비사진 PDF + 사업신청 메뉴얼 (있는 것만)
   const attachments = [];
   if (row['견적PDF_URL']) {
     attachments.push({url: row['견적PDF_URL'], name: _safeFilename(row['업체명'], '_견적서.pdf')});
@@ -1002,6 +1002,7 @@ function sendGuideForRow(row) {
   if (row['장비사진PDF_URL']) {
     attachments.push({url: row['장비사진PDF_URL'], name: _safeFilename(row['업체명'], '_장비사진.pdf')});
   }
+  attachments.push({url: 'https://jhtechsmart-cloud.github.io/jhtechsmart/manual.pdf', name: '사업신청 메뉴얼.pdf'});
   // 메일 제목 — 회사명만 동적
   const subject = '[(주)재현테크] 견적서 송부 및 동영상 촬영 가이드 · ' + (row['업체명'] || '');
   // Mailer Web App 호출
