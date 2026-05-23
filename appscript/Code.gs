@@ -55,7 +55,9 @@ const UNIFIED_HEADERS = [
   // PDF URL (2) — Phase 2 추가. 항상 헤더 끝에 두어 기존 시트 끝에 자동 append 되도록
   '견적PDF_URL','장비사진PDF_URL',
   // 가이드 버전 메타 (1) — Phase 3 추가. 가이드가 생성된 시점의 견적 version 추적 (멱등성 강화)
-  '가이드_version'
+  '가이드_version',
+  // 장비 명칭 (1) — 견적서발급관리의 장비명칭과 동일 (모델명 → 한국어 카테고리명)
+  '장비명칭'
 ];
 
 // 헤더명 → 컬럼 인덱스(0-based) 매핑
@@ -186,7 +188,8 @@ function upsertUnified(reqId, requestData, quoteData) {
         '합계': quoteData.totalPrice,
         '유효기간': quoteData.validUntil,
         'version': newVersion,
-        'isLatest': '1'
+        'isLatest': '1',
+        '장비명칭': quoteData.equipDetail
       };
       Object.keys(qMap).forEach(k => {
         const v = qMap[k];
@@ -436,6 +439,43 @@ function mergeGuideTemplate(templateHtml, parts5) {
     html = html.substring(0, divStart) + newDiv + html.substring(divEnd);
   }
   return html;
+}
+
+/* SECTION 04 플레이스홀더를 통합정보 row의 견적 데이터로 치환.
+   HW_합계(row['합계'])를 기준으로 사업비 구성 금액을 계산해 10개 {{}} 치환.
+   합계가 없으면 HTML을 그대로 반환 (신청만 있고 견적 미발급인 엣지케이스 보호). */
+function _mergeQuotePlaceholders(html, row) {
+  const hwTotal = Number(String(row['합계'] || '0').replace(/,/g, '')) || 0;
+  if (!hwTotal) return html;
+
+  function fmt(n) {
+    return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  const bizTotal  = Math.round(hwTotal / 0.8);
+  const govGrant  = Math.round(bizTotal * 0.6);
+  const selfCash  = Math.round(bizTotal * 0.2);
+  const selfKind  = Math.round(bizTotal * 0.2);
+  const selfSum   = selfCash + selfKind;
+
+  const map = {
+    '{{HW_합계}}':       fmt(hwTotal),
+    '{{사업비_합계}}':   fmt(bizTotal),
+    '{{정부지원금}}':    fmt(govGrant),
+    '{{HW_국고보조금}}': fmt(govGrant),
+    '{{자부담_현금}}':   fmt(selfCash),
+    '{{자부담_현물}}':   fmt(selfKind),
+    '{{HW_현금자부담}}': fmt(selfCash),
+    '{{자부담_소계}}':   fmt(selfSum),
+    '{{HW_명칭}}':       String(row['장비명칭'] || ''),
+    '{{HW_모델명}}':     String(row['선택장비'] || '')
+  };
+
+  let result = html;
+  Object.keys(map).forEach(function(key) {
+    result = result.split(key).join(map[key]);
+  });
+  return result;
 }
 
 /* 회사별 가이드 HTML을 Drive 폴더(GUIDE_DRIVE_FOLDER_ID)에 저장 + ANYONE_WITH_LINK VIEW.
@@ -878,7 +918,8 @@ function _ensureGuideForUnified(row) {
   // 본문 HTML 생성 + Drive 저장
   const template = loadEmailTemplate();
   const merged = mergeGuideTemplate(template, parts5);
-  const saved = saveGuideHtmlToDrive(merged, row['업체명'], reqId, curVersion);
+  const finalHtml = _mergeQuotePlaceholders(merged, row);
+  const saved = saveGuideHtmlToDrive(finalHtml, row['업체명'], reqId, curVersion);
   _updateUnifiedFields(reqId, {
     '가이드_생성일시': Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'),
     '가이드_HTML_URL': saved.url,
@@ -993,7 +1034,8 @@ function sendGuideForRow(row) {
   // 본문 HTML fetch (Drive 가이드 폴더 파일)
   const htmlUrl = row['가이드_HTML_URL'];
   if (!htmlUrl) throw new Error('가이드_HTML_URL 비어있음');
-  const html = _fetchDriveHtml(htmlUrl);
+  // Drive 파일 fetch 후 플레이스홀더 치환 — 구 가이드(미치환)·신 가이드(이미 치환, no-op) 모두 대응
+  const html = _mergeQuotePlaceholders(_fetchDriveHtml(htmlUrl), row);
   // 첨부: 견적 PDF + 장비사진 PDF + 사업신청 메뉴얼 (있는 것만)
   const attachments = [];
   if (row['견적PDF_URL']) {
@@ -1002,7 +1044,7 @@ function sendGuideForRow(row) {
   if (row['장비사진PDF_URL']) {
     attachments.push({url: row['장비사진PDF_URL'], name: _safeFilename(row['업체명'], '_장비사진.pdf')});
   }
-  attachments.push({url: 'https://drive.google.com/file/d/1IkDhoJW3joslgTmpsw8rIwlzsRv0vtrN/view', name: '사업신청 메뉴얼.pdf'});
+  attachments.push({url: 'https://drive.google.com/file/d/1q6PinLMyylu2fqxgr4DTgndspWpCTbQv/view', name: '사업신청 메뉴얼.pdf'});
   // 메일 제목 — 회사명만 동적
   const subject = '[(주)재현테크] 견적서 송부 및 동영상 촬영 가이드 · ' + (row['업체명'] || '');
   // Mailer Web App 호출
@@ -1634,6 +1676,62 @@ function regenerateGuide(reqId) {
   Logger.log('regenerateGuide: ' + reqId + ' → ' + JSON.stringify(result));
 }
 
+// ─── 일회성 백필: 견적서발급관리 기존 행에 장비명칭 채우기 ───
+// Apps Script 에디터에서 backfillEquipDetail 선택 후 1회 실행. 이후 삭제해도 무방.
+function backfillEquipDetail() {
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const sheet = ss.getSheetByName('견적서발급관리');
+  if (!sheet) { Logger.log('backfillEquipDetail: 견적서발급관리 시트 없음'); return; }
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  // 헤더 행에 장비명칭 컬럼 없으면 추가
+  if (lastCol < 14) {
+    sheet.getRange(1, 14).setValue('장비명칭').setFontWeight('bold').setBackground('#f3f7fb');
+  }
+
+  if (lastRow < 2) { Logger.log('backfillEquipDetail: 데이터 행 없음'); return; }
+
+  // 선택장비(5번째 컬럼, index 4) 읽기
+  const equipCol = sheet.getRange(2, 5, lastRow - 1, 1).getValues();
+  const details = equipCol.map(function(row) { return [_getEquipDetail(row[0])]; });
+
+  // 장비명칭(14번째 컬럼)에만 쓰기 — 기존 1~13컬럼 무변경
+  sheet.getRange(2, 14, lastRow - 1, 1).setValues(details);
+
+  Logger.log('backfillEquipDetail: ' + (lastRow - 1) + '행 장비명칭 채움 완료');
+}
+
+// ─── 일회성 백필: 통합정보 기존 행에 장비명칭 채우기 ───
+// Apps Script 에디터에서 backfillUnifiedEquipDetail 선택 후 1회 실행.
+function backfillUnifiedEquipDetail() {
+  const ss = SpreadsheetApp.openById(_getSpreadsheetId());
+  const sheet = ss.getSheetByName(UNIFIED_SHEET_NAME);
+  if (!sheet) { Logger.log('backfillUnifiedEquipDetail: 통합정보 시트 없음'); return; }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('backfillUnifiedEquipDetail: 데이터 행 없음'); return; }
+
+  // _getUnifiedSheet()를 통해 헤더 자동 보강 (장비명칭 컬럼 헤더 없으면 추가)
+  _getUnifiedSheet();
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const equipCol  = headers.indexOf('선택장비');
+  const detailCol = headers.indexOf('장비명칭');
+
+  if (equipCol < 0)  { Logger.log('backfillUnifiedEquipDetail: 선택장비 컬럼 없음'); return; }
+  if (detailCol < 0) { Logger.log('backfillUnifiedEquipDetail: 장비명칭 컬럼 없음'); return; }
+
+  const equipValues = sheet.getRange(2, equipCol + 1, lastRow - 1, 1).getValues();
+  const details = equipValues.map(function(row) { return [_getEquipDetail(row[0])]; });
+
+  // 장비명칭 컬럼에만 쓰기 — 나머지 컬럼 무변경
+  sheet.getRange(2, detailCol + 1, lastRow - 1, 1).setValues(details);
+
+  Logger.log('backfillUnifiedEquipDetail: ' + (lastRow - 1) + '행 장비명칭 채움 완료');
+}
+
 // ─── 시트 초기화 (최초 1회 수동 실행 가능, 기존 시트에 헤더 누락 시에도 자동 보강) ───
 function initSheets() {
   const ss = SpreadsheetApp.openById(_getSpreadsheetId());
@@ -1662,13 +1760,16 @@ function initSheets() {
   if (s2.getLastRow() === 0) {
     s2.appendRow([
       '견적번호','접수번호','발급일시','업체명','선택장비','포함옵션','추가옵션(JSON)',
-      '공급가액','부가세','합계','유효기간','상태','담당자'
+      '공급가액','부가세','합계','유효기간','상태','담당자','장비명칭'
     ]);
-    s2.getRange(1, 1, 1, 13).setFontWeight('bold').setBackground('#f3f7fb');
+    s2.getRange(1, 1, 1, 14).setFontWeight('bold').setBackground('#f3f7fb');
   } else {
     const lastCol = s2.getLastColumn();
     if (lastCol < 13) {
       s2.getRange(1, 13).setValue('담당자').setFontWeight('bold').setBackground('#f3f7fb');
+    }
+    if (lastCol < 14) {
+      s2.getRange(1, 14).setValue('장비명칭').setFontWeight('bold').setBackground('#f3f7fb');
     }
   }
 
@@ -2015,7 +2116,17 @@ function _quoteBase(qno) {
   return m ? s.slice(0, m.index) : s;
 }
 
-/* 견적서발급관리 한 행(13컬럼) 구성. issuedAt은 호출부에서 1회 계산해 공유. */
+/* admin.html getEquipDesc().detail 과 동일한 매핑 — 모델명 → 한국어 장비명칭. */
+function _getEquipDetail(name) {
+  const n = String(name || '').toUpperCase();
+  if (n.match(/^(JP|SG)/))                              return '평판 커팅기 시스템';
+  if (n.includes('OR16') || n.includes('OR32') || n.includes('R20')) return 'UV LED 롤투롤 프린터 시스템';
+  if (n.includes('T8Q') || n.includes('T9M'))           return 'UV LED 텍스타일 프린터 시스템';
+  if (n.includes('JU'))                                 return 'UV LED 플랫베드 프린터 시스템';
+  return 'UV LED 플랫베드 프린터 시스템';
+}
+
+/* 견적서발급관리 한 행(14컬럼) 구성. issuedAt은 호출부에서 1회 계산해 공유. */
 function _buildQuoteRow(quoteNo, data, assigneeId, issuedAt) {
   return [
     quoteNo || '', data.id, issuedAt,
@@ -2023,7 +2134,8 @@ function _buildQuoteRow(quoteNo, data, assigneeId, issuedAt) {
     (data.includeOpts || []).join(' | '),
     JSON.stringify(data.extraOpts || []),
     data.supplyPrice || '', data.taxPrice || '', data.totalPrice || '',
-    data.validUntil || '', data.status || 'confirmed', assigneeId
+    data.validUntil || '', data.status || 'confirmed', assigneeId,
+    _getEquipDetail(data.equipment)
   ];
 }
 
@@ -2036,8 +2148,8 @@ function handleConfirm(data, user) {
   let sheet2 = ss.getSheetByName('견적서발급관리');
   if (!sheet2) {
     sheet2 = ss.insertSheet('견적서발급관리');
-    sheet2.appendRow(['견적번호','접수번호','발급일시','업체명','선택장비','포함옵션','추가옵션(JSON)','공급가액','부가세','합계','유효기간','상태','담당자']);
-    sheet2.getRange(1,1,1,13).setFontWeight('bold').setBackground('#f3f7fb');
+    sheet2.appendRow(['견적번호','접수번호','발급일시','업체명','선택장비','포함옵션','추가옵션(JSON)','공급가액','부가세','합계','유효기간','상태','담당자','장비명칭']);
+    sheet2.getRange(1,1,1,14).setFontWeight('bold').setBackground('#f3f7fb');
   }
 
   // 신청관리 상태 업데이트
@@ -2071,7 +2183,7 @@ function handleConfirm(data, user) {
 
     if (matchIdx >= 0 && !matchConfirmed) {
       // 미확정 행을 확정으로 승격 — 버전 유지, in-place 갱신
-      sheet2.getRange(matchIdx + 1, 1, 1, 13)
+      sheet2.getRange(matchIdx + 1, 1, 1, 14)
             .setValues([_buildQuoteRow(finalQuoteNo, data, assigneeId, issuedAt)]);
     } else {
       // 같은 번호가 이미 confirmed면 서버가 버전 자동 +1 (P3) —
@@ -2117,7 +2229,8 @@ function handleConfirm(data, user) {
       issuedAt: issuedAt,
       includeOpts: data.includeOpts, extraOpts: data.extraOpts,
       supplyPrice: data.supplyPrice, taxPrice: data.taxPrice, totalPrice: data.totalPrice,
-      validUntil: data.validUntil, status: data.status, assignee: assigneeId
+      validUntil: data.validUntil, status: data.status, assignee: assigneeId,
+      equipDetail: _getEquipDetail(data.equipment)
     });
   } catch (e) { Logger.log('upsertUnified(confirm) 실패: ' + e); }
 
