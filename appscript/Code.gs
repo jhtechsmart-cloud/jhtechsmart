@@ -2303,17 +2303,20 @@ function handleResendGuide(data, user) {
   }
   props.setProperty(throttleKey, String(Date.now()));
   // row 확인 — 가이드 HTML 있어야 발송 가능
-  const row = _readUnifiedRow(data.id);
+  let row = _readUnifiedRow(data.id);
   if (!row) return jsonResponse({status:'error', message:'통합정보 시트에 없음'});
   if (!row['가이드_HTML_URL']) return jsonResponse({status:'error', message:'가이드 본문 없음 — 견적 확정 후 가능'});
   if (!row['이메일']) return jsonResponse({status:'error', message:'이메일 비어있음'});
-  // cooldown 우회를 위해 가이드_발송일시 임시 비우기 (sendGuideForRow의 5분 cooldown은 자동 polling용)
-  // 직접 sendGuideForRow를 호출하면 cooldown 검사가 없음 (그건 pollAndSendGuides에서만 검사) — 그래서 우회 불필요
+  // 즉시 발송은 최신 템플릿+견적 데이터로 가이드 재생성 후 발송.
+  // 가이드_version을 0으로 초기화 → _ensureGuideForUnified의 멱등 체크 우회 → 새 HTML Drive 저장 → 최신 URL로 발송.
   try {
+    _updateUnifiedField(data.id, '가이드_version', 0);
+    row['가이드_version'] = 0;
+    _ensureGuideForUnified(row);
+    row = _readUnifiedRow(data.id);
     sendGuideForRow(row);
     return jsonResponse({status:'ok', sentAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')});
   } catch (e) {
-    // 실패는 sendGuideForRow가 시트에 기록함. 응답으로도 알림.
     return jsonResponse({status:'error', message:'발송 실패: ' + (e.message || e)});
   }
 }
