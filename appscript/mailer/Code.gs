@@ -52,6 +52,7 @@ function doPost(e) {
       attachments: attachments
     };
     if (data.replyTo) options.replyTo = data.replyTo;
+    if (data.cc) options.cc = data.cc;
 
     MailApp.sendEmail(data.to, data.subject, '', options);
 
