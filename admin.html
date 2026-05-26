@@ -804,7 +804,7 @@ const equipment = [
   {id:'or32',   name:'XTRA OR32',  cat:'printer', img:'장비사진/프린터 XTRA OR32.png'},
   {id:'r20',    name:'XTRA R20',   cat:'printer', img:'장비사진/프린터 XTRA R20.png'},
   {id:'s2512',  name:'XTRA 2512S', cat:'printer', img:'장비사진/프린터 XTRA 2512S.png'},
-  {id:'x20',    name:'X20',        cat:'printer', img:'장비사진/프린터 X20.png'},
+  {id:'x20',    name:'X20h',       cat:'printer', img:'장비사진/프린터 X20.png'},
   {id:'ju2513', name:'JU2513+',    cat:'printer', img:'장비사진/프린터 JP2513+.png'},
   {id:'ju1810', name:'JU1810+',    cat:'printer', img:'장비사진/프린터 JU180+.png'},
   {id:'ju9060', name:'JU9060+',    cat:'printer', img:'장비사진/프린터 JP9060+.png'},
@@ -812,8 +812,8 @@ const equipment = [
   {id:'t8q',    name:'T8Q',        cat:'printer', img:'장비사진/프린터 T8Q.png'},
   {id:'t9m',    name:'T9M',        cat:'printer', img:'장비사진/프린터 T9M.png'},
   {id:'jp0806', name:'JP0806',     cat:'cutter',  img:'장비사진/평판커팅기 JP0806.png'},
-  {id:'jp1311', name:'JP1311',     cat:'cutter',  img:'장비사진/평판커팅기 JP1311.png'},
-  {id:'jp1625', name:'JP1625',     cat:'cutter',  img:'장비사진/평판커팅기 JP1625.png'},
+  {id:'jp1311', name:'JP1113',     cat:'cutter',  img:'장비사진/평판커팅기 JP1311.png'},
+  {id:'jp1625', name:'JP2516',     cat:'cutter',  img:'장비사진/평판커팅기 JP1625.png'},
   {id:'sg1625', name:'SG1625',     cat:'cutter',  img:'장비사진/평판커팅기 SG1625.png'},
 ];
 
@@ -1192,7 +1192,7 @@ async function loadRequests(opts){
 function loadDemoData(){
   allRequests = [
     {id:'REQ-001',submittedAt:'2026-05-07 10:23',company:'(주)홍길동인쇄',bizNo:'123-45-67890',ceo:'홍길동',phone:'010-1234-5678',email:'hong@print.co.kr',address:'서울시 마포구 성산동 123',foundDate:'2018-03-15',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'280,000,000',rev2024:'320,000,000',rev2025:'350,000,000',problemProcess:'인쇄 공정',adoptionType:'기존장비 교체',issues:'노후 프린터 잦은 고장으로 생산 중단·납기 지연 반복 → 설비 안정성 확보 목표',equipment:'XTRA OR16',equipRequest:'아크릴 직접 인쇄 가능 여부 확인 필요',status:'new',includeOpts:[],extraOpts:[],supplyPrice:'',taxPrice:'',totalPrice:'',validUntil:'',quoteNo:''},
-    {id:'REQ-002',submittedAt:'2026-05-07 14:05',company:'스마트커팅 주식회사',bizNo:'234-56-78901',ceo:'김미래',phone:'010-9876-5432',email:'kim@smartcut.kr',address:'경기도 파주시 문발로 456',foundDate:'2020-08-01',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'',rev2024:'310,000,000',rev2025:'290,000,000',problemProcess:'절단/커팅 공정',adoptionType:'신규 장비 도입',issues:'커팅 전량 외주로 납기 통제 불가|외주 커팅비·운송비 발생으로 원가 부담 지속 증가',equipment:'JP1311',equipRequest:'아크릴 20mm 커팅 가능 여부',status:'new',includeOpts:[],extraOpts:[],supplyPrice:'',taxPrice:'',totalPrice:'',validUntil:'',quoteNo:''},
+    {id:'REQ-002',submittedAt:'2026-05-07 14:05',company:'스마트커팅 주식회사',bizNo:'234-56-78901',ceo:'김미래',phone:'010-9876-5432',email:'kim@smartcut.kr',address:'경기도 파주시 문발로 456',foundDate:'2020-08-01',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'',rev2024:'310,000,000',rev2025:'290,000,000',problemProcess:'절단/커팅 공정',adoptionType:'신규 장비 도입',issues:'커팅 전량 외주로 납기 통제 불가|외주 커팅비·운송비 발생으로 원가 부담 지속 증가',equipment:'JP1113',equipRequest:'아크릴 20mm 커팅 가능 여부',status:'new',includeOpts:[],extraOpts:[],supplyPrice:'',taxPrice:'',totalPrice:'',validUntil:'',quoteNo:''},
     {id:'REQ-003',submittedAt:'2026-05-06 09:11',company:'대한프린팅',bizNo:'345-67-89012',ceo:'이대한',phone:'010-5555-7777',email:'lee@dahan.com',address:'부산시 해운대구 우동 789',foundDate:'2015-01-20',industry:'C18 인쇄 및 기록매체 복제업',rev2023:'410,000,000',rev2024:'390,000,000',rev2025:'420,000,000',problemProcess:'인쇄 공정',adoptionType:'신규 장비 도입',issues:'아크릴·목재·금속·가죽 등 다양한 소재 직접 인쇄 설비 없음 → 소재 다양화·신규 수주 확대 목표',equipment:'XTRA 2512S',equipRequest:'대형 아크릴 인쇄, 2500×1200mm 풀사이즈 가능 확인',status:'confirmed',includeOpts:['RIP 소프트웨어 (Photoprint/Ergosoft 등)','잉크 기본 세트 포함','설치 및 기초 사용 교육','1년 무상 A/S'],extraOpts:[{name:'화이트 잉크 키트',price:'1500000'},{name:'현장 출장 설치비',price:'300000'}],supplyPrice:'42000000',taxPrice:'4200000',totalPrice:'42000000',validUntil:'2026-05-31',quoteNo:'Q2026-001'},
   ];
   renderList();
