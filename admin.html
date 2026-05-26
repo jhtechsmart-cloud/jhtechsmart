@@ -2446,18 +2446,29 @@ function numToKorean(num) {
 
 /* ─── 장비 설명 ─── */
 function getEquipDesc(name, cat) {
-  const n = (name||'').toUpperCase();
   const hl = s => '<b style="font-weight:900;color:#ffb400">'+s+'</b>';
-  if (cat==='cutter') return {bar:'Flatbed Cutting System '+hl(name), detail:'평판 커팅기 시스템'};
-  if (n.includes('OR16')||n.includes('OR32')||n.includes('R20'))
-    return {bar:'UV LED Roll-to-Roll printer '+hl(name), detail:'UV LED 롤투롤 프린터 시스템'};
-  if (n.includes('T8Q')||n.includes('T9M'))
-    return {bar:'UV LED Textile Printer '+hl(name), detail:'UV LED 텍스타일 프린터 시스템'};
-  if (n.includes('JU9060'))
-    return {bar:'Industrial UV LED FLATBED printer '+hl('JU-9060Plus')+' Gen5i', detail:'UV LED 플랫베드 프린터 시스템'};
-  if (n.includes('JU'))
-    return {bar:'Industrial UV LED FLATBED printer '+hl(name), detail:'UV LED 플랫베드 프린터 시스템'};
-  return {bar:'UV LED FLATBED printer '+hl(name), detail:'UV LED 플랫베드 프린터 시스템'};
+  const MAP = {
+    'XTRA OR16':  {detail:'XTRA-R16 UV롤프린터',          bar:'UV Roll Printer '+hl('XTRA OR16')},
+    'XTRA OR32':  {detail:'XTRA-R32 UV롤프린터',          bar:'UV Roll Printer '+hl('XTRA OR32')},
+    'XTRA R20':   {detail:'XTRA-R20 UV롤프린터',          bar:'UV Roll Printer '+hl('XTRA R20')},
+    'XTRA 2512S': {detail:'XTRA2512S UV플랫베드프린터',   bar:'UV Flatbed Printer '+hl('XTRA 2512S')},
+    'X20h':       {detail:'X20h UV하이브리드프린터',       bar:'UV Hybrid Printer '+hl('X20h')},
+    'T8Q':        {detail:'T8Q 솔벤트프린터',             bar:'Solvent Printer '+hl('T8Q')},
+    'T9M':        {detail:'T9M UV롤프린터',               bar:'UV Roll Printer '+hl('T9M')},
+    'JU2513+':    {detail:'JU2513+ UV플랫베드프린터',     bar:'Industrial UV LED FLATBED printer '+hl('JU2513+')},
+    'JU1810+':    {detail:'JU1810+ UV플랫베드프린터',     bar:'Industrial UV LED FLATBED printer '+hl('JU1810+')},
+    'JU9060+':    {detail:'JU9060+ UV플랫베드프린터',     bar:'Industrial UV LED FLATBED printer '+hl('JU9060+')},
+    'JU1361':     {detail:'JU1361H UV하이브리드프린터',   bar:'Industrial UV LED Hybrid printer '+hl('JU1361H')},
+    'JP0806':     {detail:'MultiCut JP0806 디지탈커팅기', bar:'Flatbed Cutting System '+hl('JP0806')},
+    'JP1113':     {detail:'MultiCut JP1113 디지탈커팅기', bar:'Flatbed Cutting System '+hl('JP1113')},
+    'JP2516':     {detail:'MultiCut JP2516 디지탈커팅기', bar:'Flatbed Cutting System '+hl('JP2516')},
+    'SG1625':     {detail:'MultiCut SG1625 디지탈커팅기', bar:'Flatbed Cutting System '+hl('SG1625')},
+  };
+  const found = MAP[String(name||'')];
+  if (found) return found;
+  // fallback — 매핑에 없는 신규 장비
+  if (cat==='cutter') return {bar:'Flatbed Cutting System '+hl(name), detail:'MultiCut '+name+' 디지탈커팅기'};
+  return {bar:'UV LED Printer '+hl(name), detail:name+' UV프린터'};
 }
 
 /* ─── 견적서 출력 ─── */

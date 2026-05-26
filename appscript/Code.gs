@@ -2117,14 +2117,26 @@ function _quoteBase(qno) {
   return m ? s.slice(0, m.index) : s;
 }
 
-/* admin.html getEquipDesc().detail 과 동일한 매핑 — 모델명 → 한국어 장비명칭. */
+/* admin.html getEquipDesc().detail 과 동일한 매핑 — 모델명 → 공급품명(장비명칭). */
 function _getEquipDetail(name) {
-  const n = String(name || '').toUpperCase();
-  if (n.match(/^(JP|SG)/))                              return '평판 커팅기 시스템';
-  if (n.includes('OR16') || n.includes('OR32') || n.includes('R20')) return 'UV LED 롤투롤 프린터 시스템';
-  if (n.includes('T8Q') || n.includes('T9M'))           return 'UV LED 텍스타일 프린터 시스템';
-  if (n.includes('JU'))                                 return 'UV LED 플랫베드 프린터 시스템';
-  return 'UV LED 플랫베드 프린터 시스템';
+  const MAP = {
+    'XTRA OR16':  'XTRA-R16 UV롤프린터',
+    'XTRA OR32':  'XTRA-R32 UV롤프린터',
+    'XTRA R20':   'XTRA-R20 UV롤프린터',
+    'XTRA 2512S': 'XTRA2512S UV플랫베드프린터',
+    'X20h':       'X20h UV하이브리드프린터',
+    'T8Q':        'T8Q 솔벤트프린터',
+    'T9M':        'T9M UV롤프린터',
+    'JU2513+':    'JU2513+ UV플랫베드프린터',
+    'JU1810+':    'JU1810+ UV플랫베드프린터',
+    'JU9060+':    'JU9060+ UV플랫베드프린터',
+    'JU1361':     'JU1361H UV하이브리드프린터',
+    'JP0806':     'MultiCut JP0806 디지탈커팅기',
+    'JP1113':     'MultiCut JP1113 디지탈커팅기',
+    'JP2516':     'MultiCut JP2516 디지탈커팅기',
+    'SG1625':     'MultiCut SG1625 디지탈커팅기',
+  };
+  return MAP[String(name || '')] || String(name || '');
 }
 
 /* 견적서발급관리 한 행(14컬럼) 구성. issuedAt은 호출부에서 1회 계산해 공유. */
