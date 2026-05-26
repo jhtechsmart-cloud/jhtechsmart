@@ -1789,7 +1789,7 @@ function initSheets() {
       ['or32',  'XTRA OR32',  'printer','',pInc,pExt],
       ['r20',   'XTRA R20',   'printer','',pInc,pExt],
       ['s2512', 'XTRA 2512S', 'printer','',pInc,pExt],
-      ['x20',   'X20h',       'printer','',pInc,pExt],
+      ['x20h',  'X20h',       'printer','',pInc,pExt],
       ['ju2513','JU2513+',    'printer','',pInc,pExt],
       ['ju1810','JU1810+',    'printer','',pInc,pExt],
       ['ju9060','JU9060+',    'printer','',pInc,pExt],
@@ -1797,8 +1797,8 @@ function initSheets() {
       ['t8q',   'T8Q',        'printer','',pInc,pExt],
       ['t9m',   'T9M',        'printer','',pInc,pExt],
       ['jp0806','JP0806',     'cutter', '',cInc,cExt],
-      ['jp1311','JP1113',     'cutter', '',cInc,cExt],
-      ['jp1625','JP2516',     'cutter', '',cInc,cExt],
+      ['jp1113','JP1113',     'cutter', '',cInc,cExt],
+      ['jp2516','JP2516',     'cutter', '',cInc,cExt],
       ['sg1625','SG1625',     'cutter', '',cInc,cExt],
     ].forEach(row => s3.appendRow(row));
     s3.setColumnWidth(5, 260);
