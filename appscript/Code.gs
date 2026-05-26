@@ -1047,14 +1047,14 @@ function sendGuideForRow(row) {
   attachments.push({url: 'https://drive.google.com/file/d/1hAWzhXotFCYRNXr-3VarxDtk7FB7AX1B/view', name: '사업신청 메뉴얼.pdf'});
   // 메일 제목 — 회사명만 동적
   const subject = '[(주)재현테크] 견적서 송부 및 동영상 촬영 가이드 · ' + (row['업체명'] || '');
-  // Mailer Web App 호출 — cc: 담당자 수신 (테스트: choseonje@gmail.com / 운영: park@jhtech.co.kr)
+  // Mailer Web App 호출 — cc: 담당자 수신
   const result = callMailer({
     to: to,
-    cc: 'choseonje@gmail.com',
+    cc: 'park@jhtech.co.kr',
     subject: subject,
     htmlBody: html,
     name: '(주)재현테크',
-    replyTo: 'smart@paxc.co.kr',
+    replyTo: 'jhtechsmart@gmail.com',
     attachments: attachments
   });
   if (result.status !== 'ok') {
