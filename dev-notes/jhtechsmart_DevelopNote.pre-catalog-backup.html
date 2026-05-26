@@ -1,0 +1,2665 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>jhtechsmart — Develop Note</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css" id="hljs-light">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css" id="hljs-dark" disabled>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-faint: #94a3b8;
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --accent-strong: #1d4ed8;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0891b2;
+    --code-bg: #f6f8fa;
+    --code-text: #1f2328;
+    --path-bg: #f1f5f9;
+    --path-text: #64748b;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --sidebar-w: 320px;
+    /* Typography scale - 명확한 위계 */
+    --fs-xs: 11px;
+    --fs-sm: 12px;
+    --fs-base: 14px;
+    --fs-md: 15px;
+    --fs-lg: 16px;
+    --fs-xl: 18px;
+    --fs-2xl: 22px;
+    --fs-3xl: 28px;
+    --lh-tight: 1.35;
+    --lh-base: 1.65;
+    --lh-loose: 1.8;
+  }
+  [data-theme="dark"] {
+    --bg: #0a0a0a;
+    --bg-secondary: #111111;
+    --bg-tertiary: #1a1a1a;
+    --border: #262626;
+    --border-strong: #404040;
+    --text: #fafafa;
+    --text-secondary: #d4d4d8;
+    --text-muted: #a1a1aa;
+    --text-faint: #71717a;
+    --accent: #60a5fa;
+    --accent-soft: #1e293b;
+    --accent-strong: #93c5fd;
+    --code-bg: #161b22;
+    --code-text: #e6edf3;
+    --path-bg: #1e293b;
+    --path-text: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    font-feature-settings: "ss06" on, "cv11" on;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  .app { display: flex; height: 100vh; }
+
+  /* ═══════════════ Sidebar ═══════════════ */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-title {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .sidebar-project {
+    font-size: var(--fs-xl);
+    font-weight: 700;
+    color: var(--text);
+    line-height: var(--lh-tight);
+    word-break: keep-all;
+  }
+  .sidebar-stats {
+    margin-top: 14px;
+    display: flex;
+    gap: 14px;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+  }
+  .sidebar-stats span strong { color: var(--text-secondary); font-weight: 600; }
+
+  .sidebar-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-tab {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    background: none;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    font-family: inherit;
+  }
+  .sidebar-tab:hover { color: var(--text); background: var(--bg-tertiary); }
+  .sidebar-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .search-box {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .sidebar-list::-webkit-scrollbar { width: 8px; }
+  .sidebar-list::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+  .date-group { margin-bottom: 4px; }
+  .date-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 16px;
+    cursor: pointer;
+    user-select: none;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .date-header:hover { background: var(--bg-tertiary); }
+  .date-toggle {
+    display: inline-block;
+    width: 12px; height: 12px;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .date-group.collapsed .date-toggle { transform: rotate(-90deg); }
+  .date-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .date-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .feature-list {
+    list-style: none;
+    overflow: hidden;
+    max-height: 2000px;
+    transition: max-height 0.25s ease;
+  }
+  .date-group.collapsed .feature-list { max-height: 0; }
+  .feature-item {
+    padding: 9px 16px 9px 36px;
+    cursor: pointer;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.12s, color 0.12s;
+    border-left: 3px solid transparent;
+    line-height: var(--lh-tight);
+  }
+  .feature-item:hover { background: var(--bg-tertiary); color: var(--text); }
+  .feature-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .feature-type-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .feature-type-badge.feat { background: #dcfce7; color: #166534; }
+  .feature-type-badge.fix { background: #fee2e2; color: #991b1b; }
+  .feature-type-badge.refactor { background: #fef3c7; color: #92400e; }
+  .feature-type-badge.docs { background: #dbeafe; color: #1e40af; }
+  .feature-type-badge.test { background: #f3e8ff; color: #6b21a8; }
+  .feature-type-badge.chore { background: #f1f5f9; color: #475569; }
+  .feature-type-badge.perf { background: #ccfbf1; color: #115e59; }
+  .feature-type-badge.style { background: #fce7f3; color: #9d174d; }
+  .feature-type-badge.build, .feature-type-badge.ci { background: #e0e7ff; color: #3730a3; }
+  [data-theme="dark"] .feature-type-badge.feat { background: #14532d; color: #86efac; }
+  [data-theme="dark"] .feature-type-badge.fix { background: #7f1d1d; color: #fca5a5; }
+  [data-theme="dark"] .feature-type-badge.refactor { background: #78350f; color: #fcd34d; }
+  [data-theme="dark"] .feature-type-badge.docs { background: #1e3a8a; color: #93c5fd; }
+  [data-theme="dark"] .feature-type-badge.test { background: #581c87; color: #d8b4fe; }
+  [data-theme="dark"] .feature-type-badge.chore { background: #1e293b; color: #cbd5e1; }
+  [data-theme="dark"] .feature-type-badge.perf { background: #134e4a; color: #5eead4; }
+  [data-theme="dark"] .feature-type-badge.style { background: #831843; color: #f9a8d4; }
+  [data-theme="dark"] .feature-type-badge.build,
+  [data-theme="dark"] .feature-type-badge.ci { background: #312e81; color: #a5b4fc; }
+  .feature-title-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    transition: all 0.15s;
+  }
+  .theme-toggle:hover { background: var(--bg-tertiary); color: var(--text); }
+
+  /* ═══════════════ Main content ═══════════════ */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .main::-webkit-scrollbar { width: 10px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }
+
+  .content {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 60px 96px;
+  }
+
+  .empty-state {
+    height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px;
+  }
+  .empty-state h2 { font-size: var(--fs-2xl); font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
+  .empty-state p { font-size: var(--fs-base); max-width: 460px; line-height: var(--lh-base); }
+
+  /* ─── Feature header ─── */
+  .feature-header { margin-bottom: 36px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+  .breadcrumb {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+    line-height: var(--lh-tight);
+  }
+  .breadcrumb-item { color: var(--text-muted); }
+  .breadcrumb-sep { color: var(--border-strong); }
+  .feature-h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin-bottom: 18px;
+    color: var(--text);
+  }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 16px;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    align-items: center;
+    line-height: var(--lh-tight);
+  }
+  .meta-row .status-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .status-badge.completed { background: #dcfce7; color: #166534; }
+  .status-badge.in-progress { background: #fef3c7; color: #92400e; }
+  .status-badge.blocked { background: #fee2e2; color: #991b1b; }
+  [data-theme="dark"] .status-badge.completed { background: #14532d; color: #86efac; }
+  [data-theme="dark"] .status-badge.in-progress { background: #78350f; color: #fcd34d; }
+  [data-theme="dark"] .status-badge.blocked { background: #7f1d1d; color: #fca5a5; }
+
+  .tags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: var(--fs-xs);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* ─── Section ─── */
+  .section { margin-top: 40px; }
+  .section-title {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+    line-height: var(--lh-tight);
+  }
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 16px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ─── Prose — 가독성 중심 ─── */
+  .prose {
+    line-height: var(--lh-base);
+    color: var(--text);
+    font-size: var(--fs-md);
+  }
+  .prose p { margin-bottom: 14px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { font-weight: 600; color: var(--text); }
+  .prose em { color: var(--text-secondary); font-style: italic; }
+  /* 인라인 코드 — 명확하게 구분되는 스타일 */
+  .prose code, .card-row code, .claude-hint-body code, .prompt-text code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em;
+    border: 1px solid var(--border);
+    font-weight: 500;
+    word-break: break-all;
+  }
+  /* 파일 경로 — 별도의 부드러운 스타일 */
+  .file-path {
+    display: inline-block;
+    background: var(--path-bg);
+    color: var(--path-text);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.82em;
+    border: 1px solid var(--border);
+    margin-top: 2px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .prose pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .prose pre code {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    color: var(--code-text);
+    font-size: 13px;
+  }
+  /* 리스트 — 들여쓰기 명확하게 */
+  .prose ul, .prose ol {
+    margin: 10px 0 16px 0;
+    padding-left: 28px;
+  }
+  .prose li {
+    margin-bottom: 6px;
+    line-height: var(--lh-base);
+  }
+  .prose li:last-child { margin-bottom: 0; }
+  /* 중첩 리스트 더 깊이 들여쓰기 */
+  .prose ul ul, .prose ul ol, .prose ol ul, .prose ol ol {
+    margin: 6px 0 6px 0;
+    padding-left: 24px;
+  }
+  .prose blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 12px 18px;
+    background: var(--bg-secondary);
+    margin: 16px 0;
+    color: var(--text-secondary);
+    border-radius: 0 6px 6px 0;
+    line-height: var(--lh-base);
+  }
+  .prose h3 { margin-top: 28px; margin-bottom: 12px; font-size: var(--fs-xl); font-weight: 600; line-height: var(--lh-tight); }
+  .prose h4 { margin-top: 20px; margin-bottom: 10px; font-size: var(--fs-lg); color: var(--text-secondary); font-weight: 600; line-height: var(--lh-tight); }
+  .prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s; }
+  .prose a:hover { border-bottom-color: var(--accent); }
+
+  /* ─── Code snippet ─── */
+  .code-snippet {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .code-snippet-header {
+    background: var(--bg-tertiary);
+    padding: 10px 16px;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    line-height: var(--lh-tight);
+  }
+  .code-snippet pre { margin: 0; border: 0; border-radius: 0; }
+  .code-snippet-caption {
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: var(--lh-base);
+  }
+  .copy-btn {
+    background: none; border: 0; color: var(--text-muted); cursor: pointer;
+    font-size: var(--fs-xs); font-family: inherit; padding: 3px 10px; border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--bg); color: var(--text); }
+
+  /* ═══════════════ ADR / Problem cards — 들여쓰기 수정 ═══════════════ */
+  .decision-card, .problem-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    background: var(--bg-secondary);
+  }
+  .decision-card { border-left: 4px solid var(--info); }
+  .problem-card { border-left: 4px solid var(--warning); }
+  .card-title {
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--text);
+    line-height: var(--lh-tight);
+  }
+  /* 카드 내부 행 — 라벨과 값을 명확히 분리, 자식은 들여쓰기 */
+  .card-row {
+    margin-bottom: 12px;
+    font-size: var(--fs-base);
+    line-height: var(--lh-base);
+    color: var(--text);
+  }
+  .card-row:last-child { margin-bottom: 0; }
+  .card-row .label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-size: var(--fs-sm);
+    letter-spacing: 0.01em;
+  }
+  .card-row .value {
+    color: var(--text);
+    padding-left: 0;
+  }
+  /* 카드 내부 리스트 — 명확한 들여쓰기 */
+  .card-row ul {
+    margin: 6px 0 0 0;
+    padding-left: 24px;
+    list-style: disc;
+  }
+  .card-row ul li {
+    margin-bottom: 4px;
+    line-height: var(--lh-base);
+    color: var(--text);
+  }
+  .card-row ul li:last-child { margin-bottom: 0; }
+
+  /* ═══════════════ Changelog grid ═══════════════ */
+  .changelog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .changelog-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    background: var(--bg-secondary);
+  }
+  .changelog-card h4 {
+    margin: 0 0 12px;
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+  .changelog-card.added h4 { color: var(--success); }
+  .changelog-card.changed h4 { color: var(--info); }
+  .changelog-card.fixed h4 { color: var(--warning); }
+  .changelog-card.removed h4 { color: var(--danger); }
+  .changelog-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .changelog-card li {
+    font-size: var(--fs-sm);
+    color: var(--text);
+    padding: 8px 0;
+    line-height: var(--lh-base);
+    border-bottom: 1px dashed var(--border);
+  }
+  .changelog-card li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .changelog-card li:first-child { padding-top: 0; }
+  .changelog-card code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.88em;
+    border: 1px solid var(--border);
+  }
+
+  /* ═══════════════ Next steps ═══════════════ */
+  .next-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .next-steps li {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 0;
+    font-size: var(--fs-base);
+    color: var(--text);
+    line-height: var(--lh-base);
+    border-bottom: 1px dashed var(--border);
+  }
+  .next-steps li:last-child { border-bottom: 0; }
+  .next-steps li::before {
+    content: '☐';
+    color: var(--text-muted);
+    font-family: monospace;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ═══════════════ Claude hints — 디자인 개선 ═══════════════ */
+  .claude-hints {
+    background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 40px;
+  }
+  [data-theme="dark"] .claude-hints {
+    background: linear-gradient(135deg, #2a2206 0%, #3d2f04 100%);
+    border-color: #a16207;
+  }
+  .claude-hints h3 {
+    color: #92400e;
+    font-size: var(--fs-md);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700;
+    line-height: var(--lh-tight);
+  }
+  [data-theme="dark"] .claude-hints h3 { color: #fde68a; }
+  .claude-hint-body {
+    color: #78350f;
+    font-size: var(--fs-base);
+    line-height: var(--lh-loose);
+  }
+  [data-theme="dark"] .claude-hint-body { color: #fef3c7; }
+  .claude-hint-body p { margin-bottom: 12px; }
+  .claude-hint-body p:last-child { margin-bottom: 0; }
+  /* For Future Claude 박스 내 코드 — 더 진한 배경으로 구분 */
+  .claude-hint-body code {
+    background: rgba(180, 83, 9, 0.12);
+    color: #78350f;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.86em;
+    border: 1px solid rgba(180, 83, 9, 0.25);
+    font-weight: 500;
+  }
+  [data-theme="dark"] .claude-hint-body code {
+    background: rgba(252, 211, 77, 0.12);
+    color: #fde68a;
+    border-color: rgba(252, 211, 77, 0.25);
+  }
+
+  .claude-patterns-title {
+    margin-top: 18px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #92400e;
+    font-size: var(--fs-base);
+  }
+  [data-theme="dark"] .claude-patterns-title { color: #fde68a; }
+  .claude-patterns {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  .claude-patterns > li {
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(180, 83, 9, 0.2);
+    font-size: var(--fs-base);
+    line-height: var(--lh-base);
+  }
+  [data-theme="dark"] .claude-patterns > li {
+    border-color: rgba(252, 211, 77, 0.2);
+  }
+  .claude-patterns > li:last-child { border-bottom: 0; }
+  .claude-patterns > li:first-child { padding-top: 0; }
+  .pattern-name {
+    display: inline-block;
+    color: #78350f;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  [data-theme="dark"] .pattern-name { color: #fde68a; }
+  .pattern-desc {
+    color: #78350f;
+    margin-left: 0;
+  }
+  [data-theme="dark"] .pattern-desc { color: #fef3c7; }
+  .pattern-file {
+    display: block;
+    margin-top: 6px;
+    padding: 3px 8px;
+    background: rgba(180, 83, 9, 0.08);
+    border: 1px solid rgba(180, 83, 9, 0.2);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.82em;
+    color: #92400e;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  [data-theme="dark"] .pattern-file {
+    background: rgba(252, 211, 77, 0.08);
+    border-color: rgba(252, 211, 77, 0.25);
+    color: #fde68a;
+  }
+
+  /* ═══════════════ Prompt Library ═══════════════ */
+  .prompt-card {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    background: var(--bg-secondary);
+  }
+  .prompt-card.verdict-good { border-left-color: var(--success); }
+  .prompt-card.verdict-bad { border-left-color: var(--danger); }
+  .prompt-card.verdict-neutral { border-left-color: var(--info); }
+  .prompt-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .prompt-verdict-icon { font-size: var(--fs-md); }
+  .prompt-label { color: var(--text); }
+  .prompt-text {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--code-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .prompt-lesson {
+    font-size: var(--fs-base);
+    color: var(--text);
+    line-height: var(--lh-base);
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .prompt-lesson strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* ═══════════════ Reference items ═══════════════ */
+  .ref-item {
+    display: block;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+  }
+  .ref-item:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .ref-title {
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+    line-height: var(--lh-tight);
+  }
+  .ref-url {
+    font-size: var(--fs-xs);
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    word-break: break-all;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .ref-note {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    line-height: var(--lh-base);
+    margin-top: 6px;
+  }
+  .ref-tags {
+    display: flex; gap: 5px; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .ref-tag {
+    font-size: 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  /* ═══════════════ Mermaid diagram ═══════════════ */
+  .mermaid-container {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    background: var(--bg-secondary);
+    overflow-x: auto;
+    text-align: center;
+  }
+  .mermaid-container svg { max-width: 100%; height: auto; }
+
+  /* ═══════════════ Prompts panel (sidebar tab #2) ═══════════════ */
+  .prompts-panel {
+    padding: 16px;
+  }
+  .prompts-panel h3 {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+    margin-top: 12px;
+  }
+  .prompts-panel h3:first-child { margin-top: 0; }
+  .mini-prompt-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-base);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .mini-prompt-card:hover { border-color: var(--accent); }
+  .mini-prompt-card.verdict-good { border-left-color: var(--success); }
+  .mini-prompt-card.verdict-bad { border-left-color: var(--danger); }
+  .mini-prompt-card .label {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .mini-prompt-card .preview {
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+  }
+
+  /* ═══════════════ Mobile responsive ═══════════════ */
+  .mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 100;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 13px;
+    cursor: pointer;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+  }
+  @media (max-width: 768px) {
+    .mobile-toggle { display: block; }
+    .sidebar {
+      position: fixed;
+      left: -100%;
+      top: 0;
+      height: 100vh;
+      z-index: 99;
+      transition: left 0.25s;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .sidebar.open { left: 0; }
+    .content { padding: 64px 24px 80px; }
+    .feature-h1 { font-size: var(--fs-2xl); }
+  }
+</style>
+</head>
+<body>
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰ Menu</button>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Develop Note</div>
+      <div class="sidebar-project" id="sidebar-project">jhtechsmart</div>
+      <div class="sidebar-stats" id="sidebar-stats">
+        <span><strong id="stat-days">0</strong> days</span>
+        <span><strong id="stat-features">0</strong> features</span>
+        <span><strong id="stat-prompts">0</strong> prompts</span>
+      </div>
+    </div>
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="features">📋 Features</button>
+      <button class="sidebar-tab" data-tab="prompts">🎯 Prompts</button>
+    </div>
+    <div class="search-box">
+      <input type="text" class="search-input" id="search-input" placeholder="검색...">
+    </div>
+    <nav class="sidebar-list" id="sidebar-list"></nav>
+    <div class="sidebar-footer">
+      <span id="last-updated">—</span>
+      <button class="theme-toggle" id="theme-toggle">🌙 Dark</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="content" id="content">
+      <div class="empty-state">
+        <h2>📓 개발 노트에 오신 것을 환영합니다</h2>
+        <p>왼쪽 사이드바에서 날짜와 기능을 선택하면 상세 내용을 볼 수 있습니다.<br>
+        매일매일 작성된 개발 기록이 누적됩니다.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- BEGIN_DEV_NOTES_DATA -->
+<script type="application/json" id="dev-notes-data">
+{
+  "project": "jhtechsmart",
+  "entries": [
+    {
+      "tldr": "GPT 동영상 가이드 프롬프트 전면 재설계 — 1인칭 사장님 톤, 영문 모델명 → 한국어 카테고리, 환각·클리셰·반말 차단, 시트 영향 없는 testGuidePrompt() 튜닝 환경 + few-shot 도입. 아침에는 admin 로그인 화면 Manufacturing Hub 디자인을 커밋·배포.",
+      "tags": [
+        "gpt-prompt",
+        "openai",
+        "guide-script",
+        "appscript",
+        "admin-ui",
+        "design-refresh",
+        "24차"
+      ],
+      "features": [
+        {
+          "title": "admin 로그인 화면 Manufacturing Hub 디자인 전면 개편 (커밋 1eacbca)",
+          "type": "feat",
+          "scope": "admin",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "context": "기존 380px 단일 흰 카드만 있던 빈약한 로그인 화면을 재현테크 브랜드와 시스템 워크플로(신청→견적→PDF)를 함께 보여주는 라이트 톤 풀스크린으로 교체. 디자인 탐색용 샘플 3종(Bold Split / Glass Hero / Manufacturing Hub) 중 사용자가 Manufacturing Hub를 선택.",
+          "implementation": "좌측에 1→2→3 단계 시각화, 우측에 파란 헤더 + 아이콘 인풋 + 오렌지 CTA. 모든 새 CSS는 #loginWrap 하위 스코프로 admin 본체 .card/.field/.btn 클래스와 충돌 회피. 기존 #idInput/#pwInput/#loginBtn ID 및 Enter 키 핸들러 유지로 doLogin 회귀 없음. v2-header에 #appHeader id 부여 후 _enterApp/_clearScreen에서 토글. 우측 상단 '신청 페이지' 링크는 quote.html을 새 탭으로 — 어두운 헤더에서도 잘 보이게 파란 알약 버튼 스타일.",
+          "decisions": [
+            {
+              "title": "디자인 샘플 중 Manufacturing Hub 채택",
+              "context": "Bold Split / Glass Hero / Manufacturing Hub 세 안 비교",
+              "chosen": "Manufacturing Hub",
+              "rationale": "재현테크의 제조 도메인(공장 워크플로우)과 가장 잘 맞고, 좌측 단계 시각화가 시스템의 정체성을 한 화면에 전달",
+              "consequences": "Bold Split / Glass Hero 샘플은 디자인 탐색용으로 코드에 보존 (다음 디자인 회의 때 재참조 가능)"
+            }
+          ],
+          "learnings": [
+            "기존 클래스(.card, .field, .btn)와 충돌 없이 새 디자인을 얹으려면 신규 영역에 wrapper id(#loginWrap)를 두고 모든 새 CSS를 그 하위로 스코프하는 게 안전"
+          ],
+          "id": "admin-로그인-화면-manufacturing-hub-디자인-전면-개편-커밋-1eacbca"
+        },
+        {
+          "title": "GPT 동영상 가이드 프롬프트 전면 재설계 (1인칭 사장님 톤)",
+          "type": "feat",
+          "scope": "appscript/guide",
+          "status": "in-progress",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "Phase 3에서 구축한 GPT 동영상 가이드 자동 생성이 운영에서 응답 품질 저하로 사용 불가 수준. 문제: (1) 영업 담당자 3인칭 톤이 어색함, (2) 영문 모델명(XTRA OR16, JU1810+) 노출, (3) PART 3과 PART 4 내용 중복, (4) input에 없는 정보 환각(임의로 '10년째'), (5) '한 단계 더 나아갈 수 있게', '도약', '발전' 같은 AI 클리셰 만연, (6) '~요'로 끝나는 친근체가 정부 제출 영상 톤과 안 맞음.",
+          "implementation": "system prompt를 바닥부터 재작성. (a) 화자를 '재현테크 영업 담당자' → '신청서를 낸 소공인 사장님 본인'으로 전환. (b) PART별 input 매핑을 명시 — PART 1: 자기소개+필수문구, PART 2: industry에서 코드/안내문구 제거, PART 3: 문제+장비 호명만(효과 표현 금지), PART 4: 카메라 액션 + 도입 효과 메인. (c) 영문 모델명 카테고리 매핑 7종(인쇄공정 자동화 설비 / 소형·중형 소재 커팅 설비 / 정밀 가공 설비 / 자동 사출 성형 설비 / 포장 공정 자동화 설비 / 정밀 측정 검사 설비). (d) 어조 규칙: 모든 종결을 '-다'체로, '~요' 일체 금지, '안녕하세요'→'안녕하십니까'. (e) 환각 금지 조항 추가 — 회사 연차·창업 연도·매출·직원 수 등 input에 없는 사실 금지. (f) 클리셰 금지어 18종으로 확장(성장/발전/도약/나아감 류 우회 변형 포함). (g) input.issues 파이프 기호(|) 자연어로 풀어 쓰기 강제.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "caption": "PART 3 호명 규칙 — 영문 모델명 차단 + 한국어 카테고리 강제 + 효과 표현 PART 4로 양보",
+              "code": "'- PART 3 (핵심 — 현 문제 + 도입 장비 \"호명\"까지만 다룬다. 도입 후 효과/변화/기대는 절대 다루지 말고 PART 4에 양보할 것): … 호명은 다음 규칙을 모두 지킬 것: (a) input.equipment의 영문 모델명을 어떠한 형태로도 노출하지 말 것. (b) 반드시 한국어 카테고리 명을 1회 이상 명시적으로 등장시킬 것. 카테고리 매핑 — 프린터/인쇄기 계열: \"인쇄공정 자동화 설비\", 소형 커팅기: \"소형 소재 정밀 커팅 설비\", 중형 커팅기: \"중형 소재 커팅 설비\", CNC/가공기 계열: \"정밀 가공 설비\", 사출기: \"자동 사출 성형 설비\", 포장기: \"포장 공정 자동화 설비\", 측정/검사기: \"정밀 측정 검사 설비\". (c) \"신규 장비\", \"이 장비\", \"본 설비\" 같이 카테고리 없이 두루뭉술 호명 금지. (d) 콤마 결합이면 각 장비를 모두 카테고리 명으로 등장시킬 것 (생략 금지). (e) PART 3 마지막에 \"~ 큰 도움이 될 것입니다\" 같은 효과·기대 표현 일체 금지.'"
+            },
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "caption": "어조 규칙 — '-다'체 강제, 클리셰 금지 우회 변형까지 차단",
+              "code": "'【어조 규칙 — 정부 제출용 격식체】',\n'- 모든 종결은 \"-다\"체 격식 종결만 사용: ~입니다 / ~합니다 / ~했습니다 / ~겠습니다 등. \"-요\"로 끝나는 모든 종결(~해요, ~예요, ~네요, ~죠, ~군요 등) 절대 사용 금지.',\n'- 다음 단어/표현은 절대 사용 금지: \"혁신적\", \"최첨단\", \"극대화\", \"도약\", \"도약하\", \"성장의 발판\", \"성장\", \"발전\", \"한 단계 발전\", \"한 단계 더\", \"한 단계 더 나아\", \"더 나아가\", \"나아갈\", \"나아갑니다\", \"나아가겠습니다\", \"스마트화\", \"디지털 전환\", \"패러다임\", \"비전\", \"미래를 향해\", \"효율성을 높여\". 성장·발전·도약·나아감 류의 추상적 미래 비유는 위 단어 외 변형도 일체 금지.',\n'- input JSON에 명시되지 않은 구체 사실(회사 연차·창업 연도·직원 수·매출 액수·거래처 수·위치·수상 이력 등)은 절대 만들어내지 말 것.'"
+            }
+          ],
+          "decisions": [
+            {
+              "title": "화자 시점 변경: 영업 담당자 → 사장님 본인",
+              "context": "기존 시스템 프롬프트가 '당신은 (주)재현테크의 영업 담당자입니다'로 시작 → 출력이 외부 관찰자 시점이라 진정성 없음",
+              "chosen": "'당신은 (주)재현테크가 신청서를 작성한 소공인 사장님 본인이 되어, 카메라 앞에서 직접 말하는 1인칭 동영상 스크립트를 작성합니다'",
+              "rationale": "정부 제출 영상의 화자는 사장님 본인이므로, 모델이 사장님 페르소나에 빙의해야 자기 일에 대한 자부심·구체 디테일이 자연스럽게 나옴",
+              "consequences": "후속 PART별 input 매핑 가이드도 모두 1인칭 화자 기준으로 재서술 필요 (저희는~, 제가 직접~)"
+            },
+            {
+              "title": "영문 모델명 차단 → 한국어 카테고리 매핑 7종",
+              "context": "장비 시트의 model name이 'XTRA OR16', 'JU1810+', 'PACK-LINE 2200' 등 영문 — 영상에서 사장님이 영문 모델명을 그대로 호명하면 부자연스럽고 광고처럼 들림",
+              "chosen": "프롬프트 레벨에서 영문 노출을 금지하고, 7종 카테고리 한국어 명을 강제. 콤마 결합 장비도 각각 매핑.",
+              "rationale": "장비 카테고리 자체가 7개로 한정적이므로 매핑 테이블이 작고 유지보수 가능. 신규 카테고리 등장 시 프롬프트만 업데이트.",
+              "consequences": "신규 장비 카테고리 추가 시 GUIDE_SYSTEM_PROMPT 매핑 + testGuidePrompt() 검증 함수의 CATEGORIES 배열 양쪽을 동기화해야 함"
+            },
+            {
+              "title": "어조: '~요' 친근체 → '-다' 격식체 강제",
+              "context": "초기 출력이 '~합니다요', '~네요' 같은 친근체 — 정부 담당자에게 제출하는 영상 톤과 안 맞음",
+              "chosen": "system prompt에 '-요' 종결 패턴 12종(~해요, ~예요, ~네요, ~죠, ~군요 등) 일체 금지 명시 + 인사말 '안녕하세요' → '안녕하십니까'",
+              "rationale": "정부 제출 + 보조금 신청 컨텍스트에서는 격식체가 표준. 그러면서도 발표문처럼 딱딱하지 않게 자부심·진심이 묻어나는 어조 유지",
+              "consequences": "검증 함수에 '-요' 종결 정규식 추가 — 명사 안의 '요'(주요, 필요)는 false positive 회피하려 종결 기호(.!?) 또는 줄끝/공백 끝 패턴만 매칭"
+            },
+            {
+              "title": "환각 차단 조항 명시 (input에 없는 사실 금지)",
+              "context": "테스트 케이스(해랑/이한솔)에서 input에 없는 '10년째', '5년째' 같은 회사 연차를 임의로 만들어냄 — 거짓 정보가 정부 제출용에 들어가면 큰 문제",
+              "chosen": "system prompt에 '회사 연차·창업 연도·직원 수·매출 액수·거래처 수·위치·수상 이력 등은 절대 만들어내지 말 것. input.company / ceo / industry / equipment / problemProcess / issues / adoptionType / equipRequest에 있는 정보 + 자연 파생 묘사만 사용' 추가",
+              "rationale": "GPT는 빈자리를 그럴듯한 사실로 채우는 경향 — 명시적으로 '만들어내지 말 것'을 강조해야 차단됨",
+              "consequences": "사용자가 신청 단계에서 회사 정보를 충분히 입력하도록 quote.html의 issues/problemProcess 필드 가이드를 강화하면 출력 품질이 더 올라감"
+            }
+          ],
+          "problems": [
+            {
+              "description": "PART 3과 PART 4의 효과·기대 내용이 중복되어 영상 흐름이 단조로움 (해랑 케이스에서 '소량 주문 대응 가능'이 두 PART에 모두 등장)",
+              "cause": "기존 프롬프트가 PART별 역할 분담을 명시하지 않아, 모델이 효과 표현을 PART 3 끝에서 미리 빼버림 → PART 4에서 같은 말 반복",
+              "solution": "PART 3에 '도입 후 효과/변화/기대는 절대 다루지 말고 PART 4에 양보할 것' + 효과 표현 7종 차단 + 마지막 문장은 '~ 카테고리 명입니다.'로 끝나야 함을 명시. PART 4는 '도입 후 변화·효과를 메인으로 다루는 PART'로 위치 재정의 + 'PART 3과 똑같은 표현으로 반복하지 말고 시간 단위·생산 단위·일상 변화의 각도로 다르게 묘사' 강제.",
+              "prevention": "검증 함수에서 PART 3 끝 200자에서 효과 표현 키워드 7종(큰 도움이 될, 문제를 해결해, 효율을 높여 등) 자동 검출"
+            },
+            {
+              "description": "Code.gs를 GAS 에디터에 붙여넣어야 할 때 자동 검증이 안 된 채 사용자에게 떠넘기는 실수 반복 (사용자 경고)",
+              "cause": "코드 변경 후 본인이 직접 testGuidePrompt() 등으로 검증하기 전에 '복사해서 붙여넣어 주세요'를 먼저 던짐",
+              "solution": "사용자가 명시적으로 다시 알려줌 — 이번 세션부터 Code.gs 변경 시 (1) 검증 시나리오 먼저 제시, (2) 사용자 검증 OK 받은 뒤 적용 안내, 순서 강제",
+              "prevention": "메모리에 [[feedback_self_verify_before_apply]] 이미 있음 — 새 세션 시작 시 우선 적용"
+            }
+          ],
+          "learnings": [
+            "GPT 프롬프트에서 금지어를 명시할 때는 우회 변형까지 함께 차단해야 효과 있음. '도약' 하나만 막으면 '도약하', '도약할'이 빠져나옴 — 어근·활용형을 모두 나열",
+            "정부 제출 컨텍스트의 톤은 '격식'과 '진정성'이 동시에 필요. 발표문처럼 딱딱해도 안 되고 친근해도 안 됨 → 어조 가이드를 한 줄이 아니라 여러 측면(종결/존칭/1인칭/금지표현)으로 분리해 명시",
+            "PART별 역할 분담이 흐릿하면 GPT가 알아서 분배함 → 결과는 중복. PART 3은 '~ 호명까지만', PART 4는 '효과 메인' 식으로 명시적 역할 위임이 필요"
+          ],
+          "id": "gpt-동영상-가이드-프롬프트-전면-재설계-1인칭-사장님-톤"
+        },
+        {
+          "title": "프롬프트 튜닝 환경: testGuidePrompt() 함수 + 9종 자동 검증 리포트",
+          "type": "feat",
+          "scope": "appscript/guide",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "프롬프트를 운영에 바로 반영하면 시트/Drive에 영향이 있어 실험이 어려움. 사용자 요청: '프롬프트만 테스트할 수 있는 함수 하나 만들어줘. 거기서 수정해서 응답받고 확인하고 다시 수정하면서 계속 만들 수 있도록.'",
+          "implementation": "Code.gs에 testGuidePrompt() 함수 신설. (1) SAMPLE_CASES 4종 사전 정의(정밀가공/식품가공/사출성형/해랑 인쇄) → ACTIVE_CASE 한 줄로 케이스 전환. (2) TEST_SYSTEM_PROMPT는 기본 GUIDE_SYSTEM_PROMPT를 가리키되 주석으로 직접 수정 안내. (3) TUNING 객체로 model/temperature/top_p/frequency_penalty/presence_penalty/max_tokens/useFewshot 노출. (4) 응답 후 자동 검증 9종 — PART별 글자수, 클리셰 금지어, 부정수급 필수 문구, 영문 모델명 노출, 업종 코드/안내문구 노출, 파이프 기호 노출, PART 4 카메라 액션, PART 3 카테고리 명/두루뭉술 호명/효과 누출, 평수·치수·전압 수치, '-요' 종결 12종 패턴, 가격 노출. Logger.log로 각 항목 ✓/✗ + 위반 샘플 출력.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "caption": "검증 #6-2: PART 3 카테고리 명 등장 + 두루뭉술 호명 + 효과 누출 동시 검출",
+              "code": "// 6-2) PART 3 한국어 카테고리 명 등장 여부 + 두루뭉술 호명 검출\ntry {\n  const part3 = (parseGuideScript(content).part3 || '');\n  const CATEGORIES = ['인쇄공정 자동화 설비','소형 소재 정밀 커팅 설비','중형 소재 커팅 설비','정밀 가공 설비','자동 사출 성형 설비','포장 공정 자동화 설비','정밀 측정 검사 설비'];\n  const matchedCat = CATEGORIES.filter(function(c){ return part3.indexOf(c) >= 0; });\n  Logger.log('▶ PART 3 한국어 카테고리: ' + (matchedCat.length ? '✓ ' + matchedCat.join(', ') : '⚠ 카테고리 명 등장 안 함'));\n\n  const VAGUE = ['신규 장비','이 장비','본 설비','이번 장비','새 장비','해당 장비','이번에 도입하는 장비'];\n  const vagueHits = VAGUE.filter(function(v){ return part3.indexOf(v) >= 0; });\n  Logger.log('▶ PART 3 두루뭉술 호명: ' + (vagueHits.length ? '✗ ' + vagueHits.join(', ') : '✓ 없음'));\n\n  // PART 3 끝 효과·기대 표현 검출 (PART 4와 중복 방지)\n  const part3Tail = part3.slice(-200);\n  const EFFECT_TAIL = ['큰 도움이 될','문제를 해결해','효율을 높여','생산성을 높여','대응할 수 있게 됩니','만족도가 향상','경쟁력이 강화'];\n  const tailHits = EFFECT_TAIL.filter(function(p){ return part3Tail.indexOf(p) >= 0; });\n  Logger.log('▶ PART 3 효과 누출 (PART 4로 가야 할 표현이 PART 3에): ' + (tailHits.length ? '✗ ' + tailHits.join(', ') : '✓ 없음'));\n} catch (e) {}"
+            }
+          ],
+          "decisions": [
+            {
+              "title": "테스트 함수를 별도 파일이 아닌 Code.gs 내부에 두기",
+              "context": "GAS는 멀티 파일이지만, 사장님 사용 흐름상 단일 파일 유지가 익숙",
+              "chosen": "Code.gs 안에 ═══ 시각적 구분선과 함께 테스트 섹션 배치",
+              "rationale": "시트/Drive에 영향 없는 read-only 함수임을 코드 위 주석으로 명시 → 안전성 확보. GAS 에디터 함수 드롭다운에서 testGuidePrompt 바로 선택 가능",
+              "consequences": "Code.gs 라인 수가 415 → ~620으로 증가 (약 200줄). 다음 리팩터링 때 guide-test.gs로 분리 검토"
+            }
+          ],
+          "learnings": [
+            "프롬프트 튜닝의 핵심은 '빠른 피드백 루프' — 응답 받기 + 검증 리포트 보기를 한 번의 GAS 함수 실행으로 끝낼 수 있어야 반복 횟수가 늘어남",
+            "검증 항목은 '실패 시 어떻게 고칠지'까지 메시지에 포함해야 유용 (예: '⚠ 카테고리 명 등장 안 함 — 매핑된 한국어 설비 명 누락')"
+          ],
+          "id": "프롬프트-튜닝-환경-testguideprompt-함수-9종-자동-검증-리포트"
+        },
+        {
+          "title": "Few-shot 예시 도입 + gpt-4o-mini → gpt-4o 모델 업그레이드",
+          "type": "feat",
+          "scope": "appscript/guide",
+          "status": "in-progress",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "system prompt를 강화해도 모델이 일부 지시를 놓침 (특히 환각·카테고리 명 등장·PART 분리). 두 가지 동시 조치: (1) few-shot 예시 1쌍을 user/assistant 페어로 주입, (2) gpt-4o-mini → gpt-4o로 업그레이드.",
+          "implementation": "GUIDE_FEWSHOT_INPUT (성진정밀가공 / 김성진 / DOOSAN VC630 / CNC 가공)와 GUIDE_FEWSHOT_OUTPUT (5 PART 모범 응답)을 상수로 정의. _guideFewshotMessages() 함수가 [user, assistant] 메시지 쌍을 반환. callOpenAI()와 testGuidePrompt() 둘 다 system → fewshot → user 순으로 메시지 배열 구성. 해랑(인쇄)과 겹치지 않게 CNC 케이스로 선정해 over-fitting 방지. fewshot 출력은 환각 없음 / 카테고리 명 1회 등장 / PART 3 끝 효과 누출 없음 / PART 4 다른 각도 효과의 모든 규칙을 만족하도록 작성.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "caption": "few-shot 메시지 페어 구성 — system → user/assistant 페어 → 실제 user 순",
+              "code": "function _guideFewshotMessages() {\n  return [\n    {role: 'user', content: JSON.stringify(GUIDE_FEWSHOT_INPUT, null, 2)},\n    {role: 'assistant', content: GUIDE_FEWSHOT_OUTPUT}\n  ];\n}\n\n// callOpenAI 내부:\nmessages: [{role: 'system', content: GUIDE_SYSTEM_PROMPT}]\n  .concat(_guideFewshotMessages())\n  .concat([{role: 'user', content: JSON.stringify(promptInput, null, 2)}])"
+            }
+          ],
+          "decisions": [
+            {
+              "title": "fewshot 케이스를 운영 케이스(인쇄)와 다른 도메인(CNC)으로 선정",
+              "context": "fewshot이 운영 케이스와 너무 비슷하면 모델이 과적합되어 모든 출력이 fewshot 어휘를 베낌",
+              "chosen": "성진정밀가공(CNC 금속 가공) 케이스로 선정",
+              "rationale": "도메인이 달라야 모델이 '구조와 톤'만 학습하고 어휘는 케이스별로 새로 생성",
+              "consequences": "fewshot 출력 자체가 모든 검증 규칙을 만족하는 모범 답안이어야 함 → 작성에 시간이 걸리지만 모델이 강하게 학습"
+            },
+            {
+              "title": "모델: gpt-4o-mini → gpt-4o 업그레이드",
+              "context": "mini에서 환각·지시 위반·PART 분리 실패가 반복",
+              "chosen": "gpt-4o (전체)",
+              "rationale": "프롬프트 한 번 호출당 비용 차이는 있지만 동영상 스크립트는 신청 1건당 1회만 생성 → 비용 영향 미미. 정부 제출용이라 품질 우선",
+              "consequences": "max_tokens 2500 유지 (PART 5개 + few-shot 2500자 정도 여유). callOpenAI / testGuidePrompt 둘 다 동일 모델 명시"
+            },
+            {
+              "title": "샘플링 파라미터: temperature 0.85 + frequency_penalty 0.4 + presence_penalty 0.3",
+              "context": "default(temperature 0.7, penalties 0)로는 같은 문장 반복 + 클리셰 빈출",
+              "chosen": "temperature 0.85 / top_p 0.9 / frequency_penalty 0.4 / presence_penalty 0.3",
+              "rationale": "약간 더 다양한 어휘 + 반복 표현 억제 + 새로운 단어 등장 유도. 정부 제출 톤이라 너무 높은 temperature는 위험해 0.85 선",
+              "consequences": "testGuidePrompt의 TUNING 객체에서 한 줄 수정으로 실험 가능 — 사용자가 직접 튜닝하며 최적값 탐색"
+            }
+          ],
+          "id": "few-shot-예시-도입-gpt-4o-mini-gpt-4o-모델-업그레이드"
+        },
+        {
+          "title": "config.js GAS URL 운영/테스트 토글",
+          "type": "config",
+          "scope": "config",
+          "status": "in-progress",
+          "filesChanged": [
+            "config.js"
+          ],
+          "context": "프롬프트 튜닝 작업을 운영 GAS에 직접 배포하면 위험 — 테스트 GAS에서 검증 후 운영 반영 워크플로 필요. 두 URL을 한 파일에 두고 주석 토글로 전환.",
+          "implementation": "운영/테스트 두 URL을 모두 코드에 두고, 활성 URL만 주석 해제. 현재는 운영 URL이 활성, 테스트 URL은 주석. 작업 중 임시로 토글 가능. (잠시 두 줄 순서가 바뀌었다가 다시 운영 활성으로 돌려놓음)",
+          "codeSnippets": [
+            {
+              "file": "config.js",
+              "lang": "javascript",
+              "caption": "운영 / 테스트 URL 토글",
+              "code": "//window.JHTECH_GAS_URL = 'https://script.google.com/macros/s/...QSH8zIsHhVuz8zimTk0j/exec'; // 테스트\n\nwindow.JHTECH_GAS_URL = 'https://script.google.com/macros/s/...iV937e70DRp/exec'; // 운영"
+            }
+          ],
+          "learnings": [
+            "config.js 단일 진실 소스 원칙(메모리 [[feedback_config_js_single_source]])은 유지하되, 같은 파일 내에서 두 URL 토글은 안전. HTML에 URL을 다시 하드코딩만 안 하면 됨"
+          ],
+          "id": "config-js-gas-url-운영-테스트-토글"
+        },
+        {
+          "title": "v1 → v2 개발노트 디자인 마이그레이션 (devnote-migrate)",
+          "type": "chore",
+          "scope": "dev-notes",
+          "status": "completed",
+          "filesChanged": [
+            "dev-notes/jhtechsmart_DevelopNote.html"
+          ],
+          "context": "v1 HTML이 폰트 위계 부재 / 줄간격 빽빽 / 한국어 단어 잘림 / ADR 들여쓰기 깨짐 등 디자인 결함 다수. v2 디자인이 발표되어 누적된 5개 노트(13~22.4차)를 일괄 재생성.",
+          "implementation": "python3 ~/.claude/skills/dev-note-manager/scripts/migrate.py --project jhtechsmart --dry-run 로 사전 확인 → 실제 실행. v1 백업이 jhtechsmart_DevelopNote.v1backup.20260514-095713.html로 자동 저장. v2 HTML이 기존 데이터를 모두 보존하면서 line-height 1.65, word-break: keep-all, typography scale, 코드/경로 분리 스타일 적용.",
+          "decisions": [
+            {
+              "title": "마이그레이션 전 dry-run으로 변환 미리보기 확인",
+              "context": "5일치 누적 노트가 있어 한 번에 망치면 복원 부담",
+              "chosen": "--dry-run 옵션으로 변환 결과 먼저 확인",
+              "rationale": "스크립트가 데이터 손실 없이 디자인만 갈아 끼우는지 검증",
+              "consequences": "dry-run 통과 후 본 실행, v1 백업도 자동 생성됨 → 안전망 두 겹"
+            }
+          ],
+          "id": "v1-v2-개발노트-디자인-마이그레이션-devnote-migrate"
+        }
+      ],
+      "prompts": [
+        {
+          "label": "프롬프트 튜닝 환경 요청 — '거기서 수정 → 응답 → 확인 → 재수정' 루프",
+          "prompt": "일단 프롬프트만 테스트할 수 있는 함수를 하나만들어줘. 거기서 수정해서 응답받고 확인하고 다시 수정하면서 계속 만들 수 있도록.",
+          "verdict": "good",
+          "lesson": "도구 요구사항을 '내가 어떤 흐름으로 작업하고 싶은지'(반복 루프)로 표현하면 LLM이 SAMPLE_CASES + TUNING + 9종 자동 검증까지 묶인 통합 환경을 제안함. '함수 하나 만들어줘'만 했으면 단순 호출 함수만 받았을 것."
+        },
+        {
+          "label": "결과 평가 요청 — 본인 의견까지 묻기",
+          "prompt": "PART3와 PART4가 중복되는 내용이 너무 많은것 같지 않나? 니가 생각하기에는 어때? 자연스럽지는 않은거 같은데.. 전제적인 결과를 한번 판단해봐",
+          "verdict": "good",
+          "lesson": "GPT 출력을 사람이 평가만 하는 게 아니라 Claude에게도 평가시킨 뒤 둘의 의견을 합쳐 프롬프트를 고치면 발견 못 한 미세 결함(PART 3과 4 효과 표현 중복)까지 잡힘. '어떻게 생각해?'를 그냥 친목용 질문이 아니라 평가 도구로 사용."
+        },
+        {
+          "label": "톤 문제를 구체적 예시 + 변경 방향 함께 지시",
+          "prompt": "지금 말투가.. ~~요, 로 끝나는데, 그것보다는 정부에 제출하는 영상이기 때문에 공손한 말투로 ~~ 다. 라고 끝나게 하는게 좋을것 같아.",
+          "verdict": "good",
+          "lesson": "'~요'와 '~다'를 직접 음절로 보여주고, 변경 사유(정부 제출 영상)까지 한 문장에 담음. 모호한 '톤을 격식 있게'가 아니라 구체적 종결어미 + 컨텍스트 → 프롬프트 작성자가 system prompt에 어조 규칙을 분리해 넣을 수 있게 됨."
+        },
+        {
+          "label": "장비명 매핑 규칙 직접 제시 (3번째 안내)",
+          "prompt": "선택장비 명이 영어로 되어 있기 때문에 프린터를 선택한 경우에는 '인쇄공정 자동화 설비', 커팅기를 선택한 경우에는 '소형소재 정밀커팅 설비' , '중형 소개 커팅 설비' 등의 문구만으로 처리할 수 있도록 했으면 좋겠어. 직접 모델명이 나오는게 아니고. 그리고 part4에서 설치 장소의 경우에는 '(손으로 가르키며) 이쪽 공간에 설치될 예정이며..'등으로 영상을 보여주며 자연스럽에 설치장소를 안내할 수 있는 문구로 해줘.",
+          "verdict": "good",
+          "lesson": "도메인 지식(장비 카테고리 매핑 + 영상 연출 가이드)을 사용자가 직접 제공하면 LLM이 추측할 필요 없이 system prompt에 그대로 박아넣을 수 있음. '자연스럽게 해줘'가 아니라 '이런 문구로'가 핵심."
+        },
+        {
+          "label": "잘못된 사용자 행동에 대한 즉시 경고 (검증 누락)",
+          "prompt": "(경고) 내가 Code.gs가 수정되서 붙어넣어야 하는경우에는 어떻게 하라고 했지?????????",
+          "verdict": "neutral",
+          "lesson": "사용자가 강하게 지적할 때는 LLM이 같은 실수를 반복했다는 신호 — 즉시 [[feedback_self_verify_before_apply]] 메모리를 다시 확인하고, 다음부터는 (1) 검증 시나리오 먼저 제시 → (2) OK 받은 뒤 GAS 붙여넣기 안내 순서를 강제. 메모리에 저장된 피드백을 세션 초반에 한 번 더 적용 안내해야 안 잊음."
+        },
+        {
+          "label": "데이터 흐름 확인 질문 — 실제로 무엇이 들어가는지",
+          "prompt": "지금 운영되는 GAS에서 업체가 입력한 데이터중에 GPT프롬프트에서 참고하는 정보 필드가 뭐가 있지?",
+          "verdict": "good",
+          "lesson": "프롬프트 개선 전에 '입력으로 무엇이 실제로 들어오는가'를 코드에서 확인하는 단계를 한 번 거치는 게 안전. 추정으로 시작하면 quote.html에 없는 필드를 system prompt에서 참조하는 등 비현실적 지시가 들어감."
+        }
+      ],
+      "references": [],
+      "changelog": {
+        "added": [
+          "appscript/Code.gs: testGuidePrompt() 함수 + SAMPLE_CASES 4종 + 9종 자동 검증 리포트",
+          "appscript/Code.gs: GUIDE_FEWSHOT_INPUT / GUIDE_FEWSHOT_OUTPUT (성진정밀가공 CNC 케이스) + _guideFewshotMessages()",
+          "appscript/Code.gs: 영문 모델명 → 한국어 카테고리 매핑 7종 (system prompt + 검증 함수 양쪽)",
+          "appscript/Code.gs: 환각 차단 조항 (input에 없는 회사 연차/창업 연도/매출 등 금지)",
+          "appscript/Code.gs: '-요' 종결 12종 패턴 차단 + '안녕하세요' → '안녕하십니까' 강제",
+          "admin.html: Manufacturing Hub 로그인 디자인 (#loginWrap 스코프, 좌측 단계 시각화 + 우측 카드)"
+        ],
+        "changed": [
+          "appscript/Code.gs: GUIDE_SYSTEM_PROMPT 화자 시점 — '재현테크 영업 담당자' → '소공인 사장님 본인'",
+          "appscript/Code.gs: PART별 input 매핑 가이드 신설 (PART 3은 '효과 표현 금지 + 호명까지만', PART 4는 '효과 메인')",
+          "appscript/Code.gs: 클리셰 금지어 12종 → 18종 (성장/발전/도약/나아감 류 우회 변형 모두 포함)",
+          "appscript/Code.gs: OpenAI 모델 gpt-4o-mini → gpt-4o, temperature 0.7 → 0.85, frequency/presence_penalty 0.4/0.3 신설",
+          "config.js: 운영/테스트 GAS URL 토글 형식으로 두 URL 코드에 모두 보존",
+          "dev-notes/jhtechsmart_DevelopNote.html: v1 → v2 디자인 마이그레이션 (line-height 1.65, word-break, typography scale)"
+        ],
+        "fixed": [],
+        "removed": []
+      },
+      "nextSteps": [
+        "testGuidePrompt() 으로 case_haerang_인쇄 외 case_정밀가공 / case_식품가공 / case_사출성형도 검증 → 9종 검증 모두 ✓ 나오면 운영 GAS에 배포",
+        "프롬프트가 안정되면 testGuidePrompt 함수와 GUIDE_FEWSHOT_* 상수를 별도 파일(guide-test.gs / guide-fewshot.gs)로 분리 — Code.gs 라인 수 관리",
+        "13차 토큰 인증 작업(메모리 [[project_v13_auth_inprogress]]) 운영 배포 — 프롬프트 작업이 끝나면 재개"
+      ],
+      "claudeHints": "GPT 가이드 프롬프트 작업 중일 때는 (1) Code.gs 변경 후 반드시 GAS 에디터에서 testGuidePrompt() 실행해 9종 검증 결과를 사용자에게 먼저 보여주고, (2) 사용자 OK 받은 뒤에 운영 적용 안내. 절대 본인 검증 없이 '복사해서 붙여넣어 주세요'를 먼저 던지지 말 것. 프롬프트 수정 시 system prompt 안에서 '도약/성장/발전' 같은 클리셰는 어근 + 활용형(도약하/도약할/나아갈/나아가겠 등)을 모두 나열해야 우회 차단됨.",
+      "reusablePatterns": [
+        {
+          "name": "프롬프트 튜닝 함수 + 자동 검증 리포트",
+          "description": "운영 데이터 영향 없이 GPT 프롬프트를 반복 실험할 수 있는 GAS/Node 함수. SAMPLE_CASES 사전 정의 + ACTIVE_CASE 한 줄 토글 + TUNING 객체로 sampling param 노출 + 응답 후 도메인 검증 N종 자동 출력. 다른 프롬프트 작업에도 그대로 이식 가능.",
+          "file": "appscript/Code.gs"
+        },
+        {
+          "name": "Few-shot 케이스 도메인 분리 원칙",
+          "description": "few-shot 예시는 운영 케이스와 다른 도메인(인쇄 ↔ CNC, 사출 ↔ 식품 등)으로 작성. 같은 도메인이면 모델이 어휘까지 베껴 over-fit. fewshot은 '구조와 톤만 학습'시키는 게 목표.",
+          "file": "appscript/Code.gs"
+        },
+        {
+          "name": "디자인 샘플 보존 패턴",
+          "description": "여러 디자인 안을 비교해 하나를 선택하더라도 나머지를 코드에서 삭제하지 말고 보존. 다음 디자인 회의 / 다른 페이지 작업 시 재참조 가능. admin.html의 Bold Split / Glass Hero / Manufacturing Hub 3종이 이 패턴.",
+          "file": "admin.html"
+        }
+      ],
+      "date": "2026-05-14",
+      "mainTask": "GPT-Guide-Prompt-Overhaul"
+    },
+    {
+      "date": "2026-05-13",
+      "mainTask": "Config-Refactor-and-Docs",
+      "features": [
+        {
+          "type": "refactor",
+          "scope": "config",
+          "title": "GAS URL을 config.js로 분리 — 단일 진실 소스",
+          "status": "completed",
+          "filesChanged": [
+            "config.js",
+            "quote.html",
+            "admin.html"
+          ],
+          "context": "기존엔 quote.html과 admin.html 양쪽에 GAS 배포 URL을 하드코딩. 새 GAS 배포 시 한쪽만 업데이트하면 다른 쪽이 옛 GAS로 신청을 보내는 데이터 누락 사고 발생.",
+          "implementation": "config.js 신규 — window.JHTECH_GAS_URL 한 줄. 양쪽 HTML에 <script src=config.js> 추가하고 const APPS_SCRIPT_URL/GAS_URL_DEFAULT = window.JHTECH_GAS_URL || ''. admin.html은 추가로 localStorage gasUrl 오버라이드 지원 — getGasUrl()이 입력값 → localStorage → config.js 폴백 순서.",
+          "problems": [
+            {
+              "description": "GAS URL 한쪽만 업데이트해서 신청 데이터가 옛 GAS로 갔던 사고",
+              "cause": "quote.html과 admin.html 양쪽에 같은 URL을 별도로 박아둠 — 한쪽 수정 후 다른 쪽 업데이트 누락",
+              "solution": "config.js 한 파일로 분리 + 양쪽이 window 전역 변수 참조",
+              "prevention": "환경 설정값은 항상 단일 진실 소스 패턴 — 새 환경 변수 추가 시 첫 단계로 분리 검토"
+            }
+          ],
+          "learnings": [
+            "정적 사이트에서도 단일 진실 소스 패턴은 매우 효과적 — 별도 빌드 도구 없이 window 전역으로 충분",
+            "환경 설정 변경 시 잘못 적용되는 경우 대비해 폴백 우선순위(입력 > localStorage > config.js)를 두면 운영 유연성 확보"
+          ],
+          "id": "gas-url을-config-js로-분리-단일-진실-소스"
+        },
+        {
+          "type": "docs",
+          "scope": "docs",
+          "title": "CLAUDE.md + 이슈 추적 + 코드 분석 문서 추가",
+          "status": "completed",
+          "filesChanged": [
+            "CLAUDE.md",
+            "docs/issues.md",
+            "docs/code-analysis.md"
+          ],
+          "context": "Claude Code 같은 AI assistant가 프로젝트를 읽고 작업할 때 컨텍스트 부족 — 아키텍처/규칙/주의사항을 한 곳에 정리 + 알려진 이슈 추적.",
+          "implementation": "CLAUDE.md — 프로젝트 개요, 파일 구조, 개발/배포 워크플로, 아키텍처 핵심 7가지(GAS 통신, config.js 단일 진실, 데이터 모델, 인증/사용자, PDF 파이프라인, 견적서 동기화 규칙, 신청 검증 로직), 보안 자산, 커밋 컨벤션. docs/issues.md — 12개 알려진 문제 + F1~F32 기능 개선 누적 트래커. docs/code-analysis.md — 코드 구조 + 호출 흐름 매핑.",
+          "learnings": [
+            "AI assistant에 프로젝트 컨텍스트를 주는 CLAUDE.md는 1차 도입 즉시 가치 — 자주 잊는 규칙(syncFormState 호출 순서 등)을 명시하면 회귀 방지",
+            "이슈를 docs/issues.md에 우선순위 표로 누적하면 진행 상태와 우선순위가 한눈에 보임 — 삭제 X, ✅ 해결 내역 추가만"
+          ],
+          "id": "claude-md-이슈-추적-코드-분석-문서-추가"
+        },
+        {
+          "type": "chore",
+          "scope": "config",
+          "title": ".gitignore에 .omc/와 tmp.md 추가",
+          "status": "completed",
+          "filesChanged": [
+            ".gitignore"
+          ],
+          "context": "임시 메모/세션 파일이 git에 잘못 들어가는 일 방지.",
+          "implementation": ".omc/ (oh-my-claudecode 세션 디렉토리), tmp.md 추가.\n\n---",
+          "id": "gitignore에-omc-와-tmp-md-추가"
+        }
+      ],
+      "tldr": "GAS 배포 URL을 quote.html · admin.html 두 곳에 하드코딩하던 구조를 config.js 한 곳으로 분리 (단일 진실 소스). 그 사이 데이터 누락 사고로 신청 데이터가 옛 GAS로 흘러갔던 문제를 근본 차단. CLAUDE.md 작성 + docs/issues.md · docs/code-analysis.md 추가로 코드베이스 인텔리전스 정리.\n\n---",
+      "tags": [
+        "config",
+        "docs",
+        "single-source-of-truth"
+      ],
+      "claudeHints": "이 시점부터 GAS URL 변경은 config.js 한 곳만 수정. HTML에 다시 하드코딩하면 데이터 누락 사고 재발 위험. CLAUDE.md 참조 — 아키텍처 규칙 7가지(특히 syncFormState 호출 순서, basePrice/totalDisplay 분리, r.assignee 우선 조회).",
+      "reusablePatterns": [
+        {
+          "name": "정적 사이트 단일 진실 소스 (config.js + window 전역)",
+          "description": "빌드 도구 없는 정적 HTML에서 환경 변수를 config.js로 분리 + window.XXX로 노출. 양쪽 HTML이 같은 값을 참조하게 강제.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/config.js"
+        },
+        {
+          "name": "환경 변수 폴백 우선순위 (입력 > localStorage > config)",
+          "description": "운영 유연성 — 임시 오버라이드는 localStorage에, 영구 변경은 config 수정. 호환성 + 디버깅용",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/admin.html"
+        }
+      ],
+      "nextSteps": [
+        "12차 — Enterprise CPQ UI 리뉴얼 + 시트 정합성 정비"
+      ],
+      "references": [],
+      "prompts": [],
+      "changelog": {
+        "added": [
+          "config.js (window.JHTECH_GAS_URL 단일 진실 소스)",
+          "CLAUDE.md (프로젝트 컨텍스트 + 아키텍처 + 주의사항)",
+          "docs/issues.md (12개 이슈 + 기능 개선 트래커)",
+          "docs/code-analysis.md (코드 구조 매핑)"
+        ],
+        "changed": [
+          "quote.html/admin.html이 config.js의 window 전역 변수 참조",
+          ".gitignore에 .omc/ + tmp.md"
+        ],
+        "fixed": [],
+        "removed": []
+      },
+      "author": "SeonjeCho"
+    },
+    {
+      "date": "2026-05-13",
+      "mainTask": "Enterprise-CPQ-and-Token-Auth",
+      "features": [
+        {
+          "type": "refactor",
+          "scope": "ui",
+          "title": "Enterprise CPQ UI 리뉴얼 — 좌우 2단 + sticky Quote Summary (12차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html",
+            "logo-header.png",
+            "docs/layout-samples/"
+          ],
+          "context": "Stripe Invoicing / Salesforce CPQ / HubSpot Quotes 같은 해외 B2B SaaS의 견적 UI 패턴을 차용 — Deal banner + sticky Quote Summary + 카드형 정보 영역.",
+          "implementation": "헤더에 logo-header.png(280×63) + 태그라인 + 역할 라벨. 사이드바 카드형(그림자/hover) + pill 탭. v2-grid 1fr/340px sticky(1280px 미만 1단). Deal banner — 회사명 + 상태 badge + KPI 4종(견적번호/담당자/유효기간/합계금액 bannerTotal). Quote Summary 우측 — 그라데이션 헤더 + 장비/옵션 소계 + 노란 합계 박스(30px) + 액션 + 메타. 영업일지를 Quote Summary 아래로 이동.",
+          "learnings": [
+            "B2B 견적 UI는 좌측 디테일(편집 영역) + 우측 sticky summary(액션 영역) 패턴이 표준",
+            "Deal banner 같은 상단 KPI 4종은 사용자가 신청 클릭 후 0.5초 안에 모든 핵심 정보를 인지하게 함"
+          ],
+          "id": "enterprise-cpq-ui-리뉴얼-좌우-2단-sticky-quote-summary-12차"
+        },
+        {
+          "type": "refactor",
+          "scope": "gas",
+          "title": "시트 정합성 정비 — 견적번호 v1, 담당자 시트 6컬럼화, 확정행 보호 (12차)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs",
+            "admin.html"
+          ],
+          "context": "운영 중 발견된 시트 데이터 일관성 이슈 5가지를 정리 — 견적번호 식별성, 담당자 데이터 위치, 확정행 보호, 시트 마이그레이션.",
+          "implementation": "1) generateQuoteNo: YYMMDD-NNNN → YYMMDD-NNNN-v1 (v1 접미). getNextVersion v1→v2→v3, 레거시 -R\\d+도 다음부터 -v로 자동. 2) handleConfirm — (접수번호+견적번호) 매칭 행이 이미 confirmed면 절대 갱신 안 함 + 신규 행 추가 (이력 손실 방지). 3) 담당자관리 6컬럼화 — 직책 컬럼 제거, 이름 컬럼에 통합. 4) initSheets()가 누락 헤더(20·21번 담당자/공정흐름도) 자동 보강.",
+          "learnings": [
+            "시트 헤더 마이그레이션은 빈 셀만 채우는 멱등 패턴이 안전 — 기존 데이터는 절대 덮어쓰지 말 것",
+            "확정 상태 행은 어떤 mutation도 절대 갱신하지 않게 명시적 차단 — 운영 이력 손실은 복구 불가"
+          ],
+          "id": "시트-정합성-정비-견적번호-v1-담당자-시트-6컬럼화-확정행-보호-12차"
+        },
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "버전 이력 UI 개선 + 행 클릭 → 우측 패널 동기 (12차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "implementation": "1개 버전부터 표시. 행 클릭 시 우측 패널이 그 버전 견적 상세로 갱신(읽기 전용 + 액션바: 이 버전 출력 / 최신으로 돌아가기). 노란 상단 배너 제거 → 단색 SVG 눈 아이콘 + 옅은 노란 배경(#fef9c3). 최신 버전 행 클릭 시엔 강조 X. 변경정보 모달의 추가옵션은 이전/변경 후 두 셀로 단순 비교.",
+          "learnings": [
+            "단색 SVG 아이콘이 색상 emoji보다 브라우저별 일관성 + currentColor 상속으로 다양한 배경에서 자동 대응"
+          ],
+          "id": "버전-이력-ui-개선-행-클릭-우측-패널-동기-12차"
+        },
+        {
+          "type": "feat",
+          "scope": "auth",
+          "title": "세션 자동 로그인 — sessionStorage (12차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "context": "새로고침 시 매번 로그인 요구되어 운영자 불편 + 공용 PC 보안 고려 필요.",
+          "implementation": "sessionStorage('jhtech_session_user')에 ID만 저장. 탭 종료 시 자동 정리 — 공용 PC에서도 비교적 안전. 비밀번호 저장 X. initApp 끝에 tryRestoreSession (담당자 시트 로드 후 사용자 객체 복원).",
+          "learnings": [
+            "sessionStorage는 탭별 격리 + 탭 닫으면 자동 삭제 — 공용 PC 자동 로그아웃에 자연스러움"
+          ],
+          "id": "세션-자동-로그인-sessionstorage-12차"
+        },
+        {
+          "type": "feat",
+          "scope": "auth",
+          "title": "토큰 기반 인증 + 백엔드 권한 검증 (13차)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs",
+            "admin.html",
+            "docs/auth-system.md"
+          ],
+          "context": "v12 이하는 GAS가 모든 신청 데이터를 무조건 반환하고 클라이언트가 if(!isAdmin) filter로 화면에만 숨김. F12 콘솔에서 다른 업체 사업자번호/연락처/이메일 모두 조회 가능 + 비밀번호도 모든 사용자에게 다운로드. 백엔드 권한 검증 부재가 docs/issues.md 문제 4 (🔴 즉시).",
+          "implementation": "HMAC-SHA256 자가서명 토큰 (8h 만료) + verifyToken 라우터 적용. _filteredRequestRows(user) — 비관리자는 본인 담당 신청만 응답. _checkRequestPermission — mutation에 권한 체크. _readUserConfigMasked — 비밀번호 마스킹. 신청관리·견적서발급관리 담당자 컬럼을 한글 이름 → u.id 영문으로 전환(한글 비교 NFC/NFD 차이 회피). migrateAssigneeNameToId 1회 마이그레이션. SPREADSHEET_ID를 Script Properties로 분리(운영/테스트 GAS 자동 분기). 클라이언트는 sessionStorage 토큰 자동 첨부 + AUTH_REQUIRED 자동 로그인 화면 복귀.",
+          "decisions": [
+            {
+              "title": "권한 모델 — 클라이언트 필터 vs 백엔드 권한 검증",
+              "context": "운영 중 다른 업체 데이터가 F12로 노출되는 보안 결함 발견",
+              "chosen": "B안 — 백엔드 권한 검증 + 응답 필터 + HMAC 자가서명 토큰",
+              "rationale": "Google IdP 통합은 도메인 위임 + OAuth 복잡. 자체 토큰은 GAS만으로 가능하고 운영 부담 적음. 운영 단일 PC 환경 전제로 8h 만료면 충분.",
+              "consequences": "토큰 즉시 무효화 불가(8h 유효). Refresh Token 미사용. 운영 안정화 후 bcrypt/audit log/rate limiting 후속 개선 필요.",
+              "options": [
+                "클라이언트 필터 유지 (현상 — 보안 결함)",
+                "백엔드 권한 검증 + 응답 자체를 필터 (B안)",
+                "Google Identity Provider 통합 (A안 — 복잡)"
+              ]
+            }
+          ],
+          "problems": [
+            {
+              "description": "신청관리 담당자 컬럼의 한글 이름 비교가 일부 깨짐",
+              "cause": "NFC/NFD 자모 분리 차이 + trailing whitespace로 String === 비교 실패",
+              "solution": "담당자 컬럼을 u.id(영문)로 전환. migrateAssigneeNameToId 1회 실행으로 기존 데이터 변환",
+              "prevention": "한글 비교가 필요한 경우 normalize('NFC') + trim, 또는 영문 ID 매칭"
+            }
+          ],
+          "learnings": [
+            "GAS만으로 HMAC 자가서명 토큰 인증 구현 가능 — Utilities.computeHmacSha256Signature 활용",
+            "한글 문자열 비교는 NFC/NFD 정규화 차이 때문에 깨질 수 있음 — ID 매칭이 안전"
+          ],
+          "id": "토큰-기반-인증-백엔드-권한-검증-13차"
+        },
+        {
+          "type": "fix",
+          "scope": "ui",
+          "title": "견적서 버전이력 UI 버그 4가지 (14차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "implementation": "1) 수정확정 후 좌측 업체 재클릭해야 버전이력 반영되던 문제 — refreshVersionsAfterPdf(reqId)가 800ms 지연으로 loadVersionsForReq 호출. 2) 버전이력 클릭 시 우측 Quote Summary가 최신 값 유지되던 문제 — renderDetail 끝 recalcPrice()에 if(!viewingPastVersion) 가드. 3) 추가옵션 input 시각적 구별 안 됨 — .ex-tbl input:not(:disabled) 보더+배경+placeholder. 4) 신청중 상태 좌우 박스 윗라인 14px 어긋남 — #versionHistorySection:empty{display:none}로 빈 flex item 카운트 제외.",
+          "learnings": [
+            "Flexbox gap은 빈 자식도 카운트해 spacing 적용 — 빈 컨테이너는 :empty{display:none}으로 제외",
+            "비동기 작업 후 UI 갱신은 setTimeout으로 GAS write 반영 시간 확보 (~800ms)가 실무적"
+          ],
+          "id": "견적서-버전이력-ui-버그-4가지-14차"
+        },
+        {
+          "type": "fix",
+          "scope": "gas",
+          "title": "GAS 응답 날짜 KST 포매팅 통일 (15차)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "운영 시트에는 KST로 저장되는데 화면에서는 ISO UTC(2026-05-13T02:51:00.000Z) 형식으로 보이던 문제 — Google Sheets가 셀을 자동으로 Date 객체로 인식하면 JSON 직렬화 시 UTC ISO 됨.",
+          "implementation": "_fmtKstDateTime / _fmtKstDate helper 도입. _filteredRequestRows의 submittedAt + foundDate, getVersions의 issuedAt + validUntil, listQuotes의 issuedAt + validUntil 3곳 모두 적용. helper는 Date 객체든 문자열이든 안전 처리, 이미 KST 형식이면 그대로 통과.",
+          "learnings": [
+            "Sheets 셀이 Date 객체로 인식되는 자동 변환은 JSON 직렬화 시 UTC ISO 됨 — 명시적 Utilities.formatDate KST 포매팅 통일 필요"
+          ],
+          "id": "gas-응답-날짜-kst-포매팅-통일-15차"
+        },
+        {
+          "type": "style",
+          "scope": "ui",
+          "title": "사이드바 ring + 날짜 가독성 (15차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "implementation": "사이드바 active 항목의 box-shadow ring(0 0 0 3px)이 .req-list(padding:0, overflow-y:auto) 위쪽 경계에서 잘리던 문제 — padding:4px 2px로 ring 두께보다 큰 안전 여백. 날짜 표시 가독성 — 2026-05-12 11:51 → 2026.05.12 · 11:51 (bold 날짜 + opacity 강약, color는 부모 상속해 deal banner 흰색 / 사이드바 회색 자동 대응). fmtDateTime helper 4곳 통일.",
+          "learnings": [
+            "box-shadow ring이 overflow:auto 컨테이너 경계에서 잘리므로 ring 두께보다 큰 padding이 안전 여백",
+            "SVG/텍스트 색은 currentColor + opacity로 부모 색 상속 + 강약 처리하면 다중 배경 자동 대응"
+          ],
+          "id": "사이드바-ring-날짜-가독성-15차"
+        }
+      ],
+      "tldr": "Enterprise CPQ 디자인 리뉴얼(좌우 2단 + sticky Quote Summary) + 시트 정합성 정비(견적번호 v1 접미, 담당자 시트 6컬럼화, 확정행 보호) + 13차 토큰 기반 인증/백엔드 권한 검증 도입(HMAC-SHA256 + 권한 필터) + 견적서 버전이력 UI 버그 4개 fix + KST timezone + 사이드바 ring + 날짜 가독성. 운영 적용 후 합쳐서 운영 안정성 본격 확보 단계.\n\n---",
+      "tags": [
+        "cpq-ui",
+        "auth",
+        "token",
+        "ui-bugs",
+        "kst-timezone"
+      ],
+      "claudeHints": "이 시점부터 모든 GAS mutation은 토큰 인증 + 권한 체크 필수. _filteredRequestRows / _checkRequestPermission 패턴 따라야 함. 견적번호 -vN 접미 + getNextVersion -v 형식 기본. _fmtKstDateTime / _fmtKstDate / fmtDateTime helper 활용. _ensureGuideForUnified 같은 후속 함수가 들어올 위치는 Phase 1~7 (다음 일자).",
+      "reusablePatterns": [
+        {
+          "name": "HMAC-SHA256 자가서명 토큰 (GAS only)",
+          "description": "Utilities.computeHmacSha256Signature + Script Properties SECRET으로 자체 인증 시스템. Refresh Token 없는 단일 토큰, 8h 만료",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "백엔드 권한 필터 (_filteredRequestRows)",
+          "description": "응답 자체를 권한별 필터 — 클라이언트 필터링과 본질적 차이. F12 콘솔로도 다른 사용자 데이터 못 봄",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "_fmtKstDateTime / _fmtKstDate (시트 ↔ JSON 응답)",
+          "description": "Sheets 셀이 Date로 인식되어도 KST 문자열로 통일. 이미 yyyy-MM-dd 형식이면 그대로 통과 (재포매팅 잘못 해석 방지)",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "Enterprise CPQ — Deal banner + sticky summary 레이아웃",
+          "description": "v2-grid 1fr/340px sticky. 좌측 디테일(편집) + 우측 sticky summary(액션·메타)",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/admin.html"
+        }
+      ],
+      "nextSteps": [
+        "Phase 1~7 — 통합정보 시트 + 메일 본문 + GPT 가이드 + Mailer + Notion 양방향 + admin 즉시 발송"
+      ],
+      "references": [],
+      "prompts": [],
+      "changelog": {
+        "added": [
+          "Enterprise CPQ 디자인 (Deal banner + sticky Quote Summary + Stripe/Salesforce 패턴)",
+          "logo-header.png + 도메인 헤더",
+          "초기 로딩 오버레이 (회전 링 스피너)",
+          "세션 자동 로그인 (sessionStorage 8h)",
+          "HMAC-SHA256 토큰 인증 + 백엔드 권한 검증",
+          "_filteredRequestRows + _checkRequestPermission + _readUserConfigMasked",
+          "migrateAssigneeNameToId (이름 → ID 1회 변환)",
+          "SPREADSHEET_ID를 Script Properties로 분리",
+          "docs/auth-system.md (인증 시스템 개발 노트)",
+          "refreshVersionsAfterPdf (버전이력 즉시 갱신)",
+          "_fmtKstDateTime / _fmtKstDate helper",
+          "fmtDateTime UI helper (날짜 bold + 점 + 옅은 시간)"
+        ],
+        "changed": [
+          "견적번호 형식 YYMMDD-NNNN → YYMMDD-NNNN-v1 (-v 접미)",
+          "담당자관리 시트 6컬럼화 (직책 컬럼 제거)",
+          "신청관리 / 견적서발급관리 담당자 컬럼 한글 → u.id",
+          ".ex-tbl input 디자인 (보더+배경+placeholder)",
+          "v2-grid 좌우 2단 + sticky Quote Summary"
+        ],
+        "fixed": [
+          "확정 상태 행이 후속 mutation에 의해 갱신되던 위험",
+          "수정확정 후 버전이력이 좌측 재클릭해야 반영되던 문제",
+          "버전이력 클릭 시 우측 Quote Summary가 최신 값 유지",
+          "신청중 상태 좌우 박스 윗라인 14px 어긋남",
+          "GAS 응답 날짜가 UTC ISO로 표시되던 문제",
+          "사이드바 active ring이 컨테이너 경계에서 잘림"
+        ],
+        "removed": []
+      },
+      "author": "SeonjeCho"
+    },
+    {
+      "date": "2026-05-13",
+      "mainTask": "Mail-Notion-Integration",
+      "features": [
+        {
+          "type": "feat",
+          "scope": "gas",
+          "title": "통합정보 마스터 시트 도입 (Phase 1)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "신청관리·견적서발급관리 시트가 따로 운영되어 외부 시스템(노션 등) 동기화 시 어떤 키로 매칭할지 복잡. 한 마스터 시트가 모든 정보 + 노션 page ID + push 시각 + hash 메타까지 가지면 매핑이 단순해진다.",
+          "implementation": "UNIFIED_HEADERS 42컬럼 (신청 21 + 견적 10 + 가이드/메일 6 + Notion sync 메타 2 + PDF URL 2 + 가이드_version 1) 정의. _getUnifiedSheet()가 시트 자동 생성 + 헤더 누락 보강. upsertUnified(reqId, requestData, quoteData)는 접수번호 기반 INSERT/UPDATE + 견적번호 -vN 추출로 버전 비교 + 빈 값 덮어쓰기 방지. handleSubmit/handleConfirm 끝에 훅 호출.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function _getUnifiedSheet() {\n  const ss = SpreadsheetApp.openById(_getSpreadsheetId());\n  let sheet = ss.getSheetByName(UNIFIED_SHEET_NAME);\n  if (!sheet) {\n    sheet = ss.insertSheet(UNIFIED_SHEET_NAME);\n    sheet.appendRow(UNIFIED_HEADERS);\n    sheet.setFrozenRows(1);\n  } else {\n    const lastCol = sheet.getLastColumn();\n    if (lastCol < UNIFIED_HEADERS.length) {\n      const cur = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];\n      const merged = UNIFIED_HEADERS.map((h, i) => (i < cur.length && cur[i]) ? cur[i] : h);\n      sheet.getRange(1, 1, 1, merged.length).setValues([merged]);\n    }\n  }\n  return sheet;\n}",
+              "caption": ""
+            }
+          ],
+          "problems": [
+            {
+              "description": "PDF URL 2컬럼을 견적 그룹 끝(중간)에 삽입하니 운영 시트에서 Notion_PageID/최종푸시일시가 중복 추가됨",
+              "cause": "_getUnifiedSheet의 보강 로직이 cur[i] || UNIFIED_HEADERS[i] 방식이라 중간 삽입은 위치 어긋남",
+              "solution": "PDF URL을 헤더 배열 끝으로 이동. 사용자가 운영 시트의 중복 컬럼 2개 수동 삭제",
+              "prevention": "신규 컬럼은 무조건 헤더 배열 끝에 push. 코멘트로 명시"
+            }
+          ],
+          "learnings": [
+            "GAS 시트 헤더 보강 로직은 끝에 append만 멱등 안전. 컬럼 순서 변경은 마이그레이션 함수 별도 필요."
+          ],
+          "id": "통합정보-마스터-시트-도입-phase-1"
+        },
+        {
+          "type": "feat",
+          "scope": "gas",
+          "title": "이메일 템플릿 로드 + GPT 5 PART 동영상 가이드 자동 생성 (Phase 2~3)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "견적 확정 + 견적 PDF·장비사진 PDF가 모두 Drive에 저장된 시점에 회사별 메일 본문을 자동 생성해 발송 큐에 등록. 본문은 사용자가 Drive에 둔 jaehyun_tech_guide_fixed.html 템플릿의 5개 마커 영역만 GPT 응답으로 치환.",
+          "implementation": "loadEmailTemplate() Drive HTML fetch + 5분 캐시 + 5 마커 검증. parseGuideScript() split + capture group으로 ## PART N 헤더로 분리. mergeGuideTemplate() 마커 다음 가장 가까운 background-color div 내부 교체. callOpenAI() gpt-4o-mini + max_tokens 2500 + finish_reason 검증. _ensureGuideForUnified() version 비교 멱등.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function callOpenAI(promptInput) {\n  const payload = {\n    model: 'gpt-4o-mini',\n    temperature: 0.7,\n    max_tokens: 2500,\n    messages: [{role:'system',content:GUIDE_SYSTEM_PROMPT},{role:'user',content:JSON.stringify(promptInput)}]\n  };\n  const response = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {\n    method:'post', contentType:'application/json',\n    headers:{Authorization:'Bearer '+_guideProp('OPENAI_API_KEY')},\n    payload:JSON.stringify(payload), muteHttpExceptions:true\n  });\n  const json = JSON.parse(response.getContentText());\n  const choice = json.choices[0];\n  if (choice.finish_reason !== 'stop') throw new Error('truncated: '+choice.finish_reason);\n  return String(choice.message.content).trim();\n}",
+              "caption": ""
+            },
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function parseGuideScript(rawMarkdown) {\n  const empty = {part1:'',part2:'',part3:'',part4:'',part5:''};\n  if (!rawMarkdown) return empty;\n  const tokens = String(rawMarkdown).trim().split(/##\\s*PART\\s*(\\d+)[^\\n]*\\n?/);\n  const out = Object.assign({}, empty);\n  for (let i = 1; i < tokens.length; i += 2) {\n    const n = Number(tokens[i]);\n    if (n >= 1 && n <= 5) out['part'+n] = String(tokens[i+1] || '').trim();\n  }\n  return out;\n}",
+              "caption": ""
+            }
+          ],
+          "problems": [
+            {
+              "description": "OpenAI 응답이 PART 2 헤더에서 잘려 5 PART 파싱 실패",
+              "cause": "max_tokens 미명시 + finish_reason 검증 부재 → truncation 응답을 정상으로 통과시킴",
+              "solution": "max_tokens=2500 명시 + finish_reason 'stop' 검증 throw",
+              "prevention": "OpenAI 호출 wrapper 작성 시 항상 두 가지 같이 도입"
+            },
+            {
+              "description": "parseGuideScript의 정규식이 마지막 PART를 못 잡음",
+              "cause": "JS 정규식에 \\Z 미지원 — lookahead (?=...|\\Z)가 작동 안 함",
+              "solution": "lookahead 대신 split + capture group",
+              "prevention": "JS에서 markdown 섹션 파싱은 split 기본 채택"
+            }
+          ],
+          "learnings": [
+            "OpenAI Chat Completions API는 max_tokens 미명시 시 짧게 잘리는 경우가 흔함",
+            "JS 정규식은 \\A/\\Z 미지원 — multiline anchor 필요 시 split이 안전",
+            "GPT 응답 형식 강제는 system 프롬프트 + 후처리 검증 두 단계 필요"
+          ],
+          "id": "이메일-템플릿-로드-gpt-5-part-동영상-가이드-자동-생성-phase-2-3"
+        },
+        {
+          "type": "feat",
+          "scope": "gas",
+          "title": "별도 Mailer Web App + 5분 polling 자동 발송 (Phase 4)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs",
+            "appscript/mailer/Code.gs"
+          ],
+          "context": "MailApp.sendEmail은 스크립트 소유자 계정으로 발송. 메인 GAS smart@paxc.co.kr 계정에서 직접 호출 시 발신자도 smart로 됨. 발신자는 jhtechsmart@gmail.com이어야 해서 별도 GAS 프로젝트 분리 배포 필요.",
+          "implementation": "appscript/mailer/Code.gs 신규 — jhtechsmart@gmail.com 별도 배포. doPost가 토큰 검증 + Drive 첨부 blob + MailApp.sendEmail. 메인 GAS의 pollAndSendGuides가 LockService + 30건/회 + 5분 cooldown. setupTriggers()가 5분 trigger 멱등 자동 등록.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function setupTriggers() {\n  const existing = ScriptApp.getProjectTriggers();\n  let removed = 0;\n  existing.forEach(t => {\n    if (t.getHandlerFunction() === 'pollAndSendGuides') {\n      ScriptApp.deleteTrigger(t);\n      removed++;\n    }\n  });\n  ScriptApp.newTrigger('pollAndSendGuides')\n    .timeBased()\n    .everyMinutes(MAIL_POLL_INTERVAL_MIN)\n    .create();\n  Logger.log('setupTriggers: '+removed+'개 삭제 + '+MAIL_POLL_INTERVAL_MIN+'분 trigger 생성');\n}",
+              "caption": ""
+            }
+          ],
+          "decisions": [
+            {
+              "title": "별도 Mailer Web App vs MailApp 직접 호출",
+              "context": "메인 GAS 계정과 메일 발신자 계정이 다른 운영 요구사항",
+              "chosen": "별도 Mailer Web App 배포",
+              "rationale": "bpksmart2026에서 검증된 패턴. 토큰 인증으로 호출 보호. 운영 부담 적음.",
+              "consequences": "MAILER_TOKEN 양쪽 동일 유지 필요. 25MB 첨부 한도. 디버깅 시 양쪽 로그 확인.",
+              "options": [
+                "MailApp 직접 (발신자가 smart로 됨)",
+                "별도 GAS Web App HTTP 분리",
+                "Workspace 도메인 위임"
+              ]
+            }
+          ],
+          "learnings": [
+            "GAS Web App 배포의 '실행 권한: 나'는 그 계정 권한으로 동작 — MailApp 발신자 제어에 결정적",
+            "Time-driven trigger를 코드로 멱등 등록하면 GAS UI 수동 설정 불필요"
+          ],
+          "id": "별도-mailer-web-app-5분-polling-자동-발송-phase-4"
+        },
+        {
+          "type": "feat",
+          "scope": "gas",
+          "title": "Notion DB 단방향 push + 양방향 sync (Phase 5~6)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "운영자가 노션을 메인 환경으로 쓰면서 사업이 시작되기 전 사전 등록 페이지를 만들어 두는 시나리오 + 노션 이메일 수정이 시트에 자동 반영되어 다음 polling에 자동 재발송 시나리오. 양방향은 무한루프 위험이라 hash 기반 차단 필수.",
+          "implementation": "NOTION_PROP_MAP 40개. pushToNotion 1순위 Notion_PageID → 2순위 OR(접수번호, 사업자번호) → 3순위 새 페이지. ensureNotionSchema 누락 속성 자동 추가 + 타입 mismatch 경고. 양방향은 BIDIRECTIONAL_FIELDS 6개만. syncFromNotion이 last_edited_time fetch + SHA-256 hash 비교 last-write-wins. push 끝에 hash 저장으로 핑퐁 차단. _safePushToNotion이 SpreadsheetApp.flush() 선행.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function _applyNotionPageToSheet(page) {\n  const reqId = _extractReqIdFromPage(page);\n  const notionValues = _extractBidirectionalFromNotion(page);\n  const notionHash = _calcBidirectionalHash(notionValues);\n  const lastHash = _getStoredHash(reqId);\n  if (lastHash === notionHash) return {skipped:'hash equal'};\n  const row = _readUnifiedRow(reqId);\n  const sheetValues = {};\n  BIDIRECTIONAL_FIELDS.forEach(k => { sheetValues[k] = row[k]; });\n  const sheetHash = _calcBidirectionalHash(sheetValues);\n  if (lastHash === sheetHash) {\n    _updateUnifiedFields(reqId, notionValues);\n    _setStoredHash(reqId, notionHash);\n    return {applied:true};\n  }\n  _setStoredHash(reqId, sheetHash);\n  _safePushToNotion(reqId);\n  return {skipped:'conflict resolved to sheet'};\n}",
+              "caption": ""
+            }
+          ],
+          "decisions": [
+            {
+              "title": "Notion sync 범위 — 단방향 전체 vs 양방향 일부",
+              "context": "운영자가 노션에서 이메일 오타 수정 + 견적 금액·날짜 등 마스터 데이터는 시트가 master",
+              "chosen": "핵심 6필드만 양방향 (이메일/연락처/상태/담당자/발송요청/발송상태)",
+              "rationale": "운영자 시나리오와 마스터 데이터 보호 둘 다 만족. 34필드는 단방향 유지로 시트가 master.",
+              "consequences": "hash 무한루프 차단 로직 필요. 동시 수정 시 시트 우선. 신청관리 시트와 통합정보 시트 두 곳 동시 update 필요.",
+              "options": [
+                "단방향 유지",
+                "전체 양방향",
+                "핵심 6필드만 양방향"
+              ]
+            }
+          ],
+          "problems": [
+            {
+              "description": "견적 발급 이후 노션 PATCH가 모두 실패",
+              "cause": "_safePushToNotion이 setValues 직후 호출 → batch write flush 안 된 옛 값 read + handleSaveQuote/_ensureGuideForUnified 끝 push 훅 누락",
+              "solution": "_safePushToNotion에 SpreadsheetApp.flush() 선행 + 누락 push 훅 2곳 추가 + [NOTION PUSH FAILED] 로그",
+              "prevention": "GAS에서 setValues 직후 즉시 read는 flush() 명시. push 호출은 모든 시트 update 후 일관 배치."
+            },
+            {
+              "description": "Notion 매출 컬럼 타입 변경 후 PATCH 전체 validation_error",
+              "cause": "NOTION_PROP_MAP rich_text인데 노션은 number — 한 필드 mismatch면 전체 reject",
+              "solution": "매출 매핑 number로 정렬 + ensureNotionSchema에 타입 mismatch 경고",
+              "prevention": "노션 속성 변경 시 ensureNotionSchema ▶ 실행으로 mismatch 검출"
+            }
+          ],
+          "learnings": [
+            "GAS의 SpreadsheetApp.setValues는 batch write — 직후 read는 flush() 필수",
+            "Notion API PATCH는 한 필드라도 invalid면 전체 reject — 부분 성공 없음",
+            "양방향 sync 무한루프 차단은 push 끝 hash 저장 + sync 비교 두 지점 모두 필요"
+          ],
+          "id": "notion-db-단방향-push-양방향-sync-phase-5-6"
+        },
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "admin.html 즉시 발송 + 이메일·연락처 인라인 수정 (Phase 7)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs",
+            "admin.html"
+          ],
+          "context": "5분 polling은 지연이 있어 진짜 즉시 처리 시나리오에 안 맞음. admin 운영자가 PC에서 수 초 안에 메일주소 수정+재발송 가능하게.",
+          "implementation": "handleUpdateRequest — 이메일/연락처만 허용 + 본인 담당 또는 관리자 + 신청관리 + 통합정보 + 노션 동시 update. handleResendGuide — sendGuideForRow 직접 호출 + 분당 1회 throttle. admin.html Quote Summary 카드 안 '발송 정보' 섹션 추가 — view↔edit 토글 + '지금 메일 발송' primary 버튼. 권한 isAssignedToMe && !viewingPastVersion.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function handleResendGuide(data, user) {\n  if (!data.id) return jsonResponse({status:'error', message:'id 누락'});\n  const perm = _checkRequestPermission(data.id, user);\n  if (!perm.ok) return perm.error;\n  const props = PropertiesService.getScriptProperties();\n  const key = 'resend_throttle_'+data.id;\n  const lastTry = Number(props.getProperty(key) || 0);\n  if (lastTry && Date.now() - lastTry < 60000) {\n    const wait = Math.ceil((60000 - (Date.now()-lastTry))/1000);\n    return jsonResponse({status:'error', code:'THROTTLED', message:'분당 1회 — '+wait+'초 후'});\n  }\n  props.setProperty(key, String(Date.now()));\n  const row = _readUnifiedRow(data.id);\n  if (!row['가이드_HTML_URL']) return jsonResponse({status:'error', message:'가이드 본문 없음'});\n  sendGuideForRow(row);\n  return jsonResponse({status:'ok'});\n}",
+              "caption": ""
+            }
+          ],
+          "learnings": [
+            "admin UI 액션은 토큰 인증 + 본인 담당 권한 + 분당 throttle 3중 보호 기본",
+            "이메일 인라인 편집: view↔edit 토글 + 정규식 검증 + 시트 응답 후 currentReq+allRequests 동기화 + renderDetail"
+          ],
+          "id": "admin-html-즉시-발송-이메일-연락처-인라인-수정-phase-7"
+        },
+        {
+          "type": "fix",
+          "scope": "polish",
+          "title": "운영 안정성 fix들 — KST timezone / 사이드바 ring / 날짜 가독성 / SVG 아이콘 / 발송완료 재발송",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs",
+            "admin.html"
+          ],
+          "context": "Phase 1~7 진행 중 만난 운영 이슈들을 인라인 fix. 작지만 운영 체감에 큰 영향.",
+          "implementation": "1) GAS 응답 날짜 필드 KST 포매팅(_fmtKstDateTime/_fmtKstDate) — UTC ISO 직렬화 문제 해결. 2) 사이드바 active ring 짤림 — padding 4px 2px 추가. 3) 날짜 표시 가독성 — bold 날짜 + opacity 강약, color는 부모 상속. 4) 연필 이모지 → SVG 단색 아이콘 4곳 통일 (stroke=currentColor). 5) pollAndSendGuides의 발송완료 skip 제거 — 운영자 재체크 시 5분 cooldown만 지나면 재발송.",
+          "learnings": [
+            "Google Sheets 셀이 Date 객체로 인식되면 JSON 직렬화 시 UTC ISO 됨 — KST 포매팅 통일",
+            "box-shadow ring이 overflow:auto 경계에서 잘림 — ring 두께보다 큰 padding이 안전",
+            "SVG icon stroke=currentColor는 부모 색 상속해 배경 무관 자동 대응"
+          ],
+          "id": "운영-안정성-fix들-kst-timezone-사이드바-ring-날짜-가독성-svg-아이콘-발송완료-재발송"
+        }
+      ],
+      "tldr": "재현테크 견적 시스템에 통합 마스터 시트(통합정보 42컬럼) + OpenAI gpt-4o-mini 5 PART 동영상 가이드 자동 생성 + 별도 GAS 계정의 Mailer Web App(jhtechsmart@gmail.com 발송) + Notion 양방향 sync(hash 기반 무한루프 차단 6필드) + admin.html 즉시 재발송 UI 도입. 5분 polling으로 운영자가 시트·노션·admin 어디서나 동일한 흐름으로 메일 발송. 차수 13차~22.4차, 총 19개 커밋, ~2150줄 추가.\n\n---",
+      "tags": [
+        "gas",
+        "notion",
+        "openai",
+        "mailer",
+        "automation",
+        "bidirectional-sync"
+      ],
+      "claudeHints": "이 프로젝트는 GAS + Google Sheets + Notion + OpenAI 통합 시스템. UNIFIED_HEADERS 신규 컬럼은 무조건 배열 끝에 추가(중간 삽입 금지). Notion sync 코드는 push 끝에서 hash 저장 필수(무한루프 차단). MailApp 발신자가 메인 계정과 다르면 별도 Mailer Web App 분리 배포. SpreadsheetApp.flush()는 setValues 직후 즉시 read하기 전 호출. OpenAI API는 max_tokens + finish_reason 검증 필수. 운영 코드 적용 전 본인 검증(node 구문 + grep 일관성) 통과 후 사용자에게 안내, 절대 경로 pbcopy 명령 제시.",
+      "reusablePatterns": [
+        {
+          "name": "통합 마스터 시트 (UNIFIED_HEADERS + upsertUnified)",
+          "description": "여러 입력 소스를 한 시트로 합쳐 외부 시스템과 1:1 매칭. 헤더 끝 append만, 빈 값 덮어쓰기 방지, 버전 비교 멱등.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "별도 Mailer Web App (계정 분리 발송)",
+          "description": "MailApp 발신자 ≠ 메인 GAS 계정일 때 별도 GAS 프로젝트 분리 배포. 토큰 인증 + 25MB 첨부 자동 skip + urlencoded(data=JSON) 호출.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/mailer/Code.gs"
+        },
+        {
+          "name": "Time-driven trigger 자동화 (setupTriggers)",
+          "description": "기존 동일 함수 trigger 모두 삭제 + 새 간격 1개 생성. 멱등. 간격 변경 시 상수 수정 + 1회 실행.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "OpenAI 5 PART 응답 + split capture group 파싱",
+          "description": "한 번 GPT 호출로 5섹션 마크다운 받아 split(/##\\s*PART\\s*(\\d+)/) capture group으로 안전 분리. JS \\Z 미지원 회피.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "Notion 멱등 upsert + 다중 매칭 키",
+          "description": "1순위 Notion_PageID 캐시 → 2순위 OR(접수번호, 사업자번호) query → 3순위 새 페이지. 사전 등록 페이지 자동 병합.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "양방향 sync + SHA-256 hash 무한루프 차단",
+          "description": "BIDIRECTIONAL_FIELDS만 양방향. push 끝 hash 저장 → sync 시 노션/시트/저장 hash 3중 비교 last-write-wins.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "PropertiesService per-key throttle",
+          "description": "admin 즉시 발송 같은 액션에 적용. resend_throttle_<reqId> 키로 마지막 시도 timestamp 저장 + 60초 차단.",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        }
+      ],
+      "nextSteps": [
+        "GPT 프롬프트(GUIDE_SYSTEM_PROMPT) 응답 품질 개선 — 회사 규모·업종별 어조 차별화",
+        "운영 안정화 관찰 1~2주 — 이메일 한도, Notion API rate, GPT 비용 모니터링",
+        "필요 시 polling 3분 단축 또는 admin 발송 이력 패널 추가"
+      ],
+      "references": [
+        {
+          "title": "bpksmart2026 reference 프로젝트",
+          "url": "file:///Users/seonjecho/Projects/bpksmart2026",
+          "note": ""
+        },
+        {
+          "title": "Notion API Reference",
+          "url": "https://developers.notion.com/reference/property-object",
+          "note": ""
+        },
+        {
+          "title": "OpenAI Chat Completions API",
+          "url": "https://platform.openai.com/docs/api-reference/chat",
+          "note": ""
+        }
+      ],
+      "prompts": [],
+      "changelog": {
+        "added": [
+          "통합정보 시트 (UNIFIED_HEADERS 42컬럼)",
+          "이메일 템플릿 + Drive 저장 + GPT 5 PART 자동 생성",
+          "별도 Mailer Web App (jhtechsmart@gmail.com 발신)",
+          "Time-driven 5분 polling + LockService",
+          "Notion DB 단방향 push + 사전 등록 페이지 자동 병합 (사업자번호 OR)",
+          "Notion 양방향 sync 6필드 + SHA-256 hash 무한루프 차단",
+          "admin.html 즉시 발송 + 이메일/연락처 인라인 수정",
+          "분당 1회 throttle + 5분 cooldown",
+          "인감 PNG repo 포함",
+          "개발노트 + 이식 가이드 (docs/devlog-2026-05-13.md, docs/portability-guide.md)"
+        ],
+        "changed": [
+          "GAS 응답 날짜 KST 포매팅 통일",
+          "날짜 표시 형식 bold + opacity 강약",
+          "연필 이모지 → SVG 단색 아이콘 4곳 통일",
+          "polling trigger 10분 → 5분",
+          "Notion 매출 컬럼 타입 number로 정렬",
+          "발송완료 상태에서 재체크 시 재발송 가능"
+        ],
+        "fixed": [
+          "OpenAI 응답 truncation — max_tokens 2500 + finish_reason 검증",
+          "parseGuideScript 마지막 PART 못 잡음 — split + capture group",
+          "노션 PATCH 실패 — SpreadsheetApp.flush() + push 훅 누락 2곳 보강",
+          "헤더 중간 삽입 시 중복 컬럼 — PDF URL을 헤더 끝으로 이동",
+          "사이드바 active ring 짤림 — padding 4px 2px",
+          "버전이력 클릭 시 Quote Summary 갱신 안됨 — recalcPrice viewingPastVersion 가드",
+          "신청중 상태 좌우 박스 어긋남 — #versionHistorySection:empty{display:none}"
+        ],
+        "removed": [
+          "pollAndSendGuides의 '발송상태 발송완료 skip' 조건 (운영자 재체크 시나리오 막음)"
+        ]
+      },
+      "author": "SeonjeCho"
+    },
+    {
+      "date": "2026-05-13",
+      "mainTask": "Project-Genesis",
+      "features": [
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "5단계 위저드 UI/UX 베이스라인 (1차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html"
+          ],
+          "context": "신청 폼이 거친 표 간격 + 검증 누락 + 깜빡임으로 사용성 약함. B2B 고객 접점이라 첫인상 중요.",
+          "implementation": "mini-table 첫 컬럼 고정 너비 + nowrap, 셀 패딩 9→11/16, 짝수 행 zebra(#fafcff). 체크박스 flex-shrink:0 + 고정 16×16 — 긴 텍스트 줄바꿈 시 위치 고정. 매출 그리드(revGrid) 사업자등록일 따라 2/3컬럼 동적 전환. validateStep() — 단계별 필수 필드 미입력 시 다음 단계 차단(왼쪽 탭 클릭도 동일).",
+          "learnings": [
+            "다단계 폼은 next 버튼 + 탭 클릭 양쪽 모두 같은 검증 함수를 거치게 — 한쪽만 막으면 우회 가능",
+            "체크박스가 줄바꿈된 라벨과 같이 있을 때 flex-shrink:0 + 고정 크기 안 주면 위치 흔들림"
+          ],
+          "id": "5단계-위저드-ui-ux-베이스라인-1차"
+        },
+        {
+          "type": "docs",
+          "scope": "content",
+          "title": "사업 안내 콘텐츠 + 개인정보 동의서 (2~3차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html"
+          ],
+          "context": "재현테크가 공식 견적 시스템으로 사용하려면 사업 안내 내용 + 개인정보 동의서가 법적 요건(개인정보 보호법 제15·17조)을 충족해야 함.",
+          "implementation": "0단계 사업 안내 — 재현테크 표기 통일, 자부담 행 확장(부가세 별도 안내 + 실질 1,680만원 강조), 신청 절차 7개 준비사항 + 의무사항 2개. 동의서 — 처리자/목적/항목/기간/제3자 제공/위탁/권리/거부권 8개 필수 기재. privacyAgree / contactAgree ID 유지로 기존 검사 호환.",
+          "learnings": [
+            "개인정보 보호법 적용 시 한 곳이라도 누락하면 동의 효력 없음 — 8개 모두 명시 필요",
+            "필수/선택 구분을 [필수] 빨간 태그로 시각화하면 사용자 인지 향상"
+          ],
+          "id": "사업-안내-콘텐츠-개인정보-동의서-2-3차"
+        },
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "3·4·5단계 개편 — 공정 분석 + 장비 선택 + 제출 확인 (4차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html"
+          ],
+          "context": "인쇄업 실제 문제점을 반영한 공정·문제 매트릭스가 필요. 장비 목록은 재현테크 취급 라인업 전체.",
+          "implementation": "purposeOptions — 공정(절단/인쇄/기타) × 목적(교체/신규) 매트릭스로 각 8~10개 '현재 문제 → 개선 목표' 형식. 4단계 — 프린터 11종 + 평판커팅기 4종, 카테고리 헤더 + 단일 선택. 5단계 — pre 텍스트 → 구조화 HTML 카드 + ✔/✘ 배지 + 태그 형태. buildSummary()(HTML) / buildPlainText()(.txt 다운로드용) 분리.",
+          "learnings": [
+            "B2B 폼은 자유 텍스트보단 선택지 매트릭스가 신청자 부담 줄이고 데이터 분석 쉬움",
+            "HTML 요약과 .txt 다운로드 형식이 다를 때 함수를 분리하면 한쪽 수정이 다른 쪽에 영향 X"
+          ],
+          "id": "3-4-5단계-개편-공정-분석-장비-선택-제출-확인-4차"
+        },
+        {
+          "type": "fix",
+          "scope": "logic",
+          "title": "평균매출 판정 부등호 수정 (5차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html"
+          ],
+          "context": "소공인 스마트제조 지원사업 평균매출 조건은 '2억원 초과' 기업이 지원 대상. 코드는 반대(2억원 이하 OK)로 구현되어 있었음 — 신청자가 잘못된 안내를 받을 수 있음.",
+          "implementation": "calcRevenue()의 판정 로직 avg <= limit → avg > limit. 라벨도 '기준 충족 가능/초과' → '2억원 초과 — 지원 대상 가능 / 2억원 이하 — 지원 대상 제외'로 명확화.",
+          "problems": [
+            {
+              "description": "부등호 방향이 반대였음",
+              "cause": "지원 대상 조건을 코드 작성자가 잘못 해석 (이하면 영세기업이라 지원 대상이라 오해)",
+              "solution": "법령 원문 확인 — 평균매출 2억원 초과 기업이 신청 가능. 부등호 반전",
+              "prevention": "사업 요건은 항상 원문 인용 + 라벨에 기준 명시"
+            }
+          ],
+          "learnings": [
+            "비즈니스 조건의 부등호 방향은 라벨에 임계값 직접 표기(2억원 이상/이하)로 회귀 방지"
+          ],
+          "id": "평균매출-판정-부등호-수정-5차"
+        },
+        {
+          "type": "feat",
+          "scope": "gas",
+          "title": "Google Apps Script 백엔드 라우터 + 시트 구축 (6차)",
+          "status": "completed",
+          "filesChanged": [
+            "appscript/Code.gs"
+          ],
+          "context": "정적 사이트만으로는 신청 접수 + 견적 발급 워크플로 구축 불가. Google 인프라(Sheets + Apps Script)로 빌드 도구 없이 풀 스택 운영.",
+          "implementation": "SPREADSHEET_ID 시트의 2개 시트 자동 초기화 (신청관리 20컬럼, 견적서발급관리 12컬럼). doPost/doGet 라우터에 7개 action: submit/confirm/saveQuote/updateAssignee/list/get/listQuotes. JSONP(callback) 지원 — CORS 우회. generateId — REQ-YYYYMMDD-NNNNN, QT-YYYYMMDD-NNNNN.",
+          "codeSnippets": [
+            {
+              "file": "appscript/Code.gs",
+              "lang": "javascript",
+              "code": "function generateId(prefix) {\n  const now = new Date();\n  const pad = n => String(n).padStart(2, '0');\n  return prefix + '-' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '-' + Date.now().toString().slice(-5);\n}",
+              "caption": ""
+            }
+          ],
+          "learnings": [
+            "GAS doPost는 application/x-www-form-urlencoded만 preflight 회피 — JSON body는 CORS 거부",
+            "GAS 응답 JSON을 클라이언트가 fetch하면 발신자 origin 제약이 강해 JSONP fallback이 필요한 경우 종종 있음"
+          ],
+          "id": "google-apps-script-백엔드-라우터-시트-구축-6차"
+        },
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "관리자 페이지 (admin.html) 신규 개발 (6차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html"
+          ],
+          "context": "신청·견적 워크플로를 화면에서 관리할 수 있는 portal 필요. 다중 사용자(관리자/일반 담당자) 권한 분기, 견적 편집, 가격 계산, 장비 변경, 버전 관리까지.",
+          "implementation": "localStorage 기반 jhtech_users + isAdmin 플래그. editMode 조건 = isAssignedToMe && (!isConfirmed || isRevising). syncFormState()로 추가옵션 행 add/remove 전 DOM 상태 저장 — 체크박스 해제 버그 방지. basePrice(입력) + totalDisplay(표시) 분리 — 이중 계산 버그 방지. getNextVersion — QT-xxx → -R2 → -R3 자동 증가.",
+          "problems": [
+            {
+              "description": "추가옵션 추가/삭제 시 포함옵션 체크가 모두 해제됨",
+              "cause": "renderDetail()이 DOM 재생성하면서 inc-opt 체크박스 상태 사라짐",
+              "solution": "syncFormState() — 추가옵션 변경 전 .inc-opt:checked 수집 → currentReq.includeOpts에 저장 → renderDetail 후 복원",
+              "prevention": "DOM 재생성 트리거하는 함수 호출 전 항상 상태 캡처"
+            },
+            {
+              "description": "가격 이중 계산",
+              "cause": "supplyPrice 단일 input에 합계가 다시 덮어쓰여짐 (recalcPrice 결과가 입력값 자리에 들어감)",
+              "solution": "basePrice(장비가 입력) / totalDisplay(합계 표시) 분리. supplyPrice는 hidden + recalcPrice 결과로만 갱신",
+              "prevention": "입력 필드와 계산 결과 표시는 항상 분리"
+            }
+          ],
+          "learnings": [
+            "DOM 재생성 트리거 전 상태 캡처 패턴은 frameworks 없이도 매우 효과적",
+            "가격 입력 / 가격 표시는 반드시 다른 DOM 요소로 분리 — 같은 요소면 무한 갱신 가능성"
+          ],
+          "id": "관리자-페이지-admin-html-신규-개발-6차"
+        },
+        {
+          "type": "feat",
+          "scope": "ui",
+          "title": "담당자 배정 기능 (7차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html",
+            "appscript/Code.gs"
+          ],
+          "context": "여러 담당자가 운영하는 환경에서 신청별 담당자 배정 + 본인 담당 신청만 편집 가능한 권한 분기 필요.",
+          "implementation": "신청 목록 드롭다운 → updateAssignee action 호출 → 신청관리 시트 컬럼 20 저장. 저장 후 버튼이 '수정'으로 전환 (재클릭 시 드롭다운 활성). 조회 우선순위: 시트(r.assignee) → localStorage → 빈값. editMode 조건에 isAssignedToMe 통합.\n\n---",
+          "id": "담당자-배정-기능-7차"
+        },
+        {
+          "type": "chore",
+          "scope": "deploy",
+          "title": "GitHub Pages 배포 (8차)",
+          "status": "completed",
+          "filesChanged": [
+            ".gitignore"
+          ],
+          "context": "정적 사이트 + 빌드 도구 없는 구조 — GitHub Pages가 가장 자연스러운 호스팅.",
+          "implementation": "Git 저장소 초기화 + jhtechsmart-cloud/jhtechsmart 원격 연결. 파일명 영문화(장비 견적 요청 프로그램.html → quote.html, 관리자.html → admin.html). .gitignore에 .claude/ + 견적서/법인도장.png. GitHub Pages 활성화 (main/root). 접속: jhtechsmart-cloud.github.io/jhtechsmart/quote.html · admin.html.\n\n---",
+          "id": "github-pages-배포-8차"
+        },
+        {
+          "type": "feat",
+          "scope": "content",
+          "title": "OG 메타태그 (카카오톡 공유) (9차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html",
+            "admin.html",
+            "logo.png"
+          ],
+          "context": "카카오톡으로 신청 링크 공유 시 미리보기에 로고와 설명 표시 필요.",
+          "implementation": "양쪽 HTML에 og:type/title/description/image/url/site_name 추가. logo.png는 800×800 정사각형(1200×630은 카카오톡에서 잘림).",
+          "learnings": [
+            "카카오톡 미리보기는 정사각형 이미지가 가장 안전 (잘림 없음)"
+          ],
+          "id": "og-메타태그-카카오톡-공유-9차"
+        },
+        {
+          "type": "docs",
+          "scope": "content",
+          "title": "quote.html 콘텐츠 개편 (10차)",
+          "status": "completed",
+          "filesChanged": [
+            "quote.html"
+          ],
+          "context": "사업 안내 내용을 더 명확하게 — 신청원칙 별도 섹션 삭제, 자가진단 단순화, 제출 후 완료 화면 표시.",
+          "implementation": "신청원칙 섹션 제거, 최대구입비 4,800만원 + VAT 480만원 표기, 유의사항 단락 → ul 4개, 신청자격 행 추가(10인 미만 / 2억 이상), 자가진단 부가세 항목 제거. 제출 후 견적신청 완료 화면 (업체명/연락처/장비/접수일시 표시).\n\n---",
+          "id": "quote-html-콘텐츠-개편-10차"
+        },
+        {
+          "type": "feat",
+          "scope": "pdf",
+          "title": "PDF 자동 저장 (Google Drive) (11차)",
+          "status": "completed",
+          "filesChanged": [
+            "admin.html",
+            "appscript/Code.gs"
+          ],
+          "context": "견적 확정 시 PDF를 자동으로 Drive에 보관 — 회계·법무 증빙 + 고객 공유 링크 즉시 생성.",
+          "implementation": "html2pdf.js를 CDN에서 동적 로드(loadHtml2Pdf). saveQuoteToDrive(html, quoteNo, company) — html2pdf로 PDF Blob 생성 → FileReader로 base64 → GAS saveQuote action POST. GAS handleSaveQuote는 base64 디코딩 → .pdf 파일 저장 → ANYONE_WITH_LINK VIEW 공유. 저장 경로: 재현테크_견적서/YYYY-MM/.",
+          "problems": [
+            {
+              "description": "PDF 빈 파일로 저장",
+              "cause": "html2pdf.js가 비동기인데 await 없이 다음 단계 진행",
+              "solution": "PDF Blob 생성 완료 후 FileReader.onload 콜백 안에서 base64 인코딩 + POST",
+              "prevention": "라이브러리 동적 로드 후 함수 호출 시 항상 promise/await 확인"
+            }
+          ],
+          "learnings": [
+            "html2pdf.js는 outputPdf().blob() 같은 promise 체인 활용 필요 — fire-and-forget으로 호출하면 빈 파일 생성"
+          ],
+          "id": "pdf-자동-저장-google-drive-11차"
+        }
+      ],
+      "tldr": "프로젝트 출범. 견적 신청 위저드(quote.html) + 관리자 페이지(admin.html) + Google Apps Script 백엔드 + Google Sheets 저장소를 0에서 구축. UI/UX 폼 + 5단계 위저드 + 평균매출 판정 + GAS 라우터(submit/confirm/list/saveQuote 등) + 담당자 배정 + GitHub Pages 배포 + OG 메타 + PDF 자동 저장(html2pdf.js)까지 1~11차 작업을 일괄 도입.\n\n---",
+      "tags": [
+        "foundation",
+        "form-wizard",
+        "gas",
+        "pdf",
+        "deploy"
+      ],
+      "claudeHints": "이 프로젝트는 빌드 도구 없는 정적 HTML + GAS + Sheets. quote.html(신청), admin.html(관리자), appscript/Code.gs(백엔드) 3파일이 핵심. 추가옵션 add/remove 전 syncFormState() 호출 필수. basePrice(입력) / totalDisplay(표시) 분리. CORS는 application/x-www-form-urlencoded로 회피. ID 형식 REQ-/QT-YYYYMMDD-NNNNN.",
+      "reusablePatterns": [
+        {
+          "name": "DOM 재생성 전 상태 캡처 (syncFormState)",
+          "description": "renderDetail() 같은 DOM 재생성 함수 호출 전에 .inc-opt:checked 등을 메모리에 저장 → re-render 후 복원. frameworks 없이도 작동",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/admin.html"
+        },
+        {
+          "name": "GAS doPost JSONP fallback",
+          "description": "callback 파라미터 있으면 JSONP 응답으로 CORS 우회. 정적 사이트에서 GAS 호출 시 유용",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/appscript/Code.gs"
+        },
+        {
+          "name": "html2pdf.js CDN 동적 로드",
+          "description": "loadHtml2Pdf() — 한 번 로드 후 캐시. 견적서 출력 시점에만 로드해 첫 화면 빠르게",
+          "file": "/Users/seonjecho/Projects/jhtechsmart/admin.html"
+        }
+      ],
+      "nextSteps": [
+        "Google Apps Script 추가 견적 분석 자동화",
+        "장비 상세 스펙 팝업 / 표시"
+      ],
+      "references": [
+        {
+          "title": "html2pdf.js",
+          "url": "https://github.com/eKoopmans/html2pdf.js",
+          "note": ""
+        }
+      ],
+      "prompts": [],
+      "changelog": {
+        "added": [
+          "quote.html 5단계 위저드 (자가진단 → 정보입력 → 공정분석 → 장비선택 → 제출)",
+          "admin.html 관리자 페이지 (로그인 + 신청목록 + 견적 편집 + 가격 계산 + 장비 변경)",
+          "appscript/Code.gs GAS 백엔드 (7개 action 라우터, 시트 자동 초기화)",
+          "담당자 배정 기능 + editMode 권한 분기",
+          "GitHub Pages 배포 + OG 메타태그",
+          "PDF 자동 저장 (html2pdf.js + Drive)",
+          "장비 라인업 데이터 (프린터 11종 + 평판커팅기 4종)"
+        ],
+        "changed": [],
+        "fixed": [
+          "추가옵션 변경 시 포함옵션 체크박스 해제 — syncFormState() 도입",
+          "가격 이중 계산 — basePrice / totalDisplay 분리",
+          "견적서 출력 시 supplyPrice=0 — basePrice input 없는 view 모드 처리",
+          "담당자 외 사용자 출력 시 본인 이름 표시 — r.assignee 우선 조회",
+          "평균매출 판정 부등호 반대 — avg > limit",
+          "PDF 빈 파일 — html2pdf 비동기 콜백 안에서 POST"
+        ],
+        "removed": []
+      },
+      "author": "SeonjeCho"
+    }
+  ]
+}
+</script>
+<!-- END_DEV_NOTES_DATA -->
+
+<script>
+(function() {
+  'use strict';
+
+  const dataEl = document.getElementById('dev-notes-data');
+  let data;
+  try {
+    data = JSON.parse(dataEl.textContent);
+  } catch (e) {
+    console.error('Failed to parse dev notes data:', e);
+    data = { project: 'Unknown', entries: [] };
+  }
+
+  // Initialize mermaid
+  if (window.mermaid) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+      flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+      fontFamily: 'Pretendard, sans-serif'
+    });
+  }
+
+  // Set project
+  document.getElementById('sidebar-project').textContent = data.project || 'Project';
+  document.title = (data.project || 'Project') + ' — Develop Note';
+
+  // Stats
+  document.getElementById('stat-days').textContent = data.entries.length;
+  let featureCount = 0, promptCount = 0;
+  data.entries.forEach(e => {
+    featureCount += (e.features || []).length;
+    promptCount += (e.prompts || []).length;
+  });
+  document.getElementById('stat-features').textContent = featureCount;
+  document.getElementById('stat-prompts').textContent = promptCount;
+
+  if (data.entries.length > 0) {
+    const dates = data.entries.map(e => e.date).sort();
+    document.getElementById('last-updated').textContent = 'Last: ' + dates[dates.length - 1];
+  }
+
+  // Theme handling
+  const themeToggle = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('devnote-theme') || 'light';
+  applyTheme(savedTheme);
+  themeToggle.onclick = () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('devnote-theme', next);
+  };
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    document.getElementById('hljs-light').disabled = theme === 'dark';
+    document.getElementById('hljs-dark').disabled = theme !== 'dark';
+    if (window.mermaid) {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: theme === 'dark' ? 'dark' : 'default',
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+        fontFamily: 'Pretendard, sans-serif'
+      });
+      // Re-render existing diagrams if any
+      document.querySelectorAll('.mermaid-rendered').forEach(el => {
+        const src = el.dataset.mermaidSrc;
+        if (src) {
+          el.classList.remove('mermaid-rendered');
+          el.removeAttribute('data-processed');
+          el.innerHTML = src;
+          renderMermaid(el);
+        }
+      });
+    }
+  }
+
+  // Sort entries newest first
+  data.entries.sort((a, b) => b.date.localeCompare(a.date));
+
+  let currentTab = 'features';
+  let currentFeatureId = null;
+
+  // Tab switching
+  document.querySelectorAll('.sidebar-tab').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.sidebar-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderSidebar(document.getElementById('search-input').value);
+    };
+  });
+
+  function renderSidebar(filter) {
+    const list = document.getElementById('sidebar-list');
+    list.innerHTML = '';
+    filter = (filter || '').toLowerCase().trim();
+
+    if (currentTab === 'features') {
+      data.entries.forEach((entry, dateIdx) => {
+        const features = (entry.features || []).filter(f => {
+          if (!filter) return true;
+          const hay = [f.title, f.context, f.implementation, (f.tags||[]).join(' '), entry.mainTask].join(' ').toLowerCase();
+          return hay.includes(filter);
+        });
+        if (features.length === 0 && filter) return;
+
+        const group = document.createElement('div');
+        group.className = 'date-group';
+        const header = document.createElement('div');
+        header.className = 'date-header';
+        header.innerHTML = `
+          <svg class="date-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="date-label">${escapeHtml(entry.date)}${entry.mainTask ? ' · ' + escapeHtml(entry.mainTask) : ''}</span>
+          <span class="date-count">${features.length}</span>
+        `;
+        header.onclick = () => group.classList.toggle('collapsed');
+        group.appendChild(header);
+
+        const ul = document.createElement('ul');
+        ul.className = 'feature-list';
+        features.forEach(f => {
+          const li = document.createElement('li');
+          li.className = 'feature-item';
+          li.dataset.featureId = f.id;
+          li.innerHTML = `
+            <span class="feature-type-badge ${cssClass(f.type||'chore')}">${escapeHtml(f.type||'chore')}</span>
+            <span class="feature-title-text">${escapeHtml(f.title)}</span>
+          `;
+          li.onclick = () => selectFeature(entry, f);
+          ul.appendChild(li);
+        });
+        group.appendChild(ul);
+        list.appendChild(group);
+      });
+    } else if (currentTab === 'prompts') {
+      // Render prompts panel
+      const panel = document.createElement('div');
+      panel.className = 'prompts-panel';
+
+      const allPrompts = [];
+      data.entries.forEach(e => (e.prompts || []).forEach(p => {
+        allPrompts.push({ ...p, _date: e.date, _entry: e });
+      }));
+
+      if (allPrompts.length === 0) {
+        panel.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:20px 0;line-height:1.6;">아직 저장된 프롬프트가 없습니다.<br><br>매일 작업 중 /devnote-prompt 명령어로 잘 통한 프롬프트를 기록해보세요.</p>';
+      } else {
+        const filtered = allPrompts.filter(p => {
+          if (!filter) return true;
+          return [p.label, p.prompt, p.lesson].join(' ').toLowerCase().includes(filter);
+        });
+
+        const goodPrompts = filtered.filter(p => p.verdict === 'good');
+        const badPrompts = filtered.filter(p => p.verdict === 'bad');
+        const neutralPrompts = filtered.filter(p => !p.verdict || p.verdict === 'neutral');
+
+        function appendGroup(title, prompts) {
+          if (prompts.length === 0) return;
+          const h = document.createElement('h3');
+          h.textContent = title + ' (' + prompts.length + ')';
+          panel.appendChild(h);
+          prompts.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'mini-prompt-card verdict-' + cssClass(p.verdict || 'neutral');
+            card.innerHTML = `
+              <div class="label">${escapeHtml(p.label || '(라벨 없음)')} <span style="font-weight:400;color:var(--text-faint);font-size:10px;">· ${escapeHtml(p._date || '')}</span></div>
+              <div class="preview">${escapeHtml((p.prompt || '').substring(0, 120))}</div>
+            `;
+            card.onclick = () => showPromptDetail(p);
+            panel.appendChild(card);
+          });
+        }
+        appendGroup('✅ 잘 통한 프롬프트', goodPrompts);
+        appendGroup('🔁 참고 프롬프트', neutralPrompts);
+        appendGroup('❌ 잘 안 통한 프롬프트', badPrompts);
+      }
+      list.appendChild(panel);
+    }
+  }
+
+  function selectFeature(entry, feature) {
+    currentFeatureId = feature.id;
+    document.querySelectorAll('.feature-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.featureId === feature.id);
+    });
+    renderContent(entry, feature);
+    if (window.innerWidth <= 768) {
+      document.querySelector('.sidebar').classList.remove('open');
+    }
+    document.querySelector('.main').scrollTop = 0;
+  }
+
+  function showPromptDetail(prompt) {
+    const content = document.getElementById('content');
+    const verdictEmoji = { good: '✅', bad: '❌', neutral: '🔁' };
+    const verdictLabel = { good: '잘 통한 프롬프트', bad: '잘 안 통한 프롬프트', neutral: '참고 프롬프트' };
+    const v = prompt.verdict || 'neutral';
+
+    content.innerHTML = `
+      <div class="feature-header">
+        <div class="breadcrumb">
+          <span class="breadcrumb-item">${escapeHtml(data.project)}</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-item">Prompt Library</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-item">${escapeHtml(prompt._date || '')}</span>
+        </div>
+        <h1 class="feature-h1">${verdictEmoji[v]} ${escapeHtml(prompt.label || '(라벨 없음)')}</h1>
+        <div class="meta-row">
+          <span style="font-weight:600;color:var(--text-secondary);">${verdictLabel[v]}</span>
+          ${prompt._date ? `<span>${escapeHtml(prompt._date)}</span>` : ''}
+        </div>
+      </div>
+      <section class="section">
+        <div class="section-title">프롬프트 원문</div>
+        <div class="prompt-text">${escapeHtml(prompt.prompt || '')}</div>
+      </section>
+      ${prompt.lesson ? `
+        <section class="section">
+          <div class="section-title">교훈 · 메모</div>
+          <div class="prose">${md(prompt.lesson)}</div>
+        </section>
+      ` : ''}
+      ${prompt.context ? `
+        <section class="section">
+          <div class="section-title">상황</div>
+          <div class="prose">${md(prompt.context)}</div>
+        </section>
+      ` : ''}
+    `;
+    document.querySelector('.main').scrollTop = 0;
+  }
+
+  function md(s) {
+    if (!s) return '';
+    return marked.parse(s, { breaks: true });
+  }
+
+  function renderContent(entry, feature) {
+    const content = document.getElementById('content');
+
+    let html = `
+      <div class="feature-header">
+        <div class="breadcrumb">
+          <span class="breadcrumb-item">${escapeHtml(data.project)}</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-item">${escapeHtml(entry.date)}</span>
+          <span class="breadcrumb-sep">/</span>
+          <span class="breadcrumb-item">${escapeHtml(entry.mainTask || '')}</span>
+        </div>
+        <h1 class="feature-h1">${escapeHtml(feature.title)}</h1>
+        <div class="meta-row">
+          <span class="feature-type-badge ${cssClass(feature.type||'chore')}">${escapeHtml(feature.type||'chore')}${feature.scope?'('+escapeHtml(feature.scope)+')':''}</span>
+          <span class="status-badge ${cssClass((feature.status||'completed').replace(/\s+/g,'-'))}">${escapeHtml(feature.status||'completed')}</span>
+          ${(feature.tags && feature.tags.length) ? `<div class="tags-row">${feature.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    `;
+
+    const isFirstFeatureOfDay = (entry.features || [])[0] && (entry.features[0].id === feature.id);
+
+    // TL;DR — only on first feature of the day
+    if (isFirstFeatureOfDay && entry.tldr) {
+      html += `<section class="section"><div class="section-title">📌 TL;DR</div><div class="prose">${md(entry.tldr)}</div></section>`;
+    }
+
+    // Code structure diagram — only on first feature of the day
+    if (isFirstFeatureOfDay && entry.codeDiagram) {
+      html += `<section class="section">
+        <div class="section-title">📊 Code Structure (자동 분석)</div>
+        <div class="mermaid-container" id="mermaid-${escapeAttr(feature.id)}" data-mermaid-src="${escapeAttr(entry.codeDiagram)}">${escapeHtml(entry.codeDiagram)}</div>
+      </section>`;
+    }
+
+    if (feature.context) {
+      html += `<section class="section"><div class="section-title">📋 Context · 왜 (배경)</div><div class="prose">${md(feature.context)}</div></section>`;
+    }
+    if (feature.implementation) {
+      html += `<section class="section"><div class="section-title">🔨 Implementation · 무엇을 어떻게</div><div class="prose">${md(feature.implementation)}</div></section>`;
+    }
+
+    if (feature.codeSnippets && feature.codeSnippets.length) {
+      html += `<section class="section"><div class="section-title">💻 Key Code (기술 구현)</div>`;
+      feature.codeSnippets.forEach((sn, i) => {
+        const code = escapeHtml(sn.code || '');
+        // lang goes into a CSS class — restrict to safe characters only
+        const lang = (sn.lang || 'plaintext').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30) || 'plaintext';
+        html += `
+          <div class="code-snippet">
+            <div class="code-snippet-header">
+              <span>${escapeHtml(sn.file || '')} · ${escapeHtml(lang)}</span>
+              <button class="copy-btn" data-feat-id="${escapeAttr(feature.id)}" data-code-idx="${i}">Copy</button>
+            </div>
+            <pre><code class="language-${lang}">${code}</code></pre>
+            ${sn.caption ? `<div class="code-snippet-caption">${escapeHtml(sn.caption)}</div>` : ''}
+          </div>
+        `;
+      });
+      html += `</section>`;
+    }
+
+    if (feature.decisions && feature.decisions.length) {
+      html += `<section class="section"><div class="section-title">📐 Architecture Decisions (ADR)</div>`;
+      feature.decisions.forEach(d => {
+        html += `
+          <div class="decision-card">
+            <div class="card-title">📐 ${escapeHtml(d.title || 'Decision')}</div>
+            ${d.context ? `<div class="card-row"><span class="label">Context</span><div class="value">${escapeHtml(d.context)}</div></div>` : ''}
+            ${(d.options && d.options.length) ? `<div class="card-row"><span class="label">Options Considered</span><ul>${d.options.map(o=>`<li>${escapeHtml(o)}</li>`).join('')}</ul></div>` : ''}
+            ${d.chosen ? `<div class="card-row"><span class="label">Chosen</span><div class="value"><strong>${escapeHtml(d.chosen)}</strong></div></div>` : ''}
+            ${d.rationale ? `<div class="card-row"><span class="label">Rationale</span><div class="value">${escapeHtml(d.rationale)}</div></div>` : ''}
+            ${d.consequences ? `<div class="card-row"><span class="label">Consequences</span><div class="value">${escapeHtml(d.consequences)}</div></div>` : ''}
+          </div>
+        `;
+      });
+      html += `</section>`;
+    }
+
+    if (feature.problems && feature.problems.length) {
+      html += `<section class="section"><div class="section-title">🐛 Problems & Solutions</div>`;
+      feature.problems.forEach(p => {
+        html += `
+          <div class="problem-card">
+            <div class="card-title">🐛 ${escapeHtml(p.description || 'Problem')}</div>
+            ${p.cause ? `<div class="card-row"><span class="label">Root Cause</span><div class="value">${escapeHtml(p.cause)}</div></div>` : ''}
+            ${p.solution ? `<div class="card-row"><span class="label">Solution</span><div class="value">${escapeHtml(p.solution)}</div></div>` : ''}
+            ${p.prevention ? `<div class="card-row"><span class="label">Prevention</span><div class="value">${escapeHtml(p.prevention)}</div></div>` : ''}
+          </div>
+        `;
+      });
+      html += `</section>`;
+    }
+
+    if (feature.learnings && feature.learnings.length) {
+      html += `<section class="section"><div class="section-title">💡 Learnings</div><div class="prose"><ul>${feature.learnings.map(l=>`<li>${escapeHtml(l)}</li>`).join('')}</ul></div></section>`;
+    }
+
+    // Day-level sections — only on first feature of the day
+    if (isFirstFeatureOfDay) {
+      // Prompts library section
+      if (entry.prompts && entry.prompts.length) {
+        html += `<section class="section"><div class="section-title">🎯 Prompt Library (오늘의 프롬프트)</div>`;
+        entry.prompts.forEach(p => {
+          const v = p.verdict || 'neutral';
+          const vEmoji = { good: '✅', bad: '❌', neutral: '🔁' };
+          const vLabel = { good: '잘 통한 프롬프트', bad: '잘 안 통한 프롬프트', neutral: '참고 프롬프트' };
+          html += `
+            <div class="prompt-card verdict-${cssClass(v)}">
+              <div class="prompt-header">
+                <span class="prompt-verdict-icon">${vEmoji[v]}</span>
+                <span>${vLabel[v]}</span>
+                ${p.label ? `<span>·</span><span class="prompt-label">${escapeHtml(p.label)}</span>` : ''}
+              </div>
+              <div class="prompt-text">${escapeHtml(p.prompt || '')}</div>
+              ${p.lesson ? `<div class="prompt-lesson"><strong>교훈:</strong> ${escapeHtml(p.lesson)}</div>` : ''}
+            </div>
+          `;
+        });
+        html += `</section>`;
+      }
+
+      // References
+      if (entry.references && entry.references.length) {
+        html += `<section class="section"><div class="section-title">📚 References & 외부 학습</div>`;
+        entry.references.forEach(r => {
+          html += `
+            <a class="ref-item" href="${escapeAttr(r.url || '#')}" target="_blank" rel="noopener">
+              <div class="ref-title">${escapeHtml(r.title || r.url || 'Untitled')}</div>
+              ${r.url ? `<div class="ref-url">${escapeHtml(r.url)}</div>` : ''}
+              ${r.note ? `<div class="ref-note">${escapeHtml(r.note)}</div>` : ''}
+              ${(r.tags && r.tags.length) ? `<div class="ref-tags">${r.tags.map(t=>`<span class="ref-tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+            </a>
+          `;
+        });
+        html += `</section>`;
+      }
+
+      // Changelog
+      const cl = entry.changelog || {};
+      const hasChangelog = ['added','changed','fixed','removed'].some(k => (cl[k]||[]).length);
+      if (hasChangelog) {
+        html += `<section class="section"><div class="section-title">📋 Changes Summary</div><div class="changelog-grid">`;
+        ['added','changed','fixed','removed'].forEach(k => {
+          if ((cl[k]||[]).length) {
+            html += `<div class="changelog-card ${k}"><h4>${k}</h4><ul>${cl[k].map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul></div>`;
+          }
+        });
+        html += `</div></section>`;
+      }
+
+      // Next steps
+      if (entry.nextSteps && entry.nextSteps.length) {
+        html += `<section class="section"><div class="section-title">⏭️ Next Steps</div><ul class="next-steps">${entry.nextSteps.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul></section>`;
+      }
+
+      // Claude hints + reusable patterns
+      if (entry.claudeHints || (entry.reusablePatterns && entry.reusablePatterns.length)) {
+        html += `<div class="claude-hints">`;
+        html += `<h3>🤖 For Future Claude Code Sessions</h3>`;
+        if (entry.claudeHints) {
+          html += `<div class="claude-hint-body">${md(entry.claudeHints)}</div>`;
+        }
+        if (entry.reusablePatterns && entry.reusablePatterns.length) {
+          html += `<div class="claude-patterns-title">Reusable patterns:</div>`;
+          html += `<ul class="claude-patterns">`;
+          entry.reusablePatterns.forEach(p => {
+            html += `
+              <li>
+                <span class="pattern-name">${escapeHtml(p.name || '')}</span>
+                <span class="pattern-desc"> — ${escapeHtml(p.description || '')}</span>
+                ${p.file ? `<span class="pattern-file">${escapeHtml(p.file)}</span>` : ''}
+              </li>
+            `;
+          });
+          html += `</ul>`;
+        }
+        html += `</div>`;
+      }
+    }
+
+    content.innerHTML = html;
+
+    // Highlight code
+    content.querySelectorAll('pre code').forEach(b => {
+      try { hljs.highlightElement(b); } catch(e) {}
+    });
+
+    // Render mermaid diagrams
+    content.querySelectorAll('.mermaid-container').forEach(el => renderMermaid(el));
+
+    // Copy buttons
+    content.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.codeIdx);
+        const code = feature.codeSnippets[idx].code;
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 1500);
+        });
+      };
+    });
+  }
+
+  function renderMermaid(el) {
+    if (!window.mermaid || el.classList.contains('mermaid-rendered')) return;
+    const src = el.dataset.mermaidSrc || el.textContent;
+    el.dataset.mermaidSrc = src;
+    try {
+      const id = 'mermaid-svg-' + Math.random().toString(36).slice(2, 9);
+      mermaid.render(id, src).then(({ svg }) => {
+        el.innerHTML = svg;
+        el.classList.add('mermaid-rendered');
+      }).catch(err => {
+        el.innerHTML = '<pre style="color:var(--text-muted);font-size:12px;text-align:left;">' + escapeHtml(src) + '</pre>';
+        console.error('Mermaid render error:', err);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+  // Sanitize for CSS class names — only alphanumeric, hyphen, underscore
+  function cssClass(s) {
+    if (s == null) return '';
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+  }
+
+  // Search
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    renderSidebar(e.target.value);
+  });
+
+  renderSidebar();
+
+  // Auto-select most recent feature
+  if (data.entries.length > 0 && data.entries[0].features && data.entries[0].features.length > 0) {
+    selectFeature(data.entries[0], data.entries[0].features[0]);
+  }
+})();
+</script>
+</body>
+</html>
