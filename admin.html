@@ -2664,14 +2664,20 @@ async function printQuote(reqOverride, skipPrint){
   } else {
     // 확정/수정확정 시 자동 Drive 저장 (견적서 + 장비사진)
     // await + return: 호출부(runExclusive)가 PDF·Drive 완료까지 게이트를 유지하도록
-    return await saveQuoteToDrive(html, r.quoteNo, r.company, buildEquipHtml(r));
+    return await saveQuoteToDrive(html, r.quoteNo, r.company, await buildEquipHtml(r));
   }
 }
 
-function buildEquipHtml(r){
+async function buildEquipHtml(r){
   const eq = getEquipObj(r.equipment);
   if(!eq) return null;
   const verLabel = getVersionLabel(r.quoteNo);
+
+  // 한글/공백 포함 경로는 srcdoc iframe에서 로드 실패 → HTML 생성 전에 미리 base64 변환
+  let imgSrc = eq.img;
+  try { imgSrc = await _xhrToDataURL(eq.img); }
+  catch(e){ console.warn('buildEquipHtml: 이미지 base64 변환 실패 (상대경로로 대체):', eq.img, e.message); }
+
   return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
   <title>장비사진_${r.equipment}_${r.company}</title>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" as="style" crossorigin>
@@ -2693,7 +2699,7 @@ function buildEquipHtml(r){
   <div class="equip-name">${r.equipment}</div>
   <div class="equip-cat">${eq.cat==='cutter'?'평판커팅기':'프린터'}</div>
   <div class="ver-badge">${verLabel}</div>
-  <div class="photo-wrap"><img src="${eq.img}" alt="${r.equipment}" onerror="this.alt='사진을 불러올 수 없습니다'"></div>
+  <div class="photo-wrap"><img src="${imgSrc}" alt="${r.equipment}"></div>
   <div class="quote-info">
     견적번호: ${r.quoteNo||'—'} &nbsp;|&nbsp; 수신: ${r.company} &nbsp;|&nbsp; 발급일: ${new Date().toLocaleDateString('ko-KR')}
   </div>
@@ -2702,10 +2708,10 @@ function buildEquipHtml(r){
   </body></html>`;
 }
 
-function printEquipPhoto(){
+async function printEquipPhoto(){
   const r = currentReq;
   if(!r) return;
-  const html = buildEquipHtml(r);
+  const html = await buildEquipHtml(r);
   if(!html){alert('장비 사진 정보가 없습니다.');return;}
   const w = window.open('', '_blank', 'width=720,height=820');
   w.document.write(html);
