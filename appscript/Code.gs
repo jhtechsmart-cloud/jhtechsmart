@@ -2245,6 +2245,21 @@ function handleConfirm(data, user) {
       validUntil: data.validUntil, status: data.status, assignee: assigneeId,
       equipDetail: _getEquipDetail(data.equipment)
     });
+
+    // A안: 재발급(v2 이상) 확정 시 이전 버전 PDF URL을 리셋해 발송 게이트 재무장.
+    // 재발급은 견적서(j1)→장비사진(j2) 순으로 저장되는데, 이전 버전 장비사진PDF_URL이
+    // 시트에 남아 있으면 j1 직후 handleSaveQuote의 "견적+장비사진 둘 다 존재" 게이트가
+    // 조기 발화 → 가이드_발송요청이 켜지고, j2 전에 자동 발송(pollAndSendGuides)이 끼면
+    // 견적서 v2 + 장비사진 v1(구버전)이 첨부됨. 두 URL과 발송요청을 비워 최초 발급(v1)과
+    // 동일하게 양쪽 v2 PDF가 모두 저장된 뒤에만 게이트가 발화하도록 한다.
+    if (_extractVersionFromQuoteNo(finalQuoteNo) >= 2) {
+      _updateUnifiedFields(data.id, {
+        '견적PDF_URL': '',
+        '장비사진PDF_URL': '',
+        '가이드_발송요청': false
+      });
+      _safePushToNotion(data.id);
+    }
   } catch (e) { Logger.log('upsertUnified(confirm) 실패: ' + e); }
 
   return jsonResponse({status:'ok', quoteNo: finalQuoteNo});
